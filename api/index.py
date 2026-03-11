@@ -217,6 +217,15 @@ def rename_scan(scan_id):
         conn.commit()
     return jsonify({"ok": True, "name": new_name})
 
+@app.route("/api/scan/<int:scan_id>/findings")
+@require_auth
+def scan_findings(scan_id):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
+            rows = cur.fetchall()
+    return jsonify([dict(r) for r in rows])
+
 @app.route("/api/scan/<int:scan_id>/progress")
 @require_auth
 def scan_progress(scan_id):
