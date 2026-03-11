@@ -246,6 +246,58 @@ def scan_progress(scan_id):
         "events": [dict(e) for e in events],
     })
 
+# ── Extra REST routes called by dashboard.html JS ────────────────────────────
+
+@app.route("/api/scans/<int:scan_id>")
+@require_auth
+def api_scan_detail(scan_id):
+    """GET /api/scans/<id> — returns scan + events + findings as JSON."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM scans WHERE id=%s", (scan_id,))
+            scan = cur.fetchone()
+            if not scan:
+                abort(404)
+            cur.execute("SELECT * FROM scan_events WHERE scan_id=%s ORDER BY phase_index", (scan_id,))
+            events = cur.fetchall()
+            cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
+            findings = cur.fetchall()
+    s = dict(scan)
+    if s.get("status") == "complete":
+        s["status"] = "completed"
+    return jsonify({
+        "scan": s,
+        "progress": [dict(e) for e in events],
+        "results": [dict(f) for f in findings],
+    })
+
+@app.route("/api/scans/<int:scan_id>", methods=["DELETE"])
+@require_auth
+def api_scan_delete(scan_id):
+    """DELETE /api/scans/<id>"""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM scan_findings WHERE scan_id=%s", (scan_id,))
+            cur.execute("DELETE FROM scan_events WHERE scan_id=%s", (scan_id,))
+            cur.execute("DELETE FROM scans WHERE id=%s", (scan_id,))
+        conn.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/scans/<int:scan_id>/rename", methods=["PATCH", "POST"])
+@require_auth
+def api_scan_rename(scan_id):
+    """PATCH /api/scans/<id>/rename"""
+    data     = request.get_json(force=True) or {}
+    new_name = data.get("desktop_name", data.get("name", "")).strip()
+    if not new_name:
+        return jsonify({"ok": False, "error": "Name required"}), 400
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE scans SET desktop_name=%s, updated_at=%s WHERE id=%s",
+                        (new_name, _now(), scan_id))
+        conn.commit()
+    return jsonify({"ok": True, "name": new_name})
+
 # ── Scanner API (called by C++ exe) ──────────────────────────────────────────
 @app.route("/api/scanner/start", methods=["POST"])
 def scanner_start():
