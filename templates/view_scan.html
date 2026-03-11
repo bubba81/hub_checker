@@ -26,6 +26,7 @@
   --title:    'Orbitron', monospace;
 }
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0 }
+html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -37,7 +38,7 @@ body::before {
   background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.07) 2px, rgba(0,0,0,.07) 4px);
 }
 
-/* TOPBAR */
+/* ── TOPBAR ── */
 .topbar {
   display:flex; align-items:center; justify-content:space-between;
   padding: 0 32px; height: 64px;
@@ -46,265 +47,230 @@ body::before {
   position: sticky; top:0; z-index:100;
   box-shadow: 0 2px 24px rgba(229,0,26,.15);
 }
-.brand-link {
-  display:flex; align-items:center; gap:12px; text-decoration:none;
-}
-.brand-name {
-  font-family: var(--title); font-size:18px; font-weight:900;
-  letter-spacing:3px; color:#fff;
-}
-.brand-name span { color: var(--red); }
-.topbar-right {
-  display:flex; align-items:center; gap:12px;
-}
+.brand-link { display:flex; align-items:center; gap:12px; text-decoration:none; }
+.brand-name { font-family:var(--title); font-size:18px; font-weight:900; letter-spacing:3px; color:#fff; }
+.brand-name span { color:var(--red); }
+.topbar-right { display:flex; align-items:center; gap:16px; }
 .btn-back {
-  background: transparent;
-  border: 1px solid var(--border-r);
-  color: var(--text-dim);
-  padding: 7px 16px;
-  font-family: var(--mono); font-size:11px; letter-spacing:1px;
+  background:transparent; border:1px solid var(--border-r);
+  color:var(--text-dim); padding:7px 16px;
+  font-family:var(--mono); font-size:11px; letter-spacing:1px;
   cursor:pointer; text-decoration:none;
-  display:inline-flex; align-items:center; gap:6px;
-  transition: all .2s;
+  display:inline-flex; align-items:center; gap:6px; transition:all .2s;
 }
 .btn-back:hover { border-color:var(--red); color:var(--red); }
-
 .user-name { font-family:var(--mono); font-size:13px; color:var(--text-dim); }
-.user-name strong { color:var(--text); }
+.live-indicator {
+  display:flex; align-items:center; gap:6px;
+  font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--orange);
+}
+.live-dot {
+  width:7px; height:7px; border-radius:50%; background:var(--orange);
+  box-shadow:0 0 8px var(--orange);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
 
-/* LAYOUT */
-.main { max-width:1280px; margin:0 auto; padding:40px 32px; }
+/* ── LAYOUT ── */
+.main { max-width:1100px; margin:0 auto; padding:40px 32px 80px; }
 
-/* SCAN HEADER */
+/* ── SCAN HEADER ── */
 .scan-header {
   display:flex; align-items:flex-start; justify-content:space-between;
-  padding-bottom: 28px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 36px;
-  position:relative;
+  padding-bottom:28px; border-bottom:1px solid var(--border);
+  margin-bottom:36px; position:relative; gap:20px;
 }
 .scan-header::after {
   content:''; position:absolute; bottom:-1px; left:0;
-  width:160px; height:1px;
-  background: linear-gradient(90deg, var(--red), transparent);
+  width:200px; height:1px;
+  background:linear-gradient(90deg, var(--red), transparent);
 }
-.scan-title-group {}
 .scan-key-label {
   font-family:var(--mono); font-size:10px; color:var(--red);
   letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;
 }
 .scan-title {
-  font-family:var(--title); font-size:26px; font-weight:900;
-  letter-spacing:3px; color:#fff;
+  font-family:var(--title); font-size:28px; font-weight:900;
+  letter-spacing:3px; color:#fff; margin-bottom:14px;
 }
-.scan-meta-row {
-  display:flex; gap:24px; margin-top:12px; flex-wrap:wrap;
-}
-.smeta {
-  font-family:var(--mono); font-size:11px; color:var(--text-dim);
-}
+.scan-meta-row { display:flex; gap:24px; flex-wrap:wrap; }
+.smeta { font-family:var(--mono); font-size:11px; color:var(--text-dim); }
 .smeta strong { color:var(--text); }
 .status-badge {
   font-family:var(--mono); font-size:10px; letter-spacing:1.5px;
-  padding:4px 12px; border:1px solid; text-transform:uppercase;
-  align-self:flex-start;
+  padding:6px 14px; border:1px solid; text-transform:uppercase;
+  align-self:flex-start; white-space:nowrap;
 }
-.status-badge.complete { border-color:var(--green); color:var(--green); background:rgba(0,229,89,.06); }
-.status-badge.running  {
+.status-badge.complete, .status-badge.completed {
+  border-color:var(--green); color:var(--green); background:rgba(0,229,89,.06);
+}
+.status-badge.running {
   border-color:var(--orange); color:var(--orange); background:rgba(255,140,0,.06);
-  animation: blink 1.2s step-end infinite;
+  animation:blink 1.2s step-end infinite;
 }
-@keyframes blink { 50% { opacity:.4; } }
+@keyframes blink { 50%{opacity:.4} }
 
-/* PROGRESS SECTION */
-.progress-section {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  padding: 28px;
-  margin-bottom: 32px;
-  position:relative;
-  overflow: hidden;
+/* ── OVERALL PROGRESS BAR ── */
+.overall-bar-wrap {
+  background:var(--bg2); border:1px solid var(--border);
+  padding:24px 28px; margin-bottom:28px;
 }
-.section-title {
-  font-family:var(--title); font-size:12px; letter-spacing:3px;
-  color:var(--red); text-transform:uppercase; margin-bottom:20px;
-  display:flex; align-items:center; gap:8px;
+.overall-bar-top {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:10px;
 }
-.section-title::after {
-  content:''; flex:1; height:1px;
-  background: linear-gradient(90deg, var(--border-r), transparent);
+.overall-label { font-family:var(--mono); font-size:11px; color:var(--text-dim); letter-spacing:1px; }
+.overall-pct { font-family:var(--mono); font-size:20px; font-weight:700; color:var(--red); }
+.bar-track {
+  background:#0a0a0a; border:1px solid var(--border); height:6px;
+  position:relative; overflow:hidden;
 }
+.bar-fill {
+  height:100%; background:linear-gradient(90deg, var(--red-dim), var(--red));
+  transition:width .6s ease; position:relative;
+}
+.bar-fill::after {
+  content:''; position:absolute; right:0; top:0; bottom:0; width:40px;
+  background:linear-gradient(90deg, transparent, rgba(255,80,80,.4));
+}
+.phase-label-row {
+  margin-top:8px; font-family:var(--mono); font-size:11px;
+  color:var(--text-dim); letter-spacing:.5px;
+}
+.phase-label-row span { color:var(--orange); }
 
-/* Big progress bar */
-.big-progress-wrap {
-  background: #0a0a0a;
-  border: 1px solid var(--border);
-  height: 8px;
-  margin-bottom: 10px;
-  position:relative;
+/* ── TWO COLUMN LAYOUT ── */
+.two-col {
+  display:grid;
+  grid-template-columns: 1fr 340px;
+  gap:24px;
+  align-items:start;
+}
+@media(max-width:900px) { .two-col { grid-template-columns:1fr; } }
+
+/* ── PANEL ── */
+.panel {
+  background:var(--bg2); border:1px solid var(--border);
   overflow:hidden;
 }
-.big-progress-fill {
-  height:100%;
-  background: linear-gradient(90deg, var(--red), #ff4455);
-  transition: width .6s ease;
-  position:relative;
+.panel-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg, #0d0003, var(--bg2));
 }
-.big-progress-fill::after {
-  content:''; position:absolute; right:0; top:0; bottom:0; width:30px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.25));
-}
-.big-progress-label {
-  display:flex; justify-content:space-between;
-  font-family:var(--mono); font-size:11px; color:var(--text-dim);
-  margin-bottom: 24px; letter-spacing:1px;
-}
-.big-progress-label span { color:var(--text); }
-
-/* Phase timeline */
-.phase-timeline { display:flex; flex-direction:column; gap:0; }
-.phase-item {
-  display:flex; align-items:flex-start; gap:16px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-  opacity: .35;
-  transition: opacity .3s;
-}
-.phase-item:last-child { border-bottom:none; }
-.phase-item.done   { opacity:1; }
-.phase-item.active { opacity:1; }
-.phase-item.pending{ opacity:.2; }
-
-.phase-dot {
-  width:10px; height:10px; border-radius:50%;
-  background: var(--border);
-  border: 1px solid var(--border);
-  flex-shrink:0; margin-top:3px;
-  transition: all .3s;
-}
-.phase-item.done   .phase-dot { background:var(--green); border-color:var(--green); box-shadow:0 0 6px rgba(0,229,89,.4); }
-.phase-item.active .phase-dot { background:var(--orange); border-color:var(--orange); box-shadow:0 0 8px rgba(255,140,0,.5); animation: ping .8s ease-in-out infinite; }
-@keyframes ping { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
-
-.phase-content { flex:1; }
-.phase-name {
-  font-family:var(--mono); font-size:12px; color:var(--text); letter-spacing:.5px;
-}
-.phase-item.done .phase-name { color:var(--green); }
-.phase-item.active .phase-name { color:var(--orange); }
-.phase-pct {
-  font-family:var(--mono); font-size:10px; color:var(--text-dim);
-  margin-top:2px;
-}
-.phase-msg {
-  font-family:var(--mono); font-size:10px; color:var(--text-dim);
-  margin-top:3px; font-style:italic;
-}
-.phase-ts { font-family:var(--mono); font-size:10px; color:var(--text-dim); margin-top:2px; }
-
-/* FINDINGS SECTION */
-.findings-section {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  padding: 28px;
-  margin-bottom: 32px;
-}
-
-.findings-empty {
-  font-family:var(--mono); font-size:13px; color:var(--green);
-  padding: 20px 0;
+.panel-title {
+  font-family:var(--title); font-size:10px; letter-spacing:3px;
+  color:var(--red); text-transform:uppercase;
   display:flex; align-items:center; gap:8px;
 }
+.panel-badge {
+  font-family:var(--mono); font-size:10px; color:var(--text-dim);
+  background:var(--bg3); border:1px solid var(--border);
+  padding:2px 8px;
+}
 
-.finding-item {
-  border: 1px solid var(--border);
-  background: var(--bg3);
-  padding: 14px 16px;
-  margin-bottom: 10px;
+/* ── PHASE LOG (combined timeline + log) ── */
+.phase-log { padding:0; }
+.phase-row {
+  display:grid;
+  grid-template-columns:28px 1fr;
+  gap:0;
+  border-bottom:1px solid var(--border);
+  transition:background .2s;
+}
+.phase-row:last-child { border-bottom:none; }
+.phase-row.done   { opacity:1; }
+.phase-row.active { background:rgba(255,140,0,.04); opacity:1; }
+.phase-row.pending{ opacity:.22; }
+
+.phase-gutter {
+  display:flex; flex-direction:column; align-items:center;
+  padding:14px 0; border-right:1px solid var(--border);
   position:relative;
-  animation: card-in .3s ease;
 }
-@keyframes card-in { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
-
-.finding-item::before {
-  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+.phase-gutter::before {
+  content:''; position:absolute; top:0; bottom:0;
+  left:50%; width:1px; background:var(--border); z-index:0;
 }
-.finding-item.warn  ::before { background:var(--yellow); }
-.finding-item.alert ::before { background:var(--red); }
-.finding-item.info  ::before { background:var(--text-dim); }
-.finding-item.warn  { border-left-color:var(--yellow); }
-.finding-item.alert { border-left-color:var(--red-dim); }
+.phase-dot {
+  width:10px; height:10px; border-radius:50%;
+  border:1px solid var(--border); background:var(--border);
+  position:relative; z-index:1; flex-shrink:0;
+  transition:all .3s;
+}
+.phase-row.done   .phase-dot { background:var(--green);  border-color:var(--green);  box-shadow:0 0 6px rgba(0,229,89,.5); }
+.phase-row.active .phase-dot { background:var(--orange); border-color:var(--orange); box-shadow:0 0 8px rgba(255,140,0,.6); animation:ping .9s ease-in-out infinite; }
+@keyframes ping { 0%,100%{transform:scale(1)} 50%{transform:scale(1.5)} }
 
-.finding-header {
-  display:flex; justify-content:space-between; align-items:center;
-  margin-bottom:8px;
+.phase-body { padding:10px 16px; }
+.phase-top-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:3px; }
+.phase-name {
+  font-family:var(--mono); font-size:12px; color:var(--text-dim);
+  letter-spacing:.5px;
+}
+.phase-row.done   .phase-name { color:var(--green); }
+.phase-row.active .phase-name { color:var(--orange); }
+.phase-pct-badge {
+  font-family:var(--mono); font-size:10px;
+  color:var(--text-dim); white-space:nowrap;
+}
+.phase-row.done   .phase-pct-badge { color:var(--green); }
+.phase-row.active .phase-pct-badge { color:var(--orange); }
+.phase-msg-text {
+  font-family:var(--mono); font-size:10px; color:#4a4a4a;
+  letter-spacing:.3px; line-height:1.5;
+}
+.phase-ts-text {
+  font-family:var(--mono); font-size:9px; color:#333;
+  margin-top:2px;
+}
+
+/* ── FINDINGS PANEL ── */
+.findings-list { padding:0; }
+.finding-row {
+  padding:12px 16px; border-bottom:1px solid var(--border);
+  position:relative;
+}
+.finding-row:last-child { border-bottom:none; }
+.finding-row.alert { border-left:3px solid var(--red); }
+.finding-row.warn  { border-left:3px solid var(--orange); }
+.finding-row.info  { border-left:3px solid #555; }
+.finding-top {
+  display:flex; align-items:center; gap:8px; margin-bottom:5px;
 }
 .finding-cat {
-  font-family:var(--mono); font-size:10px; letter-spacing:2px;
+  font-family:var(--mono); font-size:9px; letter-spacing:1.5px;
+  text-transform:uppercase; padding:2px 7px;
+  border:1px solid; background:rgba(0,0,0,.4);
+}
+.finding-cat.alert { border-color:var(--red-dim); color:var(--red); }
+.finding-cat.warn  { border-color:#5a3000; color:var(--orange); }
+.finding-cat.info  { border-color:#333; color:var(--text-dim); }
+.finding-sev {
+  font-family:var(--mono); font-size:9px; letter-spacing:1px;
   text-transform:uppercase;
 }
-.finding-cat.warn  { color:var(--yellow); }
-.finding-cat.alert { color:var(--red); }
-.finding-cat.info  { color:var(--text-dim); }
-
-.finding-sev {
-  font-family:var(--mono); font-size:9px; padding:2px 8px;
-  border:1px solid; letter-spacing:1.5px; text-transform:uppercase;
-}
-.finding-sev.warn  { border-color:var(--yellow); color:var(--yellow); }
-.finding-sev.alert { border-color:var(--red); color:var(--red); }
-.finding-sev.info  { border-color:var(--border); color:var(--text-dim); }
-
+.finding-sev.alert { color:var(--red); }
+.finding-sev.warn  { color:var(--orange); }
+.finding-sev.info  { color:var(--text-dim); }
 .finding-detail {
-  font-family:var(--mono); font-size:12px; color:var(--text);
-  line-height:1.6; word-break:break-all;
+  font-family:var(--mono); font-size:11px; color:var(--text);
+  line-height:1.55; word-break:break-word;
 }
-.finding-ts {
-  font-family:var(--mono); font-size:10px; color:var(--text-dim);
-  margin-top:6px;
+.finding-time {
+  font-family:var(--mono); font-size:9px; color:#333; margin-top:4px;
 }
+.findings-empty {
+  padding:32px 20px; text-align:center;
+  font-family:var(--mono); font-size:12px; color:var(--green);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.findings-empty svg { opacity:.5; }
 
-/* RAW LOG */
-.log-section {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  padding: 28px;
-}
-.log-terminal {
-  background: #040404;
-  border: 1px solid var(--border);
-  padding: 20px;
-  max-height: 500px;
-  overflow-y: auto;
-  font-family:var(--mono); font-size:12px; line-height:1.8;
-  color: #88a080;
-}
-.log-line { display:block; }
-.log-line.warn   { color: var(--yellow); }
-.log-line.alert  { color: var(--red); }
-.log-line.header { color: #6699ff; font-weight:bold; }
-.log-line.ok     { color: var(--green); }
-.log-line.system { color: var(--text-dim); }
-
-/* LIVE BADGE */
-.live-indicator {
-  display:inline-flex; align-items:center; gap:6px;
-  font-family:var(--mono); font-size:10px; color:var(--orange);
-  padding: 4px 10px; border:1px solid rgba(255,140,0,.3);
-  background: rgba(255,140,0,.05);
-  letter-spacing:1px;
-}
-.live-dot {
-  width:6px; height:6px; border-radius:50%;
-  background:var(--orange);
-  animation: ping .8s ease-in-out infinite;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width:6px; }
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; height:5px; }
 ::-webkit-scrollbar-track { background:var(--bg); }
-::-webkit-scrollbar-thumb { background:var(--border-r); border-radius:3px; }
-::-webkit-scrollbar-thumb:hover { background:var(--red-dim); }
+::-webkit-scrollbar-thumb { background:var(--border-r); border-radius:2px; }
 </style>
 </head>
 <body>
@@ -315,7 +281,9 @@ body::before {
   </a>
   <div class="topbar-right">
     {% if scan.status not in ('complete','completed') %}
-    <div class="live-indicator" id="liveIndicator"><div class="live-dot"></div>LIVE SCAN</div>
+    <div class="live-indicator" id="liveIndicator">
+      <div class="live-dot"></div>LIVE
+    </div>
     {% endif %}
     <span class="user-name">{{ username }}</span>
     <a href="/" class="btn-back">
@@ -327,9 +295,9 @@ body::before {
 
 <main class="main">
 
-  <!-- Scan Header -->
+  <!-- SCAN HEADER -->
   <div class="scan-header">
-    <div class="scan-title-group">
+    <div>
       <div class="scan-key-label">◈ SCAN KEY: {{ scan.scan_key }}</div>
       <div class="scan-title" id="scanTitle">{{ scan.desktop_name }}</div>
       <div class="scan-meta-row">
@@ -337,7 +305,6 @@ body::before {
         <div class="smeta">USER <strong>{{ scan.username or '—' }}</strong></div>
         <div class="smeta">OS <strong>{{ scan.os_version or '—' }}</strong></div>
         <div class="smeta">STARTED <strong>{{ scan.created_at }}</strong></div>
-        <div class="smeta">UPDATED <strong>{{ scan.updated_at }}</strong></div>
       </div>
     </div>
     <div class="status-badge {{ scan.status }}" id="statusBadge">
@@ -345,239 +312,203 @@ body::before {
     </div>
   </div>
 
-  <!-- PROGRESS -->
-  <div class="progress-section">
-    <div class="section-title">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      SCAN PROGRESS
-    </div>
-
+  <!-- OVERALL PROGRESS -->
+  <div class="overall-bar-wrap">
     {% set total = phases|length %}
-    {% set pi = scan.phase_index %}
-    {% set pct = (pi / (total - 1) * 100)|int if pi else 0 %}
-
-    <div class="big-progress-wrap">
-      <div class="big-progress-fill" id="bigFill" style="width:{{ pct }}%"></div>
+    {% set pi = scan.phase_index or 0 %}
+    {% set pct = 100 if scan.status in ('complete','completed') else ((pi / (total - 1) * 100)|int if pi else 0) %}
+    <div class="overall-bar-top">
+      <div class="overall-label" id="phaseLabel">
+        {% if scan.status in ('complete','completed') %}ALL PHASES COMPLETE
+        {% else %}PHASE {{ pi + 1 }}/{{ total }} — {{ phases[pi] if pi < total else '' }}{% endif %}
+      </div>
+      <div class="overall-pct" id="pctLabel">{{ pct }}%</div>
     </div>
-    <div class="big-progress-label">
-      <span id="phaseLabel">
-        {% if scan.status == 'complete' %}ALL PHASES COMPLETE
-        {% else %}PHASE {{ pi + 1 }}/{{ total }} — {{ phases[pi] if pi < total else 'Processing' }}{% endif %}
-      </span>
-      <span id="pctLabel">{{ pct }}%</span>
-    </div>
-
-    <div class="phase-timeline" id="phaseTimeline">
-      {% for phase in phases %}
-        {% set i = loop.index0 %}
-        {% set ev = events|selectattr('phase_index','equalto',i)|list %}
-        {% set ev_item = ev[0] if ev else none %}
-        {% if scan.status in ('complete','completed') %}
-          <div class="phase-item done">
-        {% elif i < pi %}
-          <div class="phase-item done">
-        {% elif i == pi %}
-          <div class="phase-item active">
-        {% else %}
-          <div class="phase-item pending">
-        {% endif %}
-          <div class="phase-dot"></div>
-          <div class="phase-content">
-            <div class="phase-name">{{ phase }}</div>
-            {% if ev_item %}
-              <div class="phase-pct">{{ ev_item.pct }}% complete</div>
-              {% if ev_item.message %}<div class="phase-msg">{{ ev_item.message }}</div>{% endif %}
-              <div class="phase-ts">{{ ev_item.ts }}</div>
-            {% endif %}
-          </div>
-        </div>
-      {% endfor %}
+    <div class="bar-track">
+      <div class="bar-fill" id="bigFill" style="width:{{ pct }}%"></div>
     </div>
   </div>
 
-  <!-- FINDINGS -->
-  <div class="findings-section">
-    <div class="section-title">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      FINDINGS
-      <span id="findingCount" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);font-weight:400">
-        ({{ findings|length }})
-      </span>
-    </div>
-    <div id="findingsContainer">
-      {% if not findings %}
-        <div class="findings-empty">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          No suspicious findings detected.
+  <!-- TWO COLUMN -->
+  <div class="two-col">
+
+    <!-- LEFT: Phase Log -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          SCAN PHASES
         </div>
-      {% else %}
-        {% for f in findings %}
-        <div class="finding-item {{ f.severity }}">
-          <div class="finding-header">
-            <span class="finding-cat {{ f.severity }}">{{ f.category }}</span>
-            <span class="finding-sev {{ f.severity }}">{{ f.severity }}</span>
+        <div class="panel-badge" id="phaseCount">{{ events|length }}/{{ phases|length }}</div>
+      </div>
+      <div class="phase-log" id="phaseLog">
+        {% for phase in phases %}
+          {% set i = loop.index0 %}
+          {% set ev = events|selectattr('phase_index','equalto',i)|list %}
+          {% set ev_item = ev[0] if ev else none %}
+          {% if scan.status in ('complete','completed') %}
+            {% set row_cls = 'done' %}
+          {% elif i < pi %}
+            {% set row_cls = 'done' %}
+          {% elif i == pi %}
+            {% set row_cls = 'active' %}
+          {% else %}
+            {% set row_cls = 'pending' %}
+          {% endif %}
+          <div class="phase-row {{ row_cls }}">
+            <div class="phase-gutter">
+              <div class="phase-dot"></div>
+            </div>
+            <div class="phase-body">
+              <div class="phase-top-row">
+                <div class="phase-name">{{ '%02d'|format(i) }}. {{ phase }}</div>
+                {% if ev_item %}
+                  <div class="phase-pct-badge">{{ ev_item.pct }}%</div>
+                {% endif %}
+              </div>
+              {% if ev_item %}
+                {% if ev_item.message %}
+                  <div class="phase-msg-text">{{ ev_item.message }}</div>
+                {% endif %}
+                <div class="phase-ts-text">{{ ev_item.ts }}</div>
+              {% endif %}
+            </div>
           </div>
-          <div class="finding-detail">{{ f.detail }}</div>
-          <div class="finding-ts">{{ f.ts }}</div>
-        </div>
         {% endfor %}
-      {% endif %}
+      </div>
     </div>
-  </div>
 
-  <!-- LOG -->
-  <div class="log-section">
-    <div class="section-title">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      PHASE LOG
+    <!-- RIGHT: Findings -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          FINDINGS
+        </div>
+        <div class="panel-badge" id="findingCount">{{ findings|length }}</div>
+      </div>
+      <div class="findings-list" id="findingsContainer">
+        {% if not findings %}
+          <div class="findings-empty">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+            No findings detected
+          </div>
+        {% else %}
+          {% for f in findings %}
+          <div class="finding-row {{ f.severity }}">
+            <div class="finding-top">
+              <span class="finding-cat {{ f.severity }}">{{ f.category }}</span>
+              <span class="finding-sev {{ f.severity }}">{{ f.severity }}</span>
+            </div>
+            <div class="finding-detail">{{ f.detail }}</div>
+            <div class="finding-time">{{ f.ts }}</div>
+          </div>
+          {% endfor %}
+        {% endif %}
+      </div>
     </div>
-    <div class="log-terminal" id="logTerminal">
-      {% for ev in events %}
-        {% set line_cls = '' %}
-        {% if '>>>' in ev.message or 'ALERT' in ev.message %}{% set line_cls = 'alert' %}
-        {% elif 'WARNING' in ev.message or 'WARN' in ev.message %}{% set line_cls = 'warn' %}
-        {% elif '====' in ev.message %}{% set line_cls = 'header' %}
-        {% elif 'OK' in ev.message or 'Done' in ev.message %}{% set line_cls = 'ok' %}
-        {% else %}{% set line_cls = 'system' %}{% endif %}
-        <span class="log-line {{ line_cls }}">[{{ '%02d'|format(ev.phase_index) }}] {{ ev.pct }}% &nbsp;{{ ev.phase_name }}{% if ev.message %} — {{ ev.message }}{% endif %} &nbsp;<span style="color:var(--border)">{{ ev.ts }}</span></span>
-      {% endfor %}
-      {% if not events %}
-        <span class="log-line system">// No log entries yet...</span>
-      {% endif %}
-    </div>
-  </div>
 
+  </div>
 </main>
 
 <script>
 const scanId = {{ scan.id }};
 const phases  = {{ phases|tojson }};
-// Treat both 'running' and any non-complete status as live
 let isDone = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
 
-// ── Live update helpers ──────────────────────────────────────────────────────
-
-function sevClass(sev) {
-  return { alert:'alert', warn:'warn', info:'info' }[sev] || 'info';
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function renderPhaseTimeline(events, phaseIndex, done) {
-  const total = phases.length;
+function sevClass(s) {
+  return {alert:'alert',warn:'warn',info:'info'}[s]||'info';
+}
+
+function renderPhaseLog(events, phaseIndex, done) {
   const evMap = {};
   for (const ev of events) evMap[ev.phase_index] = ev;
-
   return phases.map((phase, i) => {
-    const ev = evMap[i];
-    let cls = 'pending';
-    if (done || i < phaseIndex) cls = 'done';
-    else if (i === phaseIndex) cls = 'active';
-
-    const evHtml = ev ? `
-      <div class="phase-pct">${ev.pct}% complete</div>
-      ${ev.message ? `<div class="phase-msg">${escHtml(ev.message)}</div>` : ''}
-      <div class="phase-ts">${ev.ts}</div>` : '';
-
-    return `<div class="phase-item ${cls}">
-      <div class="phase-dot"></div>
-      <div class="phase-content">
-        <div class="phase-name">${escHtml(phase)}</div>
-        ${evHtml}
+    const ev  = evMap[i];
+    let cls = done || i < phaseIndex ? 'done' : i === phaseIndex ? 'active' : 'pending';
+    const dot = `<div class="phase-gutter"><div class="phase-dot"></div></div>`;
+    const pctBadge = ev ? `<div class="phase-pct-badge">${ev.pct}%</div>` : '';
+    const msgLine  = ev && ev.message ? `<div class="phase-msg-text">${escHtml(ev.message)}</div>` : '';
+    const tsLine   = ev ? `<div class="phase-ts-text">${ev.ts}</div>` : '';
+    return `<div class="phase-row ${cls}">
+      ${dot}
+      <div class="phase-body">
+        <div class="phase-top-row">
+          <div class="phase-name">${String(i).padStart(2,'0')}. ${escHtml(phase)}</div>
+          ${pctBadge}
+        </div>
+        ${msgLine}${tsLine}
       </div>
     </div>`;
-  }).join('');
-}
-
-function renderLog(events) {
-  if (!events.length) return '<span class="log-line system">// No log entries yet...</span>';
-  return events.map(ev => {
-    let cls = 'system';
-    const msg = ev.message || '';
-    if (msg.includes('>>>') || msg.includes('ALERT')) cls = 'alert';
-    else if (msg.includes('WARN')) cls = 'warn';
-    else if (msg.includes('====')) cls = 'header';
-    else if (msg.includes('OK') || msg.includes('Done')) cls = 'ok';
-    const msgPart = msg ? ` — ${escHtml(msg)}` : '';
-    return `<span class="log-line ${cls}">[${String(ev.phase_index).padStart(2,'0')}] ${ev.pct}% &nbsp;${escHtml(ev.phase_name)}${msgPart} &nbsp;<span style="color:var(--border)">${ev.ts}</span></span>`;
   }).join('');
 }
 
 function renderFindings(findings) {
   if (!findings.length) return `<div class="findings-empty">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-    No suspicious findings detected.
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+    No findings detected
   </div>`;
   return findings.map(f => {
     const sc = sevClass(f.severity);
-    return `<div class="finding-item ${sc}">
-      <div class="finding-header">
+    return `<div class="finding-row ${sc}">
+      <div class="finding-top">
         <span class="finding-cat ${sc}">${escHtml(f.category)}</span>
         <span class="finding-sev ${sc}">${escHtml(f.severity)}</span>
       </div>
       <div class="finding-detail">${escHtml(f.detail)}</div>
-      <div class="finding-ts">${f.ts}</div>
+      <div class="finding-time">${f.ts||''}</div>
     </div>`;
   }).join('');
 }
 
-function escHtml(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── Poll ─────────────────────────────────────────────────────────────────────
-
 async function poll() {
   try {
-    const [progRes, findRes] = await Promise.all([
+    const [pRes, fRes] = await Promise.all([
       fetch(`/api/scan/${scanId}/progress`),
       fetch(`/api/scan/${scanId}/findings`)
     ]);
-    const d = await progRes.json();
-    const findings = findRes.ok ? await findRes.json() : [];
+    const d = await pRes.json();
+    const findings = fRes.ok ? await fRes.json() : [];
 
-    const total  = d.total_phases;
-    const pi     = d.phase_index || 0;
-    const done   = (d.status === 'complete' || d.status === 'completed');
-    const pct    = done ? 100 : Math.round(pi / Math.max(total - 1, 1) * 100);
+    const total = d.total_phases || phases.length;
+    const pi    = d.phase_index  || 0;
+    const done  = d.status === 'complete' || d.status === 'completed';
+    const pct   = done ? 100 : Math.round(pi / Math.max(total-1,1) * 100);
 
-    // Big progress bar
+    // Progress bar
     document.getElementById('bigFill').style.width = pct + '%';
     document.getElementById('pctLabel').textContent = pct + '%';
 
-    // Phase label
     if (done) {
       document.getElementById('phaseLabel').textContent = 'ALL PHASES COMPLETE';
-      document.getElementById('statusBadge').className = 'status-badge complete';
+      document.getElementById('statusBadge').className  = 'status-badge complete';
       document.getElementById('statusBadge').textContent = '✓ COMPLETE';
-      document.querySelector('.live-indicator') && (document.querySelector('.live-indicator').style.display = 'none');
+      const li = document.getElementById('liveIndicator');
+      if (li) li.style.display = 'none';
     } else {
-      const pname = phases[Math.min(pi, phases.length - 1)];
-      document.getElementById('phaseLabel').textContent = `PHASE ${pi + 1}/${total} — ${pname}`;
+      const pname = phases[Math.min(pi, phases.length-1)];
+      document.getElementById('phaseLabel').textContent = `PHASE ${pi+1}/${total} — ${pname}`;
     }
 
-    // Phase timeline
-    document.getElementById('phaseTimeline').innerHTML = renderPhaseTimeline(d.events || [], pi, done);
-
-    // Log terminal (keep scrolled to bottom if already at bottom)
-    const logEl = document.getElementById('logTerminal');
-    const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 40;
-    logEl.innerHTML = renderLog(d.events || []);
-    if (atBottom) logEl.scrollTop = logEl.scrollHeight;
+    // Phase log
+    document.getElementById('phaseLog').innerHTML = renderPhaseLog(d.events||[], pi, done);
+    document.getElementById('phaseCount').textContent = `${(d.events||[]).length}/${phases.length}`;
 
     // Findings
     document.getElementById('findingsContainer').innerHTML = renderFindings(findings);
-    document.getElementById('findingCount').textContent = `(${findings.length})`;
+    document.getElementById('findingCount').textContent = findings.length;
 
     isDone = done;
     if (!done) setTimeout(poll, 2500);
-
   } catch(e) {
     if (!isDone) setTimeout(poll, 4000);
   }
 }
 
-// Always poll on page load so completed scans show data too
 poll();
 </script>
 </body>
