@@ -54,6 +54,7 @@ def init_db():
                     created_at   TEXT NOT NULL,
                     updated_at   TEXT NOT NULL,
                     status       TEXT NOT NULL DEFAULT 'running',
+                    trinity_json TEXT,
                     phase_index  INTEGER NOT NULL DEFAULT 0,
                     hostname     TEXT,
                     username     TEXT,
@@ -269,6 +270,7 @@ def api_scan_detail(scan_id):
         "scan": s,
         "progress": [dict(e) for e in events],
         "results": [dict(f) for f in findings],
+        "trinity_json": s.get("trinity_json"),
     })
 
 @app.route("/api/scans/<int:scan_id>", methods=["DELETE"])
@@ -297,6 +299,53 @@ def api_scan_rename(scan_id):
                         (new_name, _now(), scan_id))
         conn.commit()
     return jsonify({"ok": True, "name": new_name})
+
+@app.route("/api/scan", methods=["POST"])
+def trinity_scan_submit():
+    """POST /api/scan — receives full Trinity JSON payload from the C++ exe.
+    Matches the scan by hostname+username or scan_key if present, stores the JSON."""
+    import json as _json
+    data = request.get_json(force=True) or {}
+    
+    sys_info = data.get("systemInfo", {})
+    hostname = sys_info.get("hostname", "")
+    username = sys_info.get("username", "")
+    
+    # Try to find the most recent matching scan
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            # Try to match by hostname+username, get most recent
+            cur.execute("""
+                SELECT id FROM scans 
+                WHERE hostname=%s AND username=%s 
+                ORDER BY created_at DESC LIMIT 1
+            """, (hostname, username))
+            row = cur.fetchone()
+            
+            if not row:
+                # Fallback: just get the most recent scan
+                cur.execute("SELECT id FROM scans ORDER BY created_at DESC LIMIT 1")
+                row = cur.fetchone()
+            
+            if not row:
+                return jsonify({"ok": False, "error": "No matching scan found"}), 404
+            
+            scan_id = row["id"]
+            json_str = _json.dumps(data)
+            
+            # Add trinity_json column if it doesn't exist yet
+            try:
+                cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS trinity_json TEXT")
+            except Exception:
+                pass
+            
+            cur.execute(
+                "UPDATE scans SET trinity_json=%s, updated_at=%s WHERE id=%s",
+                (json_str, _now(), scan_id)
+            )
+        conn.commit()
+    
+    return jsonify({"ok": True, "scan_id": scan_id})
 
 # ── Scanner API (called by C++ exe) ──────────────────────────────────────────
 @app.route("/api/scanner/start", methods=["POST"])
