@@ -314,8 +314,8 @@ body::before {
     <span class="brand-name">HUB<span>CHECKER</span></span>
   </a>
   <div class="topbar-right">
-    {% if scan.status == 'running' %}
-    <div class="live-indicator"><div class="live-dot"></div>LIVE SCAN</div>
+    {% if scan.status not in ('complete','completed') %}
+    <div class="live-indicator" id="liveIndicator"><div class="live-dot"></div>LIVE SCAN</div>
     {% endif %}
     <span class="user-name">{{ username }}</span>
     <a href="/" class="btn-back">
@@ -341,7 +341,7 @@ body::before {
       </div>
     </div>
     <div class="status-badge {{ scan.status }}" id="statusBadge">
-      {% if scan.status == 'complete' %}✓ COMPLETE{% else %}⬤ SCANNING{% endif %}
+      {% if scan.status in ('complete','completed') %}✓ COMPLETE{% else %}⬤ SCANNING{% endif %}
     </div>
   </div>
 
@@ -368,15 +368,16 @@ body::before {
     </div>
 
     <div class="phase-timeline" id="phaseTimeline">
-      {% for i, phase in phases|enumerate %}
-        {% set ev = events|selectattr('phase_index','eq',i)|list %}
+      {% for phase in phases %}
+        {% set i = loop.index0 %}
+        {% set ev = events|selectattr('phase_index','equalto',i)|list %}
         {% set ev_item = ev[0] if ev else none %}
-        {% if i < pi %}
+        {% if scan.status in ('complete','completed') %}
           <div class="phase-item done">
-        {% elif i == pi and scan.status != 'complete' %}
+        {% elif i < pi %}
+          <div class="phase-item done">
+        {% elif i == pi %}
           <div class="phase-item active">
-        {% elif scan.status == 'complete' %}
-          <div class="phase-item done">
         {% else %}
           <div class="phase-item pending">
         {% endif %}
