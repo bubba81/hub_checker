@@ -450,54 +450,134 @@ body::before {
 
 <script>
 const scanId = {{ scan.id }};
-const isRunning = {{ 'true' if scan.status == 'running' else 'false' }};
-const phases = {{ phases|tojson }};
-let knownEventCount = {{ events|length }};
+const phases  = {{ phases|tojson }};
+// Treat both 'running' and any non-complete status as live
+let isDone = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
+
+// ── Live update helpers ──────────────────────────────────────────────────────
+
+function sevClass(sev) {
+  return { alert:'alert', warn:'warn', info:'info' }[sev] || 'info';
+}
+
+function renderPhaseTimeline(events, phaseIndex, done) {
+  const total = phases.length;
+  const evMap = {};
+  for (const ev of events) evMap[ev.phase_index] = ev;
+
+  return phases.map((phase, i) => {
+    const ev = evMap[i];
+    let cls = 'pending';
+    if (done || i < phaseIndex) cls = 'done';
+    else if (i === phaseIndex) cls = 'active';
+
+    const evHtml = ev ? `
+      <div class="phase-pct">${ev.pct}% complete</div>
+      ${ev.message ? `<div class="phase-msg">${escHtml(ev.message)}</div>` : ''}
+      <div class="phase-ts">${ev.ts}</div>` : '';
+
+    return `<div class="phase-item ${cls}">
+      <div class="phase-dot"></div>
+      <div class="phase-content">
+        <div class="phase-name">${escHtml(phase)}</div>
+        ${evHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderLog(events) {
+  if (!events.length) return '<span class="log-line system">// No log entries yet...</span>';
+  return events.map(ev => {
+    let cls = 'system';
+    const msg = ev.message || '';
+    if (msg.includes('>>>') || msg.includes('ALERT')) cls = 'alert';
+    else if (msg.includes('WARN')) cls = 'warn';
+    else if (msg.includes('====')) cls = 'header';
+    else if (msg.includes('OK') || msg.includes('Done')) cls = 'ok';
+    const msgPart = msg ? ` — ${escHtml(msg)}` : '';
+    return `<span class="log-line ${cls}">[${String(ev.phase_index).padStart(2,'0')}] ${ev.pct}% &nbsp;${escHtml(ev.phase_name)}${msgPart} &nbsp;<span style="color:var(--border)">${ev.ts}</span></span>`;
+  }).join('');
+}
+
+function renderFindings(findings) {
+  if (!findings.length) return `<div class="findings-empty">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    No suspicious findings detected.
+  </div>`;
+  return findings.map(f => {
+    const sc = sevClass(f.severity);
+    return `<div class="finding-item ${sc}">
+      <div class="finding-header">
+        <span class="finding-cat ${sc}">${escHtml(f.category)}</span>
+        <span class="finding-sev ${sc}">${escHtml(f.severity)}</span>
+      </div>
+      <div class="finding-detail">${escHtml(f.detail)}</div>
+      <div class="finding-ts">${f.ts}</div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Poll ─────────────────────────────────────────────────────────────────────
 
 async function poll() {
-  if (!isRunning && document.getElementById('statusBadge').textContent.includes('SCANNING') === false) return;
-
   try {
-    const r = await fetch(`/api/scan/${scanId}/progress`);
-    const d = await r.json();
-    const total = d.total_phases;
-    const pi = d.phase_index;
-    const pct = Math.round(pi / (total-1) * 100);
+    const [progRes, findRes] = await Promise.all([
+      fetch(`/api/scan/${scanId}/progress`),
+      fetch(`/api/scan/${scanId}/findings`)
+    ]);
+    const d = await progRes.json();
+    const findings = findRes.ok ? await findRes.json() : [];
 
-    // Update big progress bar
+    const total  = d.total_phases;
+    const pi     = d.phase_index || 0;
+    const done   = (d.status === 'complete' || d.status === 'completed');
+    const pct    = done ? 100 : Math.round(pi / Math.max(total - 1, 1) * 100);
+
+    // Big progress bar
     document.getElementById('bigFill').style.width = pct + '%';
     document.getElementById('pctLabel').textContent = pct + '%';
 
-    if (d.status === 'complete') {
+    // Phase label
+    if (done) {
       document.getElementById('phaseLabel').textContent = 'ALL PHASES COMPLETE';
       document.getElementById('statusBadge').className = 'status-badge complete';
       document.getElementById('statusBadge').textContent = '✓ COMPLETE';
+      document.querySelector('.live-indicator') && (document.querySelector('.live-indicator').style.display = 'none');
     } else {
-      const pname = phases[Math.min(pi, phases.length-1)];
-      document.getElementById('phaseLabel').textContent = `PHASE ${pi+1}/${total} — ${pname}`;
+      const pname = phases[Math.min(pi, phases.length - 1)];
+      document.getElementById('phaseLabel').textContent = `PHASE ${pi + 1}/${total} — ${pname}`;
     }
 
-    // If new events came in, refresh page to show them
-    if (d.events.length !== knownEventCount) {
-      knownEventCount = d.events.length;
-      location.reload();
-    }
+    // Phase timeline
+    document.getElementById('phaseTimeline').innerHTML = renderPhaseTimeline(d.events || [], pi, done);
 
-    if (d.status !== 'complete') {
-      setTimeout(poll, 3500);
-    }
+    // Log terminal (keep scrolled to bottom if already at bottom)
+    const logEl = document.getElementById('logTerminal');
+    const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 40;
+    logEl.innerHTML = renderLog(d.events || []);
+    if (atBottom) logEl.scrollTop = logEl.scrollHeight;
+
+    // Findings
+    document.getElementById('findingsContainer').innerHTML = renderFindings(findings);
+    document.getElementById('findingCount').textContent = `(${findings.length})`;
+
+    isDone = done;
+    if (!done) setTimeout(poll, 2500);
+
   } catch(e) {
-    setTimeout(poll, 5000);
+    if (!isDone) setTimeout(poll, 4000);
   }
 }
 
-if (isRunning) {
-  poll();
-}
-
-// Scroll log to bottom
-const log = document.getElementById('logTerminal');
-if (log) log.scrollTop = log.scrollHeight;
+// Always poll on page load so completed scans show data too
+poll();
 </script>
 </body>
 </html>
