@@ -232,6 +232,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
     <div class="tab" onclick="switchTab('phases')">Phases <span class="tab-badge" id="tabPhaseCount">{{ events|length }}/{{ phases|length }}</span></div>
     <div class="tab" onclick="switchTab('findings')">Findings <span class="tab-badge" id="tabFindingCount">{{ findings|length }}</span></div>
     <div class="tab" onclick="switchTab('raw')">Raw Log</div>
+    <div class="tab" onclick="switchTab('results')">Full Results <span class="tab-badge" id="tabResultsBadge">—</span></div>
   </div>
 
   <!-- OVERVIEW PANE -->
@@ -332,6 +333,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
     </div>
   </div>
 
+  <!-- RESULTS PANE -->
+  <div class="pane" id="pane-results">
+    <div id="resultsContent">
+      <div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim)">
+        Full results load after scan completes and JSON is submitted.
+      </div>
+    </div>
+  </div>
+
   <!-- RAW LOG PANE -->
   <div class="pane" id="pane-raw">
     <div class="raw-box" id="rawBox">
@@ -355,7 +365,7 @@ let activeFilter = 'all';
 // ── Tab switching ────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const names = ['overview','phases','findings','raw'];
+    const names = ['overview','phases','findings','raw','results'];
     t.classList.toggle('active', names[i]===name);
   });
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
@@ -424,14 +434,86 @@ function renderRaw(events) {
 }
 
 // ── Poll ─────────────────────────────────────────────────────────────────────
+function renderTrinityResults(tj) {
+  if (!tj) return '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim)">No results submitted yet.</div>';
+  
+  const si = tj.systemInfo || {};
+  const mem = tj.memoryScan || {};
+  const rb = tj.robloxData || {};
+  const nat = tj.nativeChecks || {};
+  const ic = tj.integrityChecks || {};
+
+  function sec(title, rows) {
+    if (!rows.some(r=>r[1])) return '';
+    return `<div style="margin-bottom:20px">
+      <div style="font-family:var(--title);font-size:9px;letter-spacing:3px;color:var(--red);
+        text-transform:uppercase;padding:10px 16px;background:var(--bg3);
+        border:1px solid var(--border);border-bottom:none">${title}</div>
+      <div style="border:1px solid var(--border)">
+        ${rows.filter(r=>r[1]).map(r=>`
+          <div style="display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid var(--border)">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--dim);padding:8px 14px;
+              border-right:1px solid var(--border);background:var(--bg2)">${escHtml(r[0])}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text);padding:8px 14px;
+              white-space:pre-wrap;word-break:break-word;background:var(--bg2)">${escHtml(String(r[1]))}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  const arrToStr = a => Array.isArray(a) ? a.join('\n') : (a||'');
+
+  return sec('System Info', [
+    ['Hostname',       si.hostname],
+    ['Username',       si.username],
+    ['OS Version',     si.os_version],
+    ['Install Date',   si.windows_install_date],
+    ['Roblox Accounts',arrToStr(si.roblox_accounts)],
+    ['Discord Accts',  arrToStr(si.discord_accounts)],
+    ['Roblox Cookies', arrToStr(si.roblox_cookie_notes)],
+    ['Profile URLs',   arrToStr(si.roblox_profile_urls)],
+  ]) +
+  sec('Memory Scan', [
+    ['Roblox Memory',  mem.robloxMemory],
+    ['Injected Modules',mem.injectedModules],
+    ['Discord Memory', mem.discordMemory],
+    ['Browser Memory', mem.browserMemory],
+  ]) +
+  sec('Roblox Data', [
+    ['Roblox Logs',    arrToStr(rb.robloxLogs)],
+    ['FFlags',         arrToStr(rb.robloxFlags)],
+  ]) +
+  sec('Native Checks', [
+    ['Run Keys',       nat.runKeys],
+    ['Recent Items',   arrToStr(nat.recentItems)],
+    ['UserAssist',     arrToStr(nat.userAssist)],
+  ]) +
+  sec('Integrity Checks', [
+    ['Prefetch',       ic.prefetchIntegrity],
+    ['Amcache',        ic.amcacheIntegrity],
+    ['Shimcache',      ic.shimcacheIntegrity],
+    ['SRUM',           ic.srumIntegrity],
+    ['Defender',       ic.defenderIntegrity],
+    ['BAM',            ic.bamIntegrity],
+    ['USB History',    ic.usbHistory],
+    ['System Restore', ic.systemRestore],
+    ['Recent Folder',  ic.recentFolderIntegrity],
+    ['Services',       ic.servicesCheck],
+    ['Unsigned EXEs',  ic.unsignedExes],
+  ]);
+}
+
 async function poll() {
   try {
-    const [pRes, fRes] = await Promise.all([
+    const [pRes, fRes, dRes] = await Promise.all([
       fetch(`/api/scan/${scanId}/progress`),
-      fetch(`/api/scan/${scanId}/findings`)
+      fetch(`/api/scan/${scanId}/findings`),
+      fetch(`/api/scans/${scanId}`)
     ]);
     const d = await pRes.json();
     allFindings = fRes.ok ? await fRes.json() : [];
+    const detail = dRes.ok ? await dRes.json() : {};
+    const trinityJson = detail.trinity_json || null;
 
     const total = d.total_phases || phases.length;
     const pi    = d.phase_index  || 0;
@@ -478,6 +560,15 @@ async function poll() {
 
     // Raw
     document.getElementById('rawBox').innerHTML = renderRaw(d.events||[]);
+
+    // Full Results tab
+    if (trinityJson) {
+      try {
+        const tj = typeof trinityJson === 'string' ? JSON.parse(trinityJson) : trinityJson;
+        document.getElementById('resultsContent').innerHTML = renderTrinityResults(tj);
+        document.getElementById('tabResultsBadge').textContent = '✓';
+      } catch(e) {}
+    }
 
     isDone = done;
     if (!done) setTimeout(poll, 2500);
