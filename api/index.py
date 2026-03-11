@@ -176,6 +176,24 @@ def view_scan(scan_id):
                            avatar=session.get("avatar"))
 
 # ── Dashboard AJAX ────────────────────────────────────────────────────────────
+
+@app.route("/api/scans")
+@require_auth
+def api_scans():
+    """Returns all scans as JSON for the dashboard frontend."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM scans ORDER BY created_at DESC")
+            rows = cur.fetchall()
+    # Normalise: DB stores 'complete', JS expects 'completed'
+    result = []
+    for r in rows:
+        d = dict(r)
+        if d.get("status") == "complete":
+            d["status"] = "completed"
+        result.append(d)
+    return jsonify(result)
+
 @app.route("/api/scan/<int:scan_id>/delete", methods=["POST"])
 @require_auth
 def delete_scan(scan_id):
@@ -210,8 +228,10 @@ def scan_progress(scan_id):
                 abort(404)
             cur.execute("SELECT * FROM scan_events WHERE scan_id=%s ORDER BY phase_index", (scan_id,))
             events = cur.fetchall()
+    status = scan["status"]
+    if status == "complete": status = "completed"
     return jsonify({
-        "status": scan["status"],
+        "status": status,
         "phase_index": scan["phase_index"],
         "total_phases": len(SCAN_PHASES),
         "events": [dict(e) for e in events],
