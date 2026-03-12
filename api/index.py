@@ -302,50 +302,59 @@ def api_scan_rename(scan_id):
 
 @app.route("/api/scan", methods=["POST"])
 def trinity_scan_submit():
-    """POST /api/scan — receives full Trinity JSON payload from the C++ exe.
-    Matches the scan by hostname+username or scan_key if present, stores the JSON."""
+    """POST /api/scan — receives full structured JSON from the C++ exe.
+    Stores everything: trinity detail + all hits array."""
     import json as _json
     data = request.get_json(force=True) or {}
-    
+
     sys_info = data.get("systemInfo", {})
     hostname = sys_info.get("hostname", "")
     username = sys_info.get("username", "")
-    
-    # Try to find the most recent matching scan
+    scan_key = data.get("scan_key", "")
+
     with get_conn() as conn:
         with conn.cursor() as cur:
-            # Try to match by hostname+username, get most recent
-            cur.execute("""
-                SELECT id FROM scans 
-                WHERE hostname=%s AND username=%s 
-                ORDER BY created_at DESC LIMIT 1
-            """, (hostname, username))
-            row = cur.fetchone()
-            
+            # Match by scan_key first (most reliable), then hostname+username, then latest
+            row = None
+            if scan_key:
+                cur.execute("SELECT id FROM scans WHERE scan_key=%s LIMIT 1", (scan_key,))
+                row = cur.fetchone()
+            if not row and hostname and username:
+                cur.execute("""SELECT id FROM scans WHERE hostname=%s AND username=%s
+                               ORDER BY created_at DESC LIMIT 1""", (hostname, username))
+                row = cur.fetchone()
             if not row:
-                # Fallback: just get the most recent scan
                 cur.execute("SELECT id FROM scans ORDER BY created_at DESC LIMIT 1")
                 row = cur.fetchone()
-            
             if not row:
                 return jsonify({"ok": False, "error": "No matching scan found"}), 404
-            
+
             scan_id = row["id"]
-            json_str = _json.dumps(data)
-            
-            # Add trinity_json column if it doesn't exist yet
-            try:
-                cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS trinity_json TEXT")
-            except Exception:
-                pass
-            
-            cur.execute(
-                "UPDATE scans SET trinity_json=%s, updated_at=%s WHERE id=%s",
-                (json_str, _now(), scan_id)
-            )
+
+            # Ensure trinity_json column exists
+            cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS trinity_json TEXT")
+
+            # Store the full JSON blob
+            cur.execute("UPDATE scans SET trinity_json=%s, updated_at=%s WHERE id=%s",
+                        (_json.dumps(data), _now(), scan_id))
+
+            # Also insert every hit from the hits array into scan_findings
+            hits = data.get("hits", [])
+            for h in hits:
+                severity = h.get("severity", "alert")
+                category = h.get("category", "")
+                detail = (
+                    f"[{h.get('tool','')}] {h.get('path') or h.get('filename','')}"
+                    + (f" | {h.get('eventType','')}" if h.get('eventType') else "")
+                    + (f" | Last Run: {h.get('timestamp','')}" if h.get('timestamp') else "")
+                )
+                cur.execute("""INSERT INTO scan_findings (scan_id, category, severity, detail, created_at)
+                               VALUES (%s, %s, %s, %s, %s)""",
+                            (scan_id, category, severity, detail[:2000], _now()))
+
         conn.commit()
-    
-    return jsonify({"ok": True, "scan_id": scan_id})
+
+    return jsonify({"ok": True, "scan_id": scan_id, "hits_stored": len(data.get("hits", []))})
 
 # ── Scanner API (called by C++ exe) ──────────────────────────────────────────
 @app.route("/api/scanner/start", methods=["POST"])
