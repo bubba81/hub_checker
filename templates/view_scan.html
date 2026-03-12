@@ -371,6 +371,7 @@ function switchTab(name) {
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
   document.getElementById('pane-'+name).classList.add('active');
   activeTab = name;
+  if (name === 'raw' && !g_rawLogText) loadRawLog();
 }
 
 // ── Findings filter ──────────────────────────────────────────────────────────
@@ -425,12 +426,49 @@ function renderFindingsPane(findings) {
   }).join('') + '</div>';
 }
 
-function renderRaw(events) {
-  if (!events.length) return '// No log entries yet...';
-  return events.map(ev=>{
-    const line = `[${String(ev.phase_index).padStart(2,'0')}] ${ev.pct}%  ${ev.phase_name||''}${ev.message?' — '+ev.message:''}  ${ev.ts||''}`;
-    return escHtml(line);
+function renderRaw(text) {
+  if (!text) return '// No log entries yet...';
+  return text.split('\n').map(line => {
+    const l = escHtml(line);
+    if (line.includes('[HIT]') || line.includes('[CARVED HIT]'))
+      return `<span style="color:#ff4466;font-weight:bold">${l}</span>`;
+    if (line.includes('EVIDENCE TAMPERING') || line.startsWith('[!]') || line.includes('  [!]'))
+      return `<span style="color:#ff2244;font-weight:bold">${l}</span>`;
+    if (line.includes('[+]'))
+      return `<span style="color:#44ff88">${l}</span>`;
+    if (line.includes('[T]') || line.includes('[*]') || line.includes('  [*]'))
+      return `<span style="color:#aaaaaa">${l}</span>`;
+    if (line.includes('===='))
+      return `<span style="color:#333333">${l}</span>`;
+    return `<span style="color:#777777">${l}</span>`;
   }).join('\n');
+}
+
+let g_rawLogText = '';
+
+function copyLog() {
+  navigator.clipboard.writeText(g_rawLogText).catch(()=>{});
+}
+
+function downloadLog() {
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(g_rawLogText);
+  a.download = 'HubChecker_results.txt';
+  a.click();
+}
+
+async function loadRawLog() {
+  const box = document.getElementById('rawBox');
+  if (box) box.textContent = 'Loading log...';
+  try {
+    const r = await fetch(`/api/scan/${scanId}/log`);
+    if (!r.ok) { if (box) box.textContent = 'Log not available yet. Submit a scan to populate it.'; return; }
+    const d = await r.json();
+    g_rawLogText = d.log || '';
+    if (box) box.innerHTML = g_rawLogText ? renderRaw(g_rawLogText) : '// No log entries yet...';
+  } catch(e) {
+    if (box) box.textContent = 'Error loading log.';
+  }
 }
 
 // ── Poll ─────────────────────────────────────────────────────────────────────
@@ -611,7 +649,7 @@ async function poll() {
     renderFindingsPane(allFindings);
 
     // Raw
-    document.getElementById('rawBox').innerHTML = renderRaw(d.events||[]);
+    // rawBox is now populated by loadRawLog() on tab click
 
     // Full Results tab
     if (trinityJson) {
@@ -622,6 +660,7 @@ async function poll() {
       } catch(e) {}
     }
 
+    if (done && !isDone && g_rawLogText) { loadRawLog(); }
     isDone = done;
     if (!done) setTimeout(poll, 2500);
   } catch(e) {
