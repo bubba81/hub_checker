@@ -229,7 +229,7 @@ def scan_findings(scan_id):
     return jsonify([dict(r) for r in rows])
 
 @app.route("/api/scan/<int:scan_id>/log")
-@login_required
+@require_auth
 def scan_log(scan_id):
     """GET /api/scan/<id>/log — returns the full raw log text."""
     with get_conn() as conn:
