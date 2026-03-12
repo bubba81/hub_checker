@@ -55,6 +55,7 @@ def init_db():
                     updated_at   TEXT NOT NULL,
                     status       TEXT NOT NULL DEFAULT 'running',
                     trinity_json TEXT,
+                    log_text     TEXT,
                     phase_index  INTEGER NOT NULL DEFAULT 0,
                     hostname     TEXT,
                     username     TEXT,
@@ -227,6 +228,18 @@ def scan_findings(scan_id):
             rows = cur.fetchall()
     return jsonify([dict(r) for r in rows])
 
+@app.route("/api/scan/<int:scan_id>/log")
+@login_required
+def scan_log(scan_id):
+    """GET /api/scan/<id>/log — returns the full raw log text."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT log_text FROM scans WHERE id=%s", (scan_id,))
+            row = cur.fetchone()
+    if not row:
+        return jsonify({"log": ""}), 404
+    return jsonify({"log": row.get("log_text") or ""})
+
 @app.route("/api/scan/<int:scan_id>/progress")
 @require_auth
 def scan_progress(scan_id):
@@ -271,6 +284,7 @@ def api_scan_detail(scan_id):
         "progress": [dict(e) for e in events],
         "results": [dict(f) for f in findings],
         "trinity_json": s.get("trinity_json"),
+        "log_text": s.get("log_text", ""),
     })
 
 @app.route("/api/scans/<int:scan_id>", methods=["DELETE"])
@@ -331,12 +345,14 @@ def trinity_scan_submit():
 
             scan_id = row["id"]
 
-            # Ensure trinity_json column exists
+            # Ensure columns exist
             cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS trinity_json TEXT")
+            cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS log_text TEXT")
 
-            # Store the full JSON blob
-            cur.execute("UPDATE scans SET trinity_json=%s, updated_at=%s WHERE id=%s",
-                        (_json.dumps(data), _now(), scan_id))
+            # Store the full JSON blob + raw log
+            raw_log = data.get("rawLog", "")
+            cur.execute("UPDATE scans SET trinity_json=%s, log_text=%s, updated_at=%s WHERE id=%s",
+                        (_json.dumps(data), raw_log, _now(), scan_id))
 
             # Also insert every hit from the hits array into scan_findings
             hits = data.get("hits", [])
