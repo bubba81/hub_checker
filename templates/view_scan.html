@@ -434,73 +434,125 @@ function renderRaw(events) {
 }
 
 // ── Poll ─────────────────────────────────────────────────────────────────────
+
 function renderTrinityResults(tj) {
   if (!tj) return '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim)">No results submitted yet.</div>';
-  
-  const si = tj.systemInfo || {};
-  const mem = tj.memoryScan || {};
-  const rb = tj.robloxData || {};
-  const nat = tj.nativeChecks || {};
-  const ic = tj.integrityChecks || {};
 
-  function sec(title, rows) {
-    if (!rows.some(r=>r[1])) return '';
-    return `<div style="margin-bottom:20px">
-      <div style="font-family:var(--title);font-size:9px;letter-spacing:3px;color:var(--red);
-        text-transform:uppercase;padding:10px 16px;background:var(--bg3);
-        border:1px solid var(--border);border-bottom:none">${title}</div>
-      <div style="border:1px solid var(--border)">
-        ${rows.filter(r=>r[1]).map(r=>`
-          <div style="display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid var(--border)">
-            <div style="font-family:var(--mono);font-size:9px;color:var(--dim);padding:8px 14px;
-              border-right:1px solid var(--border);background:var(--bg2)">${escHtml(r[0])}</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--text);padding:8px 14px;
-              white-space:pre-wrap;word-break:break-word;background:var(--bg2)">${escHtml(String(r[1]))}</div>
-          </div>`).join('')}
+  const hits   = tj.hits || [];
+  const si     = tj.systemInfo || {};
+  const detail = tj.trinityDetail || {};
+
+  // ── category colour ──────────────────────────────────────────────────────
+  const catColor = c => ({'BAM':'#ff2244','USN':'#ff4466','USN-Carved':'#ff6688',
+    'Prefetch':'#ff8800','bstrings':'#ffaa00','CSV':'#ffcc00',
+    'Signature':'#ff6600','Trinity':'#cc44ff'}[c] || '#ff2244');
+
+  const sevBadge = s => {
+    const col = {alert:'#ff2244',warning:'#ff8800',info:'#44aaff'}[s]||'#888';
+    return `<span style="font-family:var(--mono);font-size:9px;background:${col}22;
+      border:1px solid ${col};color:${col};padding:1px 6px;border-radius:2px">${(s||'alert').toUpperCase()}</span>`;
+  };
+
+  // ── system info bar ───────────────────────────────────────────────────────
+  let out = `<div style="padding:14px 16px;background:var(--bg3);border:1px solid var(--border);
+    margin-bottom:16px;font-family:var(--mono);font-size:10px;color:var(--dim)">
+    <span style="color:var(--text)">Host:</span> ${escHtml(si.hostname)}
+    &nbsp;&nbsp;<span style="color:var(--text)">User:</span> ${escHtml(si.username)}
+    &nbsp;&nbsp;<span style="color:var(--text)">OS:</span> ${escHtml(si.os_version)}
+    &nbsp;&nbsp;<span style="color:var(--red)">Total hits: ${hits.length}</span>
+  </div>`;
+
+  if (hits.length === 0) {
+    out += '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim)">No hits found in this scan.</div>';
+    return out;
+  }
+
+  // ── hit cards ─────────────────────────────────────────────────────────────
+  for (const h of hits) {
+    const cc = catColor(h.category);
+    const extra = (h.extra||[]).map(e=>`
+      <div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #ffffff08">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--dim);min-width:110px">${escHtml(e.k)}</span>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text);word-break:break-all">${escHtml(e.v)}</span>
+      </div>`).join('');
+
+    const patterns = (h.patterns||[]).length ? `
+      <div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #ffffff08">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--dim);min-width:110px">PE Patterns</span>
+        <span style="font-family:var(--mono);font-size:9px;color:#ff4466">${h.patterns.map(escHtml).join('<br>')}</span>
+      </div>` : '';
+
+    const prevRuns = (h.prevRuns||[]).length ? `
+      <div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #ffffff08">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--dim);min-width:110px">Prev Runs</span>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text)">${h.prevRuns.map(escHtml).join('<br>')}</span>
+      </div>` : '';
+
+    const row = (label, val) => val ? `
+      <div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #ffffff08">
+        <span style="font-family:var(--mono);font-size:9px;color:var(--dim);min-width:110px">${label}</span>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text);word-break:break-all">${escHtml(val)}</span>
+      </div>` : '';
+
+    out += `<div style="border:1px solid ${cc}44;margin-bottom:10px;background:var(--bg2)">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;
+        background:${cc}11;border-bottom:1px solid ${cc}44">
+        <span style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:${cc};
+          text-transform:uppercase;min-width:80px">${escHtml(h.category)}</span>
+        ${sevBadge(h.severity)}
+        <span style="font-family:var(--mono);font-size:10px;color:#fff;font-weight:bold">${escHtml(h.keyword)}</span>
+        <span style="flex:1"></span>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--dim)">${escHtml(h.tool)}</span>
+      </div>
+      <div style="padding:6px 12px">
+        ${row('Path', h.path)}
+        ${row('File', h.filename)}
+        ${row('Event', h.eventType)}
+        ${row('Time', h.timestamp)}
+        ${row('Source', h.source)}
+        ${row('Signature', h.signature)}
+        ${row('Signer', h.signer)}
+        ${row('On Disk', h.onDisk)}
+        ${row('In Session', h.inSession)}
+        ${row('SID', h.sid)}
+        ${row('User', h.username)}
+        ${row('BAM SeqNum', h.bamSeqNum)}
+        ${row('Run Count', h.runCount)}
+        ${patterns}${prevRuns}${extra}
       </div>
     </div>`;
   }
 
-  const arrToStr = a => Array.isArray(a) ? a.join('\n') : (a||'');
+  // ── trinity detail section ────────────────────────────────────────────────
+  const sec = (title, rows) => {
+    const filtered = rows.filter(r=>r[1]);
+    if (!filtered.length) return '';
+    return `<div style="margin-top:16px">
+      <div style="font-family:var(--title);font-size:9px;letter-spacing:3px;color:var(--red);
+        text-transform:uppercase;padding:8px 14px;background:var(--bg3);border:1px solid var(--border);
+        border-bottom:none">Trinity — ${title}</div>
+      <div style="border:1px solid var(--border)">
+        ${filtered.map(r=>`<div style="display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);padding:7px 12px;
+            border-right:1px solid var(--border);background:var(--bg2)">${escHtml(r[0])}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text);padding:7px 12px;
+            white-space:pre-wrap;word-break:break-word;background:var(--bg2)">${escHtml(String(r[1]))}</div>
+        </div>`).join('')}
+      </div></div>`;
+  };
+  const arr = a => Array.isArray(a) ? a.join('\n') : (a||'');
+  const mem = detail.memoryScan||{}, rb = detail.robloxData||{};
+  const nat = detail.nativeChecks||{}, ic = detail.integrityChecks||{};
+  out += sec('Memory Scan',[['Roblox Memory',mem.robloxMemory],['Injected Modules',mem.injectedModules],
+    ['Discord Memory',mem.discordMemory],['Browser Memory',mem.browserMemory]]);
+  out += sec('Roblox Data',[['Roblox Logs',arr(rb.robloxLogs)],['FFlags',arr(rb.robloxFlags)]]);
+  out += sec('Native Checks',[['Run Keys',nat.runKeys],['Recent Items',arr(nat.recentItems)],['UserAssist',arr(nat.userAssist)]]);
+  out += sec('Integrity',[['Prefetch',ic.prefetchIntegrity],['Amcache',ic.amcacheIntegrity],
+    ['Shimcache',ic.shimcacheIntegrity],['SRUM',ic.srumIntegrity],['Defender',ic.defenderIntegrity],
+    ['BAM',ic.bamIntegrity],['USB History',ic.usbHistory],['System Restore',ic.systemRestore],
+    ['Recent Folder',ic.recentFolderIntegrity],['Services',ic.servicesCheck],['Unsigned EXEs',ic.unsignedExes]]);
 
-  return sec('System Info', [
-    ['Hostname',       si.hostname],
-    ['Username',       si.username],
-    ['OS Version',     si.os_version],
-    ['Install Date',   si.windows_install_date],
-    ['Roblox Accounts',arrToStr(si.roblox_accounts)],
-    ['Discord Accts',  arrToStr(si.discord_accounts)],
-    ['Roblox Cookies', arrToStr(si.roblox_cookie_notes)],
-    ['Profile URLs',   arrToStr(si.roblox_profile_urls)],
-  ]) +
-  sec('Memory Scan', [
-    ['Roblox Memory',  mem.robloxMemory],
-    ['Injected Modules',mem.injectedModules],
-    ['Discord Memory', mem.discordMemory],
-    ['Browser Memory', mem.browserMemory],
-  ]) +
-  sec('Roblox Data', [
-    ['Roblox Logs',    arrToStr(rb.robloxLogs)],
-    ['FFlags',         arrToStr(rb.robloxFlags)],
-  ]) +
-  sec('Native Checks', [
-    ['Run Keys',       nat.runKeys],
-    ['Recent Items',   arrToStr(nat.recentItems)],
-    ['UserAssist',     arrToStr(nat.userAssist)],
-  ]) +
-  sec('Integrity Checks', [
-    ['Prefetch',       ic.prefetchIntegrity],
-    ['Amcache',        ic.amcacheIntegrity],
-    ['Shimcache',      ic.shimcacheIntegrity],
-    ['SRUM',           ic.srumIntegrity],
-    ['Defender',       ic.defenderIntegrity],
-    ['BAM',            ic.bamIntegrity],
-    ['USB History',    ic.usbHistory],
-    ['System Restore', ic.systemRestore],
-    ['Recent Folder',  ic.recentFolderIntegrity],
-    ['Services',       ic.servicesCheck],
-    ['Unsigned EXEs',  ic.unsignedExes],
-  ]);
+  return out;
 }
 
 async function poll() {
@@ -566,7 +618,7 @@ async function poll() {
       try {
         const tj = typeof trinityJson === 'string' ? JSON.parse(trinityJson) : trinityJson;
         document.getElementById('resultsContent').innerHTML = renderTrinityResults(tj);
-        document.getElementById('tabResultsBadge').textContent = '✓';
+        document.getElementById('tabResultsBadge').textContent = (tj.hits||[]).length || '✓';
       } catch(e) {}
     }
 
