@@ -87,6 +87,16 @@ try:
 except Exception as e:
     print(f"DB init warning: {e}")
 
+# Run column migrations (safe to run on every cold start)
+try:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS trinity_json TEXT")
+            cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS log_text TEXT")
+        conn.commit()
+except Exception as e:
+    print(f"Migration warning: {e}")
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 def require_auth(f):
     @wraps(f)
