@@ -8,665 +8,960 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --red:#e5001a; --red-dim:#8b0010; --red-glow:rgba(229,0,26,.3);
-  --bg:#080808; --bg2:#0e0e0e; --bg3:#141414;
-  --border:#1f1f1f; --border-r:#3a0008;
-  --text:#d4d4d4; --dim:#6b6b6b;
-  --green:#00e559; --orange:#ff8c00; --yellow:#ffd700;
-  --mono:'Share Tech Mono',monospace;
-  --ui:'Rajdhani',sans-serif;
-  --title:'Orbitron',monospace;
+  --red:      #e5001a;
+  --red-dim:  #8b0010;
+  --red-glow: rgba(229,0,26,0.35);
+  --bg:       #080808;
+  --bg2:      #0e0e0e;
+  --bg3:      #141414;
+  --border:   #1f1f1f;
+  --border-r: #3a0008;
+  --text:     #d4d4d4;
+  --text-dim: #6b6b6b;
+  --green:    #00e559;
+  --yellow:   #ffd700;
+  --orange:   #ff8c00;
+  --mono:     'Share Tech Mono', monospace;
+  --ui:       'Rajdhani', sans-serif;
+  --title:    'Orbitron', monospace;
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:var(--ui);min-height:100vh}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px)}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0 }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  min-height: 100vh;
+}
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.07) 2px, rgba(0,0,0,.07) 4px);
+}
 
-/* TOPBAR */
-.topbar{display:flex;align-items:center;justify-content:space-between;
-  padding:0 28px;height:56px;border-bottom:1px solid var(--border-r);
-  background:linear-gradient(90deg,#0d0003,var(--bg) 30%,var(--bg) 70%,#0d0003);
-  position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(229,0,26,.12)}
-.brand{font-family:var(--title);font-size:16px;font-weight:900;letter-spacing:3px;color:#fff;text-decoration:none}
-.brand span{color:var(--red)}
-.topbar-r{display:flex;align-items:center;gap:12px}
-.live-pill{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;
-  letter-spacing:2px;color:var(--orange);padding:3px 8px;border:1px solid rgba(255,140,0,.3);background:rgba(255,140,0,.05)}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--orange);box-shadow:0 0 6px var(--orange);
-  animation:pulse 1.2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-.btn-back{background:transparent;border:1px solid var(--border-r);color:var(--dim);
-  padding:5px 14px;font-family:var(--mono);font-size:10px;letter-spacing:1px;
-  cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:all .2s}
-.btn-back:hover{border-color:var(--red);color:var(--red)}
-.u-name{font-family:var(--mono);font-size:11px;color:var(--dim)}
+/* ── TOPBAR ── */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 0 32px; height: 64px;
+  border-bottom: 1px solid var(--border-r);
+  background: linear-gradient(90deg, #0d0003 0%, var(--bg) 40%, var(--bg) 60%, #0d0003 100%);
+  position: sticky; top:0; z-index:100;
+  box-shadow: 0 2px 24px rgba(229,0,26,.15);
+}
+.brand-link { display:flex; align-items:center; gap:12px; text-decoration:none; }
+.brand-name { font-family:var(--title); font-size:18px; font-weight:900; letter-spacing:3px; color:#fff; }
+.brand-name span { color:var(--red); }
+.topbar-right { display:flex; align-items:center; gap:16px; }
+.btn-back {
+  background:transparent; border:1px solid var(--border-r);
+  color:var(--text-dim); padding:7px 16px;
+  font-family:var(--mono); font-size:11px; letter-spacing:1px;
+  cursor:pointer; text-decoration:none;
+  display:inline-flex; align-items:center; gap:6px; transition:all .2s;
+}
+.btn-back:hover { border-color:var(--red); color:var(--red); }
+.user-name { font-family:var(--mono); font-size:13px; color:var(--text-dim); }
+.live-indicator {
+  display:flex; align-items:center; gap:6px;
+  font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--orange);
+}
+.live-dot {
+  width:7px; height:7px; border-radius:50%; background:var(--orange);
+  box-shadow:0 0 8px var(--orange);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
 
-/* PAGE */
-.page{max-width:1060px;margin:0 auto;padding:28px 28px 60px}
+/* ── LAYOUT ── */
+.main { max-width:1300px; margin:0 auto; padding:40px 32px 80px; }
 
-/* SCAN HEADER — compact */
-.scan-hdr{display:flex;align-items:center;justify-content:space-between;
-  gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);position:relative}
-.scan-hdr::after{content:'';position:absolute;bottom:-1px;left:0;width:140px;height:1px;
-  background:linear-gradient(90deg,var(--red),transparent)}
-.scan-title{font-family:var(--title);font-size:20px;font-weight:900;letter-spacing:2px;color:#fff;margin-bottom:6px}
-.scan-key{font-family:var(--mono);font-size:9px;color:var(--red);letter-spacing:2px;margin-bottom:8px}
-.scan-pills{display:flex;gap:12px;flex-wrap:wrap}
-.pill{font-family:var(--mono);font-size:10px;color:var(--dim)}
-.pill strong{color:var(--text)}
-.sbadge{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;
-  padding:4px 12px;border:1px solid;text-transform:uppercase;white-space:nowrap;align-self:flex-start}
-.sbadge.complete,.sbadge.completed{border-color:var(--green);color:var(--green);background:rgba(0,229,89,.05)}
-.sbadge.running{border-color:var(--orange);color:var(--orange);background:rgba(255,140,0,.05);animation:blink 1.2s step-end infinite}
-@keyframes blink{50%{opacity:.35}}
+/* ── SCAN HEADER ── */
+.scan-header {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  padding-bottom:28px; border-bottom:1px solid var(--border);
+  margin-bottom:28px; position:relative; gap:20px;
+}
+.scan-header::after {
+  content:''; position:absolute; bottom:-1px; left:0;
+  width:200px; height:1px;
+  background:linear-gradient(90deg, var(--red), transparent);
+}
+.scan-key-label {
+  font-family:var(--mono); font-size:10px; color:var(--red);
+  letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;
+}
+.scan-title {
+  font-family:var(--title); font-size:28px; font-weight:900;
+  letter-spacing:3px; color:#fff; margin-bottom:14px;
+}
+.scan-meta-row { display:flex; gap:24px; flex-wrap:wrap; }
+.smeta { font-family:var(--mono); font-size:11px; color:var(--text-dim); }
+.smeta strong { color:var(--text); }
+.status-badge {
+  font-family:var(--mono); font-size:10px; letter-spacing:1.5px;
+  padding:6px 14px; border:1px solid; text-transform:uppercase;
+  align-self:flex-start; white-space:nowrap;
+}
+.status-badge.complete, .status-badge.completed {
+  border-color:var(--green); color:var(--green); background:rgba(0,229,89,.06);
+}
+.status-badge.running {
+  border-color:var(--orange); color:var(--orange); background:rgba(255,140,0,.06);
+  animation:blink 1.2s step-end infinite;
+}
+@keyframes blink { 50%{opacity:.4} }
 
-/* OVERALL BAR */
-.bar-wrap{background:var(--bg2);border:1px solid var(--border);padding:16px 20px;margin-bottom:20px}
-.bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.bar-phase{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.5px}
-.bar-phase span{color:var(--orange)}
-.bar-pct{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--red)}
-.track{background:#0a0a0a;border:1px solid var(--border);height:5px;position:relative;overflow:hidden}
-.fill{height:100%;background:linear-gradient(90deg,var(--red-dim),var(--red));transition:width .6s ease;position:relative}
-.fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:30px;background:linear-gradient(90deg,transparent,rgba(255,80,80,.35))}
+/* ── OVERALL PROGRESS BAR ── */
+.overall-bar-wrap {
+  background:var(--bg2); border:1px solid var(--border);
+  padding:20px 28px; margin-bottom:28px;
+}
+.overall-bar-top {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:10px;
+}
+.overall-label { font-family:var(--mono); font-size:11px; color:var(--text-dim); letter-spacing:1px; }
+.overall-pct { font-family:var(--mono); font-size:20px; font-weight:700; color:var(--red); }
+.bar-track {
+  background:#0a0a0a; border:1px solid var(--border); height:6px;
+  position:relative; overflow:hidden;
+}
+.bar-fill {
+  height:100%; background:linear-gradient(90deg, var(--red-dim), var(--red));
+  transition:width .6s ease; position:relative;
+}
+.bar-fill::after {
+  content:''; position:absolute; right:0; top:0; bottom:0; width:40px;
+  background:linear-gradient(90deg, transparent, rgba(255,80,80,.4));
+}
 
-/* TABS */
-.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
-.tab{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
-  padding:8px 18px;cursor:pointer;color:var(--dim);border:1px solid transparent;
-  border-bottom:none;position:relative;bottom:-1px;transition:all .15s;background:transparent;user-select:none}
-.tab:hover{color:var(--text)}
-.tab.active{color:var(--red);border-color:var(--border-r);border-bottom-color:var(--bg);
-  background:var(--bg2)}
-.tab-badge{display:inline-block;font-size:9px;color:var(--dim);margin-left:5px;
-  background:var(--bg3);padding:1px 5px;border:1px solid var(--border)}
-.tab.active .tab-badge{color:var(--red);border-color:var(--border-r)}
+/* ── NAV TABS (main view switcher) ── */
+.nav-tabs {
+  display:flex; gap:0; border-bottom:1px solid var(--border);
+  margin-bottom:28px; overflow-x:auto; scrollbar-width:none;
+}
+.nav-tabs::-webkit-scrollbar { display:none; }
+.nav-tab {
+  font-family:var(--mono); font-size:11px; letter-spacing:1.5px;
+  padding:12px 20px; border:none; background:transparent;
+  color:var(--text-dim); cursor:pointer; white-space:nowrap;
+  border-bottom:2px solid transparent; transition:all .2s;
+  text-transform:uppercase; display:flex; align-items:center; gap:8px;
+  position:relative; top:1px;
+}
+.nav-tab:hover { color:var(--text); }
+.nav-tab.active { color:var(--red); border-bottom-color:var(--red); }
+.nav-tab .tab-count {
+  background:var(--bg3); border:1px solid var(--border);
+  font-size:9px; padding:1px 6px; border-radius:2px; color:var(--text-dim);
+}
+.nav-tab.active .tab-count { border-color:var(--red-dim); color:var(--red); }
 
-/* TAB PANES */
-.pane{display:none}
-.pane.active{display:block}
+/* ── TAB CONTENT ── */
+.tab-content { display:none; }
+.tab-content.active { display:block; }
 
-/* ── PHASES TAB ── */
-.phase-list{background:var(--bg2);border:1px solid var(--border)}
-.phase-row{display:grid;grid-template-columns:32px 1fr auto;align-items:center;
-  gap:0;border-bottom:1px solid var(--border);transition:background .15s}
-.phase-row:last-child{border-bottom:none}
-.phase-row.done{opacity:1}
-.phase-row.active{background:rgba(255,140,0,.04);opacity:1}
-.phase-row.pending{opacity:.2}
-.phase-row:hover.done{background:rgba(255,255,255,.015)}
-.phase-gut{display:flex;align-items:center;justify-content:center;
-  height:100%;border-right:1px solid var(--border);padding:0 10px;min-height:36px}
-.phase-dot{width:8px;height:8px;border-radius:50%;border:1px solid var(--border);background:var(--border);transition:all .3s}
-.phase-row.done   .phase-dot{background:var(--green);border-color:var(--green);box-shadow:0 0 5px rgba(0,229,89,.4)}
-.phase-row.active .phase-dot{background:var(--orange);border-color:var(--orange);box-shadow:0 0 7px rgba(255,140,0,.5);animation:ping .9s ease-in-out infinite}
-@keyframes ping{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
-.phase-body{padding:8px 14px}
-.phase-name{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.3px}
-.phase-row.done   .phase-name{color:var(--green)}
-.phase-row.active .phase-name{color:var(--orange)}
-.phase-msg{font-family:var(--mono);font-size:9px;color:#3a3a3a;margin-top:2px}
-.phase-right{padding:0 14px;text-align:right;white-space:nowrap}
-.phase-pct{font-family:var(--mono);font-size:11px;color:var(--dim)}
-.phase-row.done   .phase-pct{color:var(--green)}
-.phase-row.active .phase-pct{color:var(--orange)}
-.phase-ts{font-family:var(--mono);font-size:9px;color:#2a2a2a}
+/* ── OVERVIEW LAYOUT (phases + findings side by side) ── */
+.two-col {
+  display:grid;
+  grid-template-columns: 1fr 360px;
+  gap:24px;
+  align-items:start;
+}
+@media(max-width:900px) { .two-col { grid-template-columns:1fr; } }
 
-/* ── FINDINGS TAB ── */
-.findings-wrap{display:flex;flex-direction:column;gap:8px}
-.finding-card{background:var(--bg2);border:1px solid var(--border);
-  border-left:3px solid var(--border);padding:12px 16px}
-.finding-card.alert{border-left-color:var(--red)}
-.finding-card.warn{border-left-color:var(--orange)}
-.finding-card.info{border-left-color:#333}
-.f-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.f-cat{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
-  padding:2px 7px;border:1px solid}
-.f-cat.alert{border-color:var(--red-dim);color:var(--red)}
-.f-cat.warn{border-color:#5a3000;color:var(--orange)}
-.f-cat.info{border-color:#333;color:var(--dim)}
-.f-sev{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase}
-.f-sev.alert{color:var(--red)}
-.f-sev.warn{color:var(--orange)}
-.f-sev.info{color:var(--dim)}
-.f-detail{font-family:var(--mono);font-size:11px;color:var(--text);line-height:1.6;word-break:break-word}
-.f-time{font-family:var(--mono);font-size:9px;color:#2a2a2a;margin-top:4px}
-.findings-empty{padding:40px 20px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--green);
-  background:var(--bg2);border:1px solid var(--border)}
+/* ── PANEL ── */
+.panel {
+  background:var(--bg2); border:1px solid var(--border);
+  overflow:hidden;
+}
+.panel-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg, #0d0003, var(--bg2));
+}
+.panel-title {
+  font-family:var(--title); font-size:10px; letter-spacing:3px;
+  color:var(--red); text-transform:uppercase;
+  display:flex; align-items:center; gap:8px;
+}
+.panel-badge {
+  font-family:var(--mono); font-size:10px; color:var(--text-dim);
+  background:var(--bg3); border:1px solid var(--border);
+  padding:2px 8px;
+}
 
-/* findings filters */
-.f-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.f-filter{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;
-  padding:4px 10px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all .15s}
-.f-filter:hover{border-color:var(--dim);color:var(--text)}
-.f-filter.active{border-color:var(--red);color:var(--red);background:rgba(229,0,26,.05)}
+/* ── PHASE LOG ── */
+.phase-log { padding:0; }
+.phase-row {
+  display:grid; grid-template-columns:28px 1fr; gap:0;
+  border-bottom:1px solid var(--border); transition:background .2s;
+}
+.phase-row:last-child { border-bottom:none; }
+.phase-row.done   { opacity:1; }
+.phase-row.active { background:rgba(255,140,0,.04); opacity:1; }
+.phase-row.pending{ opacity:.22; }
+.phase-gutter {
+  display:flex; flex-direction:column; align-items:center;
+  padding:14px 0; border-right:1px solid var(--border); position:relative;
+}
+.phase-gutter::before {
+  content:''; position:absolute; top:0; bottom:0;
+  left:50%; width:1px; background:var(--border); z-index:0;
+}
+.phase-dot {
+  width:10px; height:10px; border-radius:50%;
+  border:1px solid var(--border); background:var(--border);
+  position:relative; z-index:1; flex-shrink:0; transition:all .3s;
+}
+.phase-row.done   .phase-dot { background:var(--green);  border-color:var(--green);  box-shadow:0 0 6px rgba(0,229,89,.5); }
+.phase-row.active .phase-dot { background:var(--orange); border-color:var(--orange); box-shadow:0 0 8px rgba(255,140,0,.6); animation:ping .9s ease-in-out infinite; }
+@keyframes ping { 0%,100%{transform:scale(1)} 50%{transform:scale(1.5)} }
+.phase-body { padding:10px 16px; }
+.phase-top-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:3px; }
+.phase-name { font-family:var(--mono); font-size:12px; color:var(--text-dim); letter-spacing:.5px; }
+.phase-row.done   .phase-name { color:var(--green); }
+.phase-row.active .phase-name { color:var(--orange); }
+.phase-pct-badge { font-family:var(--mono); font-size:10px; color:var(--text-dim); white-space:nowrap; }
+.phase-row.done   .phase-pct-badge { color:var(--green); }
+.phase-row.active .phase-pct-badge { color:var(--orange); }
+.phase-msg-text { font-family:var(--mono); font-size:10px; color:#4a4a4a; letter-spacing:.3px; line-height:1.5; }
+.phase-ts-text  { font-family:var(--mono); font-size:9px; color:#333; margin-top:2px; }
 
-/* ── OVERVIEW TAB ── */
-.overview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
-.ov-card{background:var(--bg2);border:1px solid var(--border);padding:16px 18px}
-.ov-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:6px}
-.ov-val{font-family:var(--title);font-size:22px;font-weight:700;color:#fff}
-.ov-val.red{color:var(--red)}
-.ov-val.orange{color:var(--orange)}
-.ov-val.green{color:var(--green)}
-.ov-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:4px}
+/* ── FINDINGS (overview sidebar — latest only) ── */
+.findings-list { padding:0; max-height:600px; overflow-y:auto; }
+.finding-row {
+  padding:11px 16px; border-bottom:1px solid var(--border); position:relative;
+}
+.finding-row:last-child { border-bottom:none; }
+.finding-row.alert { border-left:3px solid var(--red); }
+.finding-row.warn  { border-left:3px solid var(--orange); }
+.finding-row.info  { border-left:3px solid #555; }
+.finding-top { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+.finding-cat {
+  font-family:var(--mono); font-size:9px; letter-spacing:1.5px;
+  text-transform:uppercase; padding:2px 7px; border:1px solid; background:rgba(0,0,0,.4);
+}
+.finding-cat.alert { border-color:var(--red-dim); color:var(--red); }
+.finding-cat.warn  { border-color:#5a3000; color:var(--orange); }
+.finding-cat.info  { border-color:#333; color:var(--text-dim); }
+.finding-sev { font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; }
+.finding-sev.alert { color:var(--red); }
+.finding-sev.warn  { color:var(--orange); }
+.finding-sev.info  { color:var(--text-dim); }
+.finding-detail { font-family:var(--mono); font-size:11px; color:var(--text); line-height:1.55; word-break:break-word; }
+.finding-time { font-family:var(--mono); font-size:9px; color:#333; margin-top:4px; }
+.findings-empty {
+  padding:32px 20px; text-align:center;
+  font-family:var(--mono); font-size:12px; color:var(--green);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
 
-.meta-table{background:var(--bg2);border:1px solid var(--border);width:100%}
-.meta-row{display:grid;grid-template-columns:140px 1fr;border-bottom:1px solid var(--border)}
-.meta-row:last-child{border-bottom:none}
-.meta-k{font-family:var(--mono);font-size:10px;color:var(--dim);padding:10px 14px;border-right:1px solid var(--border)}
-.meta-v{font-family:var(--mono);font-size:10px;color:var(--text);padding:10px 14px;word-break:break-all}
+/* ── SCAN TYPE TABS PAGE ── */
+.scan-tabs-page { display:flex; flex-direction:column; gap:0; }
 
-/* ── RAW LOG TAB ── */
-.raw-box{background:#050505;border:1px solid var(--border);padding:16px;
-  font-family:var(--mono);font-size:10px;color:#3a3a3a;line-height:1.7;
-  max-height:600px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
-.raw-box .r-ok{color:#1a5c2a}
-.raw-box .r-hit{color:var(--red)}
-.raw-box .r-warn{color:#7a4a00}
-.raw-box .r-head{color:#2a2a2a}
+/* scan type sub-tabs */
+.scan-type-tabs {
+  display:flex; flex-wrap:wrap; gap:4px; margin-bottom:20px;
+}
+.stt-btn {
+  font-family:var(--mono); font-size:10px; letter-spacing:1.2px;
+  padding:7px 14px; border:1px solid var(--border);
+  background:var(--bg2); color:var(--text-dim); cursor:pointer;
+  text-transform:uppercase; transition:all .2s; display:flex; align-items:center; gap:6px;
+}
+.stt-btn:hover { border-color:var(--red-dim); color:var(--text); }
+.stt-btn.active { border-color:var(--red); color:var(--red); background:rgba(229,0,26,.06); }
+.stt-btn .stt-count {
+  background:var(--bg3); border:1px solid var(--border);
+  font-size:9px; padding:1px 5px; border-radius:1px;
+}
+.stt-btn.active .stt-count { border-color:var(--red-dim); color:var(--red); }
+
+/* search bar */
+.search-bar-wrap {
+  display:flex; align-items:center; gap:12px; margin-bottom:20px;
+}
+.search-input-wrap {
+  flex:1; position:relative; display:flex; align-items:center;
+}
+.search-icon {
+  position:absolute; left:12px; pointer-events:none;
+  color:var(--text-dim);
+}
+.search-input {
+  width:100%; background:var(--bg2); border:1px solid var(--border);
+  color:var(--text); font-family:var(--mono); font-size:12px;
+  padding:10px 16px 10px 38px; outline:none; letter-spacing:.5px;
+  transition:border-color .2s;
+}
+.search-input:focus { border-color:var(--red-dim); }
+.search-input::placeholder { color:#333; }
+.search-clear {
+  position:absolute; right:10px; background:none; border:none;
+  color:var(--text-dim); cursor:pointer; font-size:16px; padding:4px;
+  display:none;
+}
+.search-clear.visible { display:block; }
+.search-info {
+  font-family:var(--mono); font-size:10px; color:var(--text-dim);
+  white-space:nowrap; letter-spacing:.5px;
+}
+.search-info span { color:var(--red); }
+
+/* severity filter */
+.sev-filters { display:flex; gap:4px; }
+.sev-btn {
+  font-family:var(--mono); font-size:10px; letter-spacing:1px;
+  padding:6px 12px; border:1px solid var(--border);
+  background:var(--bg2); color:var(--text-dim); cursor:pointer;
+  text-transform:uppercase; transition:all .2s;
+}
+.sev-btn:hover { color:var(--text); }
+.sev-btn.active-all  { border-color:#555;            color:var(--text);    background:rgba(100,100,100,.1); }
+.sev-btn.active-alert{ border-color:var(--red-dim);  color:var(--red);     background:rgba(229,0,26,.06); }
+.sev-btn.active-warn { border-color:#5a3000;          color:var(--orange);  background:rgba(255,140,0,.06); }
+.sev-btn.active-info { border-color:#333;             color:var(--text-dim);background:rgba(60,60,60,.1); }
+
+/* scan findings table */
+.scan-findings { display:flex; flex-direction:column; gap:0; }
+
+.sf-row {
+  border:1px solid var(--border); border-top:none; padding:14px 20px;
+  position:relative; transition:background .15s;
+}
+.sf-row:first-child { border-top:1px solid var(--border); }
+.sf-row:hover { background:rgba(255,255,255,.015); }
+.sf-row.alert { border-left:3px solid var(--red); }
+.sf-row.warn  { border-left:3px solid var(--orange); }
+.sf-row.info  { border-left:3px solid #3a3a3a; }
+.sf-row.hidden { display:none; }
+
+.sf-head {
+  display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;
+}
+.sf-cat {
+  font-family:var(--mono); font-size:9px; letter-spacing:1.5px;
+  text-transform:uppercase; padding:3px 8px; border:1px solid;
+}
+.sf-cat.alert { border-color:var(--red-dim); color:var(--red); background:rgba(229,0,26,.07); }
+.sf-cat.warn  { border-color:#5a3000; color:var(--orange); background:rgba(255,140,0,.07); }
+.sf-cat.info  { border-color:#333; color:var(--text-dim); background:rgba(50,50,50,.1); }
+.sf-sev {
+  font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:1px;
+}
+.sf-sev.alert { color:var(--red); }
+.sf-sev.warn  { color:var(--orange); }
+.sf-sev.info  { color:var(--text-dim); }
+.sf-ts { font-family:var(--mono); font-size:9px; color:#3a3a3a; margin-left:auto; }
+
+.sf-detail {
+  font-family:var(--mono); font-size:11px; color:var(--text);
+  line-height:1.7; word-break:break-word;
+}
+/* highlight matched search text */
+.sf-detail mark {
+  background: rgba(229,0,26,.25); color:#fff; border-radius:1px;
+  padding:0 1px;
+}
+
+.sf-kv {
+  display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:8px;
+}
+.sf-kv-pair {
+  font-family:var(--mono); font-size:10px; color:var(--text-dim);
+}
+.sf-kv-pair strong { color:var(--text); }
+
+.no-results {
+  padding:48px 20px; text-align:center;
+  font-family:var(--mono); font-size:12px; color:#333;
+}
+.no-results span { color:var(--red); }
+
+/* raw log tab */
+.raw-log-wrap {
+  background:var(--bg2); border:1px solid var(--border);
+  padding:0; overflow:hidden;
+}
+.raw-log-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg,#0d0003,var(--bg2));
+}
+.raw-log-content {
+  font-family:var(--mono); font-size:11px; color:#555;
+  line-height:1.6; padding:20px; overflow-x:auto; white-space:pre-wrap;
+  max-height:600px; overflow-y:auto;
+}
 
 /* scrollbar */
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border-r);border-radius:2px}
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border-r); border-radius:2px; }
+
+/* ── FULL RESULTS tab ── */
+.full-results-note {
+  font-family:var(--mono); font-size:11px; color:var(--text-dim);
+  padding:20px; background:var(--bg2); border:1px solid var(--border);
+  margin-bottom:16px;
+}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <a href="/" class="brand">HUB<span>CHECKER</span></a>
-  <div class="topbar-r">
+  <a href="/" class="brand-link">
+    <span class="brand-name">HUB<span>CHECKER</span></span>
+  </a>
+  <div class="topbar-right">
     {% if scan.status not in ('complete','completed') %}
-    <div class="live-pill" id="livePill"><div class="live-dot"></div>LIVE</div>
+    <div class="live-indicator" id="liveIndicator">
+      <div class="live-dot"></div>LIVE
+    </div>
     {% endif %}
-    <span class="u-name">{{ username }}</span>
+    <span class="user-name">{{ username }}</span>
     <a href="/" class="btn-back">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       BACK
     </a>
   </div>
 </div>
 
-<div class="page">
+<main class="main">
 
   <!-- SCAN HEADER -->
-  <div class="scan-hdr">
+  <div class="scan-header">
     <div>
-      <div class="scan-key">◈ {{ scan.scan_key }}</div>
-      <div class="scan-title">{{ scan.desktop_name }}</div>
-      <div class="scan-pills">
-        <div class="pill">HOST <strong>{{ scan.hostname or '—' }}</strong></div>
-        <div class="pill">USER <strong>{{ scan.username or '—' }}</strong></div>
-        <div class="pill">OS <strong>{{ scan.os_version or '—' }}</strong></div>
-        <div class="pill">{{ scan.created_at }}</div>
+      <div class="scan-key-label">◈ SCAN KEY: {{ scan.scan_key }}</div>
+      <div class="scan-title" id="scanTitle">{{ scan.desktop_name }}</div>
+      <div class="scan-meta-row">
+        <div class="smeta">HOSTNAME <strong>{{ scan.hostname or '—' }}</strong></div>
+        <div class="smeta">USER <strong>{{ scan.username or '—' }}</strong></div>
+        <div class="smeta">OS <strong>{{ scan.os_version or '—' }}</strong></div>
+        <div class="smeta">STARTED <strong>{{ scan.created_at }}</strong></div>
       </div>
     </div>
-    <div class="sbadge {{ scan.status }}" id="statusBadge">
+    <div class="status-badge {{ scan.status }}" id="statusBadge">
       {% if scan.status in ('complete','completed') %}✓ COMPLETE{% else %}⬤ SCANNING{% endif %}
     </div>
   </div>
 
-  <!-- PROGRESS BAR -->
-  {% set total = phases|length %}
-  {% set pi = scan.phase_index or 0 %}
-  {% set pct = 100 if scan.status in ('complete','completed') else ((pi / (total-1) * 100)|int if pi else 0) %}
-  <div class="bar-wrap">
-    <div class="bar-top">
-      <div class="bar-phase" id="phaseLabel">
-        {% if scan.status in ('complete','completed') %}
-          ALL PHASES COMPLETE
-        {% else %}
-          PHASE <span>{{ pi+1 }}/{{ total }}</span> — {{ phases[pi] if pi < total else '' }}
-        {% endif %}
+  <!-- OVERALL PROGRESS -->
+  <div class="overall-bar-wrap">
+    {% set total = phases|length %}
+    {% set pi = scan.phase_index or 0 %}
+    {% set pct = 100 if scan.status in ('complete','completed') else ((pi / (total - 1) * 100)|int if pi else 0) %}
+    <div class="overall-bar-top">
+      <div class="overall-label" id="phaseLabel">
+        {% if scan.status in ('complete','completed') %}ALL PHASES COMPLETE
+        {% else %}PHASE {{ pi + 1 }}/{{ total }} — {{ phases[pi] if pi < total else '' }}{% endif %}
       </div>
-      <div class="bar-pct" id="pctLabel">{{ pct }}%</div>
+      <div class="overall-pct" id="pctLabel">{{ pct }}%</div>
     </div>
-    <div class="track"><div class="fill" id="bigFill" style="width:{{ pct }}%"></div></div>
-  </div>
-
-  <!-- TABS -->
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('overview')">Overview</div>
-    <div class="tab" onclick="switchTab('phases')">Phases <span class="tab-badge" id="tabPhaseCount">{{ events|length }}/{{ phases|length }}</span></div>
-    <div class="tab" onclick="switchTab('findings')">Findings <span class="tab-badge" id="tabFindingCount">{{ findings|length }}</span></div>
-    <div class="tab" onclick="switchTab('raw')">Raw Log</div>
-    <div class="tab" onclick="switchTab('results')">Full Results <span class="tab-badge" id="tabResultsBadge">—</span></div>
-  </div>
-
-  <!-- OVERVIEW PANE -->
-  <div class="pane active" id="pane-overview">
-    <div class="overview-grid">
-      <div class="ov-card">
-        <div class="ov-label">Phases Done</div>
-        <div class="ov-val" id="ovPhases">{{ events|length }}<span style="font-size:14px;color:var(--dim)">/{{ phases|length }}</span></div>
-        <div class="ov-sub">scan phases completed</div>
-      </div>
-      <div class="ov-card">
-        <div class="ov-label">Findings</div>
-        <div class="ov-val {{ 'red' if findings|length > 0 else 'green' }}" id="ovFindings">{{ findings|length }}</div>
-        <div class="ov-sub">suspicious items</div>
-      </div>
-      <div class="ov-card">
-        <div class="ov-label">Alerts</div>
-        <div class="ov-val {{ 'red' if findings|selectattr('severity','equalto','alert')|list|length > 0 else 'green' }}" id="ovAlerts">
-          {{ findings|selectattr('severity','equalto','alert')|list|length }}
-        </div>
-        <div class="ov-sub">high severity</div>
-      </div>
-      <div class="ov-card">
-        <div class="ov-label">Warnings</div>
-        <div class="ov-val {{ 'orange' if findings|selectattr('severity','equalto','warn')|list|length > 0 else 'green' }}" id="ovWarns">
-          {{ findings|selectattr('severity','equalto','warn')|list|length }}
-        </div>
-        <div class="ov-sub">medium severity</div>
-      </div>
-    </div>
-    <div class="meta-table">
-      <div class="meta-row"><div class="meta-k">Scan Key</div><div class="meta-v">{{ scan.scan_key }}</div></div>
-      <div class="meta-row"><div class="meta-k">Desktop</div><div class="meta-v">{{ scan.desktop_name }}</div></div>
-      <div class="meta-row"><div class="meta-k">Hostname</div><div class="meta-v">{{ scan.hostname or '—' }}</div></div>
-      <div class="meta-row"><div class="meta-k">Username</div><div class="meta-v">{{ scan.username or '—' }}</div></div>
-      <div class="meta-row"><div class="meta-k">OS Version</div><div class="meta-v">{{ scan.os_version or '—' }}</div></div>
-      <div class="meta-row"><div class="meta-k">Started</div><div class="meta-v">{{ scan.created_at }}</div></div>
-      <div class="meta-row"><div class="meta-k">Last Updated</div><div class="meta-v">{{ scan.updated_at }}</div></div>
-      <div class="meta-row"><div class="meta-k">Status</div><div class="meta-v" id="metaStatus">{{ scan.status }}</div></div>
+    <div class="bar-track">
+      <div class="bar-fill" id="bigFill" style="width:{{ pct }}%"></div>
     </div>
   </div>
 
-  <!-- PHASES PANE -->
-  <div class="pane" id="pane-phases">
-    <div class="phase-list" id="phaseLog">
-      {% for phase in phases %}
-        {% set i = loop.index0 %}
-        {% set ev = events|selectattr('phase_index','equalto',i)|list %}
-        {% set ev_item = ev[0] if ev else none %}
-        {% if scan.status in ('complete','completed') %}{% set row_cls='done' %}
-        {% elif i < pi %}{% set row_cls='done' %}
-        {% elif i == pi %}{% set row_cls='active' %}
-        {% else %}{% set row_cls='pending' %}{% endif %}
-        <div class="phase-row {{ row_cls }}">
-          <div class="phase-gut"><div class="phase-dot"></div></div>
-          <div class="phase-body">
-            <div class="phase-name">{{ '%02d'|format(i) }}. {{ phase }}</div>
-            {% if ev_item and ev_item.message %}
-              <div class="phase-msg">{{ ev_item.message }}</div>
-            {% endif %}
+  <!-- MAIN NAV TABS -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-tab="overview">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      OVERVIEW
+    </button>
+    <button class="nav-tab" data-tab="phases">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      PHASES
+      <span class="tab-count" id="tcPhases">{{ phases|length }}</span>
+    </button>
+    <button class="nav-tab" data-tab="findings">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+      FINDINGS
+      <span class="tab-count" id="tcFindings">{{ findings|length }}</span>
+    </button>
+    <button class="nav-tab" data-tab="rawlog">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      RAW LOG
+    </button>
+    <button class="nav-tab" data-tab="fullresults">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      FULL RESULTS
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════ TAB: OVERVIEW ═══════════════════════════ -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="two-col">
+      <!-- Phase Log -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            SCAN PHASES
           </div>
-          <div class="phase-right">
-            {% if ev_item %}
-              <div class="phase-pct">{{ ev_item.pct }}%</div>
-              <div class="phase-ts">{{ ev_item.ts }}</div>
-            {% endif %}
-          </div>
+          <div class="panel-badge" id="phaseCount">{{ events|length }}/{{ phases|length }}</div>
         </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- FINDINGS PANE -->
-  <div class="pane" id="pane-findings">
-    <div class="f-filters">
-      <button class="f-filter active" onclick="filterFindings('all',this)">ALL <span id="fcAll">{{ findings|length }}</span></button>
-      <button class="f-filter" onclick="filterFindings('alert',this)">ALERT <span id="fcAlert">{{ findings|selectattr('severity','equalto','alert')|list|length }}</span></button>
-      <button class="f-filter" onclick="filterFindings('warn',this)">WARN <span id="fcWarn">{{ findings|selectattr('severity','equalto','warn')|list|length }}</span></button>
-      <button class="f-filter" onclick="filterFindings('info',this)">INFO <span id="fcInfo">{{ findings|selectattr('severity','equalto','info')|list|length }}</span></button>
-    </div>
-    <div id="findingsContainer">
-      {% if not findings %}
-        <div class="findings-empty">✓ No suspicious findings detected</div>
-      {% else %}
-        <div class="findings-wrap">
-        {% for f in findings %}
-          <div class="finding-card {{ f.severity }}" data-sev="{{ f.severity }}">
-            <div class="f-top">
-              <span class="f-cat {{ f.severity }}">{{ f.category }}</span>
-              <span class="f-sev {{ f.severity }}">{{ f.severity }}</span>
+        <div class="phase-log" id="phaseLog">
+          {% for phase in phases %}
+            {% set i = loop.index0 %}
+            {% set ev = events|selectattr('phase_index','equalto',i)|list %}
+            {% set ev_item = ev[0] if ev else none %}
+            {% if scan.status in ('complete','completed') %}
+              {% set row_cls = 'done' %}
+            {% elif i < pi %}
+              {% set row_cls = 'done' %}
+            {% elif i == pi %}
+              {% set row_cls = 'active' %}
+            {% else %}
+              {% set row_cls = 'pending' %}
+            {% endif %}
+            <div class="phase-row {{ row_cls }}">
+              <div class="phase-gutter"><div class="phase-dot"></div></div>
+              <div class="phase-body">
+                <div class="phase-top-row">
+                  <div class="phase-name">{{ '%02d'|format(i) }}. {{ phase }}</div>
+                  {% if ev_item %}<div class="phase-pct-badge">{{ ev_item.pct }}%</div>{% endif %}
+                </div>
+                {% if ev_item %}
+                  {% if ev_item.message %}<div class="phase-msg-text">{{ ev_item.message }}</div>{% endif %}
+                  <div class="phase-ts-text">{{ ev_item.ts }}</div>
+                {% endif %}
+              </div>
             </div>
-            <div class="f-detail">{{ f.detail }}</div>
-            <div class="f-time">{{ f.ts }}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Recent Findings sidebar -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            RECENT FINDINGS
+          </div>
+          <div class="panel-badge" id="findingCount">{{ findings|length }}</div>
+        </div>
+        <div class="findings-list" id="findingsContainer">
+          {% if not findings %}
+            <div class="findings-empty">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+              No findings detected
+            </div>
+          {% else %}
+            {% for f in findings[:20] %}
+            <div class="finding-row {{ f.severity }}">
+              <div class="finding-top">
+                <span class="finding-cat {{ f.severity }}">{{ f.category }}</span>
+                <span class="finding-sev {{ f.severity }}">{{ f.severity }}</span>
+              </div>
+              <div class="finding-detail">{{ f.detail }}</div>
+              <div class="finding-time">{{ f.ts }}</div>
+            </div>
+            {% endfor %}
+            {% if findings|length > 20 %}
+            <div style="padding:12px 16px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);">
+              + {{ findings|length - 20 }} more — <a href="#" onclick="switchTab('findings');return false;" style="color:var(--red);">View all in FINDINGS tab</a>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ TAB: PHASES ═══════════════════════════ -->
+  <div class="tab-content" id="tab-phases">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          ALL PHASES
+        </div>
+        <div class="panel-badge">{{ phases|length }} total</div>
+      </div>
+      <div class="phase-log" id="phaseLogFull">
+        {% for phase in phases %}
+          {% set i = loop.index0 %}
+          {% set ev = events|selectattr('phase_index','equalto',i)|list %}
+          {% set ev_item = ev[0] if ev else none %}
+          {% if scan.status in ('complete','completed') %}
+            {% set row_cls = 'done' %}
+          {% elif i < pi %}
+            {% set row_cls = 'done' %}
+          {% elif i == pi %}
+            {% set row_cls = 'active' %}
+          {% else %}
+            {% set row_cls = 'pending' %}
+          {% endif %}
+          <div class="phase-row {{ row_cls }}">
+            <div class="phase-gutter"><div class="phase-dot"></div></div>
+            <div class="phase-body">
+              <div class="phase-top-row">
+                <div class="phase-name">{{ '%02d'|format(i) }}. {{ phase }}</div>
+                {% if ev_item %}<div class="phase-pct-badge">{{ ev_item.pct }}%</div>{% endif %}
+              </div>
+              {% if ev_item %}
+                {% if ev_item.message %}<div class="phase-msg-text">{{ ev_item.message }}</div>{% endif %}
+                <div class="phase-ts-text">{{ ev_item.ts }}</div>
+              {% endif %}
+            </div>
           </div>
         {% endfor %}
-        </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- RESULTS PANE -->
-  <div class="pane" id="pane-results">
-    <div id="resultsContent">
-      <div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim)">
-        Full results load after scan completes and JSON is submitted.
       </div>
     </div>
   </div>
 
-  <!-- RAW LOG PANE -->
-  <div class="pane" id="pane-raw">
-    <div class="raw-box" id="rawBox">
-      {% for ev in events %}
-[{{ '%02d'|format(ev.phase_index) }}] {{ ev.pct }}%  {{ ev.phase_name }}{% if ev.message %} — {{ ev.message }}{% endif %}  {{ ev.ts }}
-      {% endfor %}
-      {% if not events %}// No log entries yet...{% endif %}
+  <!-- ═══════════════════════════ TAB: FINDINGS ═══════════════════════════ -->
+  <div class="tab-content" id="tab-findings">
+    <div class="scan-tabs-page">
+
+      <!-- Scan-type sub-tabs -->
+      <div class="scan-type-tabs" id="scanTypeTabs">
+        <!-- populated by JS -->
+      </div>
+
+      <!-- Search + severity filter bar -->
+      <div class="search-bar-wrap">
+        <div class="search-input-wrap">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" id="searchInput" type="text" placeholder="Search findings, paths, keywords...">
+          <button class="search-clear" id="searchClear" title="Clear search">✕</button>
+        </div>
+        <div class="search-info" id="searchInfo"><span id="matchCount">0</span> results</div>
+        <div class="sev-filters">
+          <button class="sev-btn active-all" data-sev="all">ALL</button>
+          <button class="sev-btn" data-sev="alert">ALERT</button>
+          <button class="sev-btn" data-sev="warn">WARN</button>
+          <button class="sev-btn" data-sev="info">INFO</button>
+        </div>
+      </div>
+
+      <!-- Findings list — all rendered, JS controls visibility -->
+      <div class="scan-findings" id="scanFindings">
+        {% if not findings %}
+          <div class="no-results">No findings detected.</div>
+        {% else %}
+          {% for f in findings %}
+          <div class="sf-row {{ f.severity }}"
+               data-category="{{ f.category|lower }}"
+               data-sev="{{ f.severity }}"
+               data-detail="{{ f.detail|lower }}"
+               data-raw="{{ f.detail }}">
+            <div class="sf-head">
+              <span class="sf-cat {{ f.severity }}">{{ f.category }}</span>
+              <span class="sf-sev {{ f.severity }}">{{ f.severity }}</span>
+              <span class="sf-ts">{{ f.ts }}</span>
+            </div>
+            <div class="sf-detail">{{ f.detail }}</div>
+          </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+      <div class="no-results" id="noResults" style="display:none;">
+        No findings match <span id="noResultsQuery">""</span>
+      </div>
     </div>
   </div>
 
-</div>
+  <!-- ═══════════════════════════ TAB: RAW LOG ═══════════════════════════ -->
+  <div class="tab-content" id="tab-rawlog">
+    <div class="raw-log-wrap">
+      <div class="raw-log-head">
+        <div class="panel-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          RAW LOG OUTPUT
+        </div>
+        <div class="panel-badge">{{ (raw_log or '')|length }} chars</div>
+      </div>
+      <div class="raw-log-content" id="rawLogContent">{{ raw_log or 'Log not yet available.' }}</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ TAB: FULL RESULTS ═══════════════════════════ -->
+  <div class="tab-content" id="tab-fullresults">
+    <div class="full-results-note">
+      Full JSON results blob — contains all raw scan data including trinity detail.
+    </div>
+    <div class="raw-log-wrap">
+      <div class="raw-log-head">
+        <div class="panel-title">JSON RESULTS</div>
+        <button onclick="copyFullResults()" style="font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;cursor:pointer;letter-spacing:1px;">COPY</button>
+      </div>
+      <div class="raw-log-content" id="fullResultsContent">{{ full_results_json or 'Not yet available.' }}</div>
+    </div>
+  </div>
+
+</main>
 
 <script>
-const scanId = {{ scan.id }};
-const phases = {{ phases|tojson }};
-let isDone = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
-let activeTab = 'overview';
+const scanId  = {{ scan.id }};
+const phases  = {{ phases|tojson }};
+let isDone    = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
 let allFindings = [];
-let activeFilter = 'all';
 
-// ── Tab switching ────────────────────────────────────────────────────────────
+// ── Tab switching ──────────────────────────────────────────────────────────────
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i)=>{
-    const names = ['overview','phases','findings','raw','results'];
-    t.classList.toggle('active', names[i]===name);
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + name));
+}
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+// ── Findings: scan-type sub-tabs ──────────────────────────────────────────────
+let activeScanType = 'all';
+let activeSev      = 'all';
+let searchQuery    = '';
+
+function getCategories(findings) {
+  const cats = {};
+  for (const f of findings) {
+    const c = (f.category || 'other').toUpperCase();
+    cats[c] = (cats[c] || 0) + 1;
+  }
+  return cats;
+}
+
+function buildScanTypeTabs(findings) {
+  const cats = getCategories(findings);
+  const total = findings.length;
+  const container = document.getElementById('scanTypeTabs');
+  let html = `<button class="stt-btn ${activeScanType==='all'?'active':''}" data-stype="all">ALL <span class="stt-count">${total}</span></button>`;
+  for (const [cat, count] of Object.entries(cats)) {
+    html += `<button class="stt-btn ${activeScanType===cat.toLowerCase()?'active':''}" data-stype="${cat.toLowerCase()}">${cat} <span class="stt-count">${count}</span></button>`;
+  }
+  container.innerHTML = html;
+  container.querySelectorAll('.stt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeScanType = btn.dataset.stype;
+      container.querySelectorAll('.stt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    });
   });
-  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
-  document.getElementById('pane-'+name).classList.add('active');
-  activeTab = name;
-  if (name === 'raw' && !g_rawLogText) loadRawLog();
 }
 
-// ── Findings filter ──────────────────────────────────────────────────────────
-function filterFindings(sev, btn) {
-  activeFilter = sev;
-  document.querySelectorAll('.f-filter').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderFindingsPane(allFindings);
+// ── Search + filter logic ──────────────────────────────────────────────────────
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function escHtml(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function highlight(text, query) {
+  if (!query) return escHtml(text);
+  const rx = new RegExp('(' + escapeRegex(query) + ')', 'gi');
+  return escHtml(text).replace(new RegExp('(' + escapeRegex(escHtml(query)) + ')', 'gi'), '<mark>$1</mark>');
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function escHtml(s){
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function sevCls(s){ return {alert:'alert',warn:'warn',info:'info'}[s]||'info'; }
+function applyFilters() {
+  const rows = document.querySelectorAll('#scanFindings .sf-row');
+  let visible = 0;
+  const q = searchQuery.toLowerCase().trim();
 
-// ── Render functions ─────────────────────────────────────────────────────────
-function renderPhaseLog(events, pi, done) {
+  rows.forEach(row => {
+    const catMatch  = activeScanType === 'all' || row.dataset.category === activeScanType;
+    const sevMatch  = activeSev === 'all' || row.dataset.sev === activeSev;
+    const qMatch    = !q || row.dataset.detail.includes(q);
+    const show      = catMatch && sevMatch && qMatch;
+    row.classList.toggle('hidden', !show);
+    if (show) {
+      visible++;
+      // Update highlighted detail text
+      const detail = row.querySelector('.sf-detail');
+      if (detail) detail.innerHTML = highlight(row.dataset.raw, searchQuery);
+    } else {
+      const detail = row.querySelector('.sf-detail');
+      if (detail) detail.innerHTML = escHtml(row.dataset.raw);
+    }
+  });
+
+  document.getElementById('matchCount').textContent = visible;
+  const noRes = document.getElementById('noResults');
+  noRes.style.display = visible === 0 ? 'block' : 'none';
+  if (q) document.getElementById('noResultsQuery').textContent = '"' + q + '"';
+}
+
+// ── Search input ──────────────────────────────────────────────────────────────
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value;
+  searchClear.classList.toggle('visible', searchQuery.length > 0);
+  applyFilters();
+});
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchQuery = '';
+  searchClear.classList.remove('visible');
+  applyFilters();
+  searchInput.focus();
+});
+// Keyboard shortcut: Ctrl+F or / to focus search when on findings tab
+document.addEventListener('keydown', e => {
+  const findingsActive = document.getElementById('tab-findings').classList.contains('active');
+  if (findingsActive && (e.key === '/' || (e.ctrlKey && e.key === 'f'))) {
+    e.preventDefault();
+    searchInput.focus();
+  }
+  if (e.key === 'Escape' && document.activeElement === searchInput) {
+    searchInput.blur();
+  }
+});
+
+// ── Severity filter ───────────────────────────────────────────────────────────
+document.querySelectorAll('.sev-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeSev = btn.dataset.sev;
+    document.querySelectorAll('.sev-btn').forEach(b => {
+      b.className = 'sev-btn';
+      if (b.dataset.sev === activeSev) b.classList.add('active-' + activeSev);
+    });
+    applyFilters();
+  });
+});
+
+// ── Rendering helpers ─────────────────────────────────────────────────────────
+function sevClass(s) { return {alert:'alert',warn:'warn',info:'info'}[s]||'info'; }
+
+function renderPhaseLog(events, phaseIndex, done) {
   const evMap = {};
   for (const ev of events) evMap[ev.phase_index] = ev;
-  return phases.map((phase,i)=>{
+  return phases.map((phase, i) => {
     const ev  = evMap[i];
-    const cls = done||i<pi ? 'done' : i===pi ? 'active' : 'pending';
-    const msg = ev&&ev.message ? `<div class="phase-msg">${escHtml(ev.message)}</div>` : '';
-    const right = ev ? `<div class="phase-pct">${ev.pct}%</div><div class="phase-ts">${ev.ts||''}</div>` : '';
+    const cls = done || i < phaseIndex ? 'done' : i === phaseIndex ? 'active' : 'pending';
+    const pctBadge = ev ? `<div class="phase-pct-badge">${ev.pct}%</div>` : '';
+    const msgLine  = ev && ev.message ? `<div class="phase-msg-text">${escHtml(ev.message)}</div>` : '';
+    const tsLine   = ev ? `<div class="phase-ts-text">${ev.ts}</div>` : '';
     return `<div class="phase-row ${cls}">
-      <div class="phase-gut"><div class="phase-dot"></div></div>
-      <div class="phase-body"><div class="phase-name">${String(i).padStart(2,'0')}. ${escHtml(phase)}</div>${msg}</div>
-      <div class="phase-right">${right}</div>
+      <div class="phase-gutter"><div class="phase-dot"></div></div>
+      <div class="phase-body">
+        <div class="phase-top-row">
+          <div class="phase-name">${String(i).padStart(2,'0')}. ${escHtml(phase)}</div>${pctBadge}
+        </div>${msgLine}${tsLine}
+      </div>
     </div>`;
   }).join('');
 }
 
-function renderFindingsPane(findings) {
-  const filtered = activeFilter==='all' ? findings : findings.filter(f=>f.severity===activeFilter);
-  const cont = document.getElementById('findingsContainer');
-  if (!findings.length) {
-    cont.innerHTML = '<div class="findings-empty">✓ No suspicious findings detected</div>';
-    return;
-  }
-  if (!filtered.length) {
-    cont.innerHTML = '<div class="findings-empty" style="color:var(--dim)">No findings for this filter</div>';
-    return;
-  }
-  cont.innerHTML = '<div class="findings-wrap">' + filtered.map(f=>{
-    const sc = sevCls(f.severity);
-    return `<div class="finding-card ${sc}" data-sev="${f.severity}">
-      <div class="f-top"><span class="f-cat ${sc}">${escHtml(f.category)}</span><span class="f-sev ${sc}">${escHtml(f.severity)}</span></div>
-      <div class="f-detail">${escHtml(f.detail)}</div>
-      <div class="f-time">${f.ts||''}</div>
-    </div>`;
-  }).join('') + '</div>';
-}
-
-function renderRaw(text) {
-  if (!text) return '// No log entries yet...';
-  return text.split('\n').map(line => {
-    const l = escHtml(line);
-    if (line.includes('[HIT]') || line.includes('[CARVED HIT]'))
-      return `<span style="color:#ff4466;font-weight:bold">${l}</span>`;
-    if (line.includes('EVIDENCE TAMPERING') || line.startsWith('[!]') || line.includes('  [!]'))
-      return `<span style="color:#ff2244;font-weight:bold">${l}</span>`;
-    if (line.includes('[+]'))
-      return `<span style="color:#44ff88">${l}</span>`;
-    if (line.includes('[T]') || line.includes('[*]') || line.includes('  [*]'))
-      return `<span style="color:#aaaaaa">${l}</span>`;
-    if (line.includes('===='))
-      return `<span style="color:#333333">${l}</span>`;
-    return `<span style="color:#777777">${l}</span>`;
-  }).join('\n');
-}
-
-let g_rawLogText = '';
-
-function copyLog() {
-  navigator.clipboard.writeText(g_rawLogText).catch(()=>{});
-}
-
-function downloadLog() {
-  const a = document.createElement('a');
-  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(g_rawLogText);
-  a.download = 'HubChecker_results.txt';
-  a.click();
-}
-
-async function loadRawLog() {
-  const box = document.getElementById('rawBox');
-  if (box) box.textContent = 'Loading log...';
-  try {
-    const r = await fetch(`/api/scan/${scanId}/log`);
-    if (!r.ok) { if (box) box.textContent = 'Log not available yet. Submit a scan to populate it.'; return; }
-    const d = await r.json();
-    g_rawLogText = d.log || '';
-    if (box) box.innerHTML = g_rawLogText ? renderRaw(g_rawLogText) : '// No log entries yet...';
-  } catch(e) {
-    if (box) box.textContent = 'Error loading log.';
-  }
-}
-
-// ── Poll ─────────────────────────────────────────────────────────────────────
-
-function renderTrinityResults(tj) {
-  if (!tj) return '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim)">No results submitted yet.</div>';
-
-  const hits   = tj.hits || [];
-  const si     = tj.systemInfo || {};
-  const detail = tj.trinityDetail || {};
-
-  // ── category colour ──────────────────────────────────────────────────────
-  const catColor = c => ({'BAM':'#ff2244','USN':'#ff4466','USN-Carved':'#ff6688',
-    'Prefetch':'#ff8800','bstrings':'#ffaa00','CSV':'#ffcc00',
-    'Signature':'#ff6600','Trinity':'#cc44ff'}[c] || '#ff2244');
-
-  const sevBadge = s => {
-    const col = {alert:'#ff2244',warning:'#ff8800',info:'#44aaff'}[s]||'#888';
-    return `<span style="font-family:var(--mono);font-size:9px;background:${col}22;
-      border:1px solid ${col};color:${col};padding:1px 6px;border-radius:2px">${(s||'alert').toUpperCase()}</span>`;
-  };
-
-  // ── system info bar ───────────────────────────────────────────────────────
-  let out = `<div style="padding:14px 16px;background:var(--bg3);border:1px solid var(--border);
-    margin-bottom:16px;font-family:var(--mono);font-size:10px;color:var(--dim)">
-    <span style="color:var(--text)">Host:</span> ${escHtml(si.hostname)}
-    &nbsp;&nbsp;<span style="color:var(--text)">User:</span> ${escHtml(si.username)}
-    &nbsp;&nbsp;<span style="color:var(--text)">OS:</span> ${escHtml(si.os_version)}
-    &nbsp;&nbsp;<span style="color:var(--red)">Total hits: ${hits.length}</span>
+function renderFindingsSidebar(findings) {
+  if (!findings.length) return `<div class="findings-empty">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+    No findings detected
   </div>`;
-
-  if (hits.length === 0) {
-    out += '<div style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim)">No hits found in this scan.</div>';
-    return out;
-  }
-
-  // ── hit cards ─────────────────────────────────────────────────────────────
-  for (const h of hits) {
-    const cc = catColor(h.category);
-    const extra = (h.extra||[]).map(e=>`
-      <div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #ffffff08">
-        <span style="font-family:var(--mono);font-size:9px;color:var(--dim);min-width:110px">${escHtml(e.k)}</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--text);word-break:break-all">${escHtml(e.v)}</span>
-      </div>`).join('');
-
-    const patterns = (h.patterns||[]).length ? `
-      <div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #ffffff08">
-        <span style="font-family:var(--mono);font-size:9px;color:var(--dim);min-width:110px">PE Patterns</span>
-        <span style="font-family:var(--mono);font-size:9px;color:#ff4466">${h.patterns.map(escHtml).join('<br>')}</span>
-      </div>` : '';
-
-    const prevRuns = (h.prevRuns||[]).length ? `
-      <div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #ffffff08">
-        <span style="font-family:var(--mono);font-size:9px;color:var(--dim);min-width:110px">Prev Runs</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--text)">${h.prevRuns.map(escHtml).join('<br>')}</span>
-      </div>` : '';
-
-    const row = (label, val) => val ? `
-      <div style="display:flex;gap:8px;padding:4px 0;border-top:1px solid #ffffff08">
-        <span style="font-family:var(--mono);font-size:9px;color:var(--dim);min-width:110px">${label}</span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--text);word-break:break-all">${escHtml(val)}</span>
-      </div>` : '';
-
-    out += `<div style="border:1px solid ${cc}44;margin-bottom:10px;background:var(--bg2)">
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;
-        background:${cc}11;border-bottom:1px solid ${cc}44">
-        <span style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:${cc};
-          text-transform:uppercase;min-width:80px">${escHtml(h.category)}</span>
-        ${sevBadge(h.severity)}
-        <span style="font-family:var(--mono);font-size:10px;color:#fff;font-weight:bold">${escHtml(h.keyword)}</span>
-        <span style="flex:1"></span>
-        <span style="font-family:var(--mono);font-size:9px;color:var(--dim)">${escHtml(h.tool)}</span>
+  const slice = findings.slice(0, 20);
+  let html = slice.map(f => {
+    const sc = sevClass(f.severity);
+    return `<div class="finding-row ${sc}">
+      <div class="finding-top">
+        <span class="finding-cat ${sc}">${escHtml(f.category)}</span>
+        <span class="finding-sev ${sc}">${escHtml(f.severity)}</span>
       </div>
-      <div style="padding:6px 12px">
-        ${row('Path', h.path)}
-        ${row('File', h.filename)}
-        ${row('Event', h.eventType)}
-        ${row('Time', h.timestamp)}
-        ${row('Source', h.source)}
-        ${row('Signature', h.signature)}
-        ${row('Signer', h.signer)}
-        ${row('On Disk', h.onDisk)}
-        ${row('In Session', h.inSession)}
-        ${row('SID', h.sid)}
-        ${row('User', h.username)}
-        ${row('BAM SeqNum', h.bamSeqNum)}
-        ${row('Run Count', h.runCount)}
-        ${patterns}${prevRuns}${extra}
-      </div>
+      <div class="finding-detail">${escHtml(f.detail)}</div>
+      <div class="finding-time">${f.ts||''}</div>
+    </div>`;
+  }).join('');
+  if (findings.length > 20) {
+    html += `<div style="padding:12px 16px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);">
+      + ${findings.length-20} more — <a href="#" onclick="switchTab('findings');return false;" style="color:var(--red);">View all</a>
     </div>`;
   }
-
-  // ── trinity detail section ────────────────────────────────────────────────
-  const sec = (title, rows) => {
-    const filtered = rows.filter(r=>r[1]);
-    if (!filtered.length) return '';
-    return `<div style="margin-top:16px">
-      <div style="font-family:var(--title);font-size:9px;letter-spacing:3px;color:var(--red);
-        text-transform:uppercase;padding:8px 14px;background:var(--bg3);border:1px solid var(--border);
-        border-bottom:none">Trinity — ${title}</div>
-      <div style="border:1px solid var(--border)">
-        ${filtered.map(r=>`<div style="display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid var(--border)">
-          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);padding:7px 12px;
-            border-right:1px solid var(--border);background:var(--bg2)">${escHtml(r[0])}</div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text);padding:7px 12px;
-            white-space:pre-wrap;word-break:break-word;background:var(--bg2)">${escHtml(String(r[1]))}</div>
-        </div>`).join('')}
-      </div></div>`;
-  };
-  const arr = a => Array.isArray(a) ? a.join('\n') : (a||'');
-  const mem = detail.memoryScan||{}, rb = detail.robloxData||{};
-  const nat = detail.nativeChecks||{}, ic = detail.integrityChecks||{};
-  out += sec('Memory Scan',[['Roblox Memory',mem.robloxMemory],['Injected Modules',mem.injectedModules],
-    ['Discord Memory',mem.discordMemory],['Browser Memory',mem.browserMemory]]);
-  out += sec('Roblox Data',[['Roblox Logs',arr(rb.robloxLogs)],['FFlags',arr(rb.robloxFlags)]]);
-  out += sec('Native Checks',[['Run Keys',nat.runKeys],['Recent Items',arr(nat.recentItems)],['UserAssist',arr(nat.userAssist)]]);
-  out += sec('Integrity',[['Prefetch',ic.prefetchIntegrity],['Amcache',ic.amcacheIntegrity],
-    ['Shimcache',ic.shimcacheIntegrity],['SRUM',ic.srumIntegrity],['Defender',ic.defenderIntegrity],
-    ['BAM',ic.bamIntegrity],['USB History',ic.usbHistory],['System Restore',ic.systemRestore],
-    ['Recent Folder',ic.recentFolderIntegrity],['Services',ic.servicesCheck],['Unsigned EXEs',ic.unsignedExes]]);
-
-  return out;
+  return html;
 }
 
+function renderScanFindingsRows(findings) {
+  if (!findings.length) return `<div class="no-results">No findings detected.</div>`;
+  return findings.map(f => {
+    const sc = sevClass(f.severity);
+    return `<div class="sf-row ${sc}"
+      data-category="${escHtml((f.category||'other').toLowerCase())}"
+      data-sev="${escHtml(f.severity)}"
+      data-detail="${escHtml((f.detail||'').toLowerCase())}"
+      data-raw="${escHtml(f.detail||'')}">
+      <div class="sf-head">
+        <span class="sf-cat ${sc}">${escHtml(f.category)}</span>
+        <span class="sf-sev ${sc}">${escHtml(f.severity)}</span>
+        <span class="sf-ts">${f.ts||''}</span>
+      </div>
+      <div class="sf-detail">${escHtml(f.detail||'')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Copy full results ─────────────────────────────────────────────────────────
+function copyFullResults() {
+  const content = document.getElementById('fullResultsContent').textContent;
+  navigator.clipboard.writeText(content).catch(() => {});
+}
+
+// ── Polling ───────────────────────────────────────────────────────────────────
 async function poll() {
   try {
-    const [pRes, fRes, dRes] = await Promise.all([
+    const [pRes, fRes] = await Promise.all([
       fetch(`/api/scan/${scanId}/progress`),
-      fetch(`/api/scan/${scanId}/findings`),
-      fetch(`/api/scans/${scanId}`)
+      fetch(`/api/scan/${scanId}/findings`)
     ]);
     const d = await pRes.json();
-    allFindings = fRes.ok ? await fRes.json() : [];
-    const detail = dRes.ok ? await dRes.json() : {};
-    const trinityJson = detail.trinity_json || null;
+    const findings = fRes.ok ? await fRes.json() : [];
+    allFindings = findings;
 
     const total = d.total_phases || phases.length;
     const pi    = d.phase_index  || 0;
-    const done  = d.status==='complete'||d.status==='completed';
-    const pct   = done ? 100 : Math.round(pi/Math.max(total-1,1)*100);
+    const done  = d.status === 'complete' || d.status === 'completed';
+    const pct   = done ? 100 : Math.round(pi / Math.max(total-1,1) * 100);
 
-    // Bar
-    document.getElementById('bigFill').style.width = pct+'%';
-    document.getElementById('pctLabel').textContent = pct+'%';
+    // Progress bar
+    document.getElementById('bigFill').style.width = pct + '%';
+    document.getElementById('pctLabel').textContent = pct + '%';
 
     if (done) {
       document.getElementById('phaseLabel').textContent = 'ALL PHASES COMPLETE';
-      document.getElementById('statusBadge').className  = 'sbadge complete';
-      document.getElementById('statusBadge').textContent= '✓ COMPLETE';
-      document.getElementById('metaStatus').textContent = 'completed';
-      const lp = document.getElementById('livePill');
-      if (lp) lp.style.display='none';
+      document.getElementById('statusBadge').className  = 'status-badge complete';
+      document.getElementById('statusBadge').textContent = '✓ COMPLETE';
+      const li = document.getElementById('liveIndicator');
+      if (li) li.style.display = 'none';
+      isDone = true;
     } else {
-      const pname = phases[Math.min(pi,phases.length-1)];
-      document.getElementById('phaseLabel').innerHTML = `PHASE <span>${pi+1}/${total}</span> — ${escHtml(pname)}`;
+      const pname = phases[Math.min(pi, phases.length-1)];
+      document.getElementById('phaseLabel').textContent = `PHASE ${pi+1}/${total} — ${pname}`;
     }
 
-    // Phases tab
-    document.getElementById('phaseLog').innerHTML = renderPhaseLog(d.events||[], pi, done);
-    const pc = `${(d.events||[]).length}/${phases.length}`;
-    document.getElementById('tabPhaseCount').textContent = pc;
-    document.getElementById('ovPhases').innerHTML = `${(d.events||[]).length}<span style="font-size:14px;color:var(--dim)">/${phases.length}</span>`;
+    // Phase logs (both tabs)
+    const phaseHtml = renderPhaseLog(d.events||[], pi, done);
+    document.getElementById('phaseLog').innerHTML     = phaseHtml;
+    document.getElementById('phaseLogFull').innerHTML = phaseHtml;
+    document.getElementById('phaseCount').textContent = `${(d.events||[]).length}/${phases.length}`;
 
-    // Findings
-    document.getElementById('tabFindingCount').textContent = allFindings.length;
-    document.getElementById('ovFindings').textContent = allFindings.length;
-    document.getElementById('ovFindings').className = 'ov-val '+(allFindings.length?'red':'green');
-    const alerts = allFindings.filter(f=>f.severity==='alert').length;
-    const warns  = allFindings.filter(f=>f.severity==='warn').length;
-    document.getElementById('ovAlerts').textContent = alerts;
-    document.getElementById('ovAlerts').className = 'ov-val '+(alerts?'red':'green');
-    document.getElementById('ovWarns').textContent = warns;
-    document.getElementById('ovWarns').className = 'ov-val '+(warns?'orange':'green');
-    document.getElementById('fcAll').textContent   = allFindings.length;
-    document.getElementById('fcAlert').textContent = alerts;
-    document.getElementById('fcWarn').textContent  = warns;
-    document.getElementById('fcInfo').textContent  = allFindings.filter(f=>f.severity==='info').length;
-    renderFindingsPane(allFindings);
+    // Tab counts
+    document.getElementById('tcPhases').textContent   = phases.length;
+    document.getElementById('tcFindings').textContent = findings.length;
 
-    // Raw
-    // rawBox is now populated by loadRawLog() on tab click
+    // Overview sidebar findings
+    document.getElementById('findingsContainer').innerHTML = renderFindingsSidebar(findings);
+    document.getElementById('findingCount').textContent = findings.length;
 
-    // Full Results tab
-    if (trinityJson) {
-      try {
-        const tj = typeof trinityJson === 'string' ? JSON.parse(trinityJson) : trinityJson;
-        document.getElementById('resultsContent').innerHTML = renderTrinityResults(tj);
-        document.getElementById('tabResultsBadge').textContent = (tj.hits||[]).length || '✓';
-      } catch(e) {}
+    // Findings tab — only re-render if count changed (avoids disrupting search)
+    const currentRows = document.querySelectorAll('#scanFindings .sf-row').length;
+    if (findings.length !== currentRows) {
+      document.getElementById('scanFindings').innerHTML = renderScanFindingsRows(findings);
+      buildScanTypeTabs(findings);
+      applyFilters();
     }
 
-    if (done && !isDone && g_rawLogText) { loadRawLog(); }
-    isDone = done;
     if (!done) setTimeout(poll, 2500);
   } catch(e) {
     if (!isDone) setTimeout(poll, 4000);
   }
 }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+// Build scan type tabs from server-rendered findings on initial load
+(function init() {
+  const rows = document.querySelectorAll('#scanFindings .sf-row');
+  const findings = [];
+  rows.forEach(r => findings.push({ category: r.dataset.category.toUpperCase() }));
+  buildScanTypeTabs(findings);
+  applyFilters();
+  document.getElementById('matchCount').textContent = rows.length;
+})();
 
 poll();
 </script>
