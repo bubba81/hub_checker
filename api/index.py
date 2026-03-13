@@ -181,7 +181,7 @@ def view_scan(scan_id):
             cur.execute("SELECT * FROM scan_events WHERE scan_id=%s ORDER BY phase_index", (scan_id,))
             events = cur.fetchall()
             cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
-            findings = cur.fetchall()
+            findings = [_enrich_finding(r) for r in cur.fetchall()]
     return render_template("view_scan.html", scan=scan, events=events,
                            findings=findings, phases=SCAN_PHASES,
                            username=session.get("global_name"),
@@ -229,6 +229,65 @@ def rename_scan(scan_id):
         conn.commit()
     return jsonify({"ok": True, "name": new_name})
 
+def _enrich_finding(r):
+    """Add a 'fields' dict and 'keyword' to a finding row for the rich renderer."""
+    import re as _re
+    d = dict(r)
+    detail = d.get("detail", "") or ""
+
+    def _grab(pattern, text, group=1):
+        m = _re.search(pattern, text, _re.IGNORECASE | _re.MULTILINE)
+        return m.group(group).strip() if m else None
+
+    fields = {}
+    fields["tool"]             = _grab(r"^\[(.+?)\]", detail)
+    fields["path"]             = _grab(r"Path\s*:\s*(.+)", detail)
+    fields["fileName"]         = _grab(r"File Name\s*:\s*(.+)", detail)
+    fields["eventType"]        = _grab(r"Event Type\s*:\s*(.+)", detail)
+    fields["lastRun"]          = _grab(r"Last Run\s*:\s*(.+)", detail)
+    fields["runCount"]         = _grab(r"Run Count\s*:\s*(.+)", detail)
+    fields["executed"]         = _grab(r"Executed Flag\s*:\s*(.+)", detail)
+    fields["present"]          = _grab(r"Present\s*:\s*(.+)", detail)
+    fields["shimPos"]          = _grab(r"ShimCache Position[^:]*:\s*(.+)", detail)
+    fields["sourceHive"]       = _grab(r"Source Hive\s*:\s*(.+)", detail)
+    fields["keyLastWrite"]     = _grab(r"Key Last Write\s*:\s*(.+)", detail)
+    fields["lastWrite"]        = _grab(r"Last Write\s*:\s*(.+)", detail)
+    fields["keyPath"]          = _grab(r"Key Path\s*:\s*(.+)", detail)
+    fields["valueName"]        = _grab(r"Value Name\s*:\s*(.+)", detail)
+    fields["valueData"]        = _grab(r"Value Data\s*:\s*(.+)", detail)
+    fields["regCategory"]      = _grab(r"Category\s*:\s*(.+)", detail)
+    fields["lnkName"]          = _grab(r"LNK Name\s*:\s*(.+)", detail)
+    fields["programName"]      = _grab(r"Program Name\s*:\s*(.+)", detail)
+    fields["sourceName"]       = _grab(r"Source Name[^:]*:\s*(.+)", detail)
+    fields["fileSize"]         = _grab(r"File Size\s*:\s*(.+)", detail)
+    fields["deletedOn"]        = _grab(r"Deleted On\s*:\s*(.+)", detail)
+    fields["siCreated"]        = _grab(r"SI Created\s*:\s*(.+)", detail)
+    fields["siModified"]       = _grab(r"SI Modified\s*:\s*(.+)", detail)
+    fields["siAccessed"]       = _grab(r"SI Accessed\s*:\s*(.+)", detail)
+    fields["frn"]              = _grab(r"FRN\s*:\s*(.+)", detail)
+    fields["inUse"]            = _grab(r"In Use\s*:\s*(.+)", detail)
+    fields["sigStatus"]        = _grab(r"Sig(?:nature)?\s*Status\s*:\s*(.+)", detail)
+    fields["signerName"]       = _grab(r"Signer(?:\s*Name)?\s*:\s*(.+)", detail)
+    fields["patterns"]         = _grab(r"Patterns?\s*:\s*(.+)", detail)
+    fields["fileLastModified"] = _grab(r"File Last Modified[^:]*:\s*(.+)", detail)
+    fields["runTime"]          = _grab(r"Run Time\s*:\s*(.+)", detail)
+    fields["csv"]              = _grab(r"CSV\s*:\s*(.+)", detail)
+
+    prev = _re.findall(r"- (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", detail)
+    if prev:
+        fields["prevRuns"] = prev
+
+    kw = _grab(r"Keyword\s*:\s*(.+)", detail)
+    if kw:
+        d["keyword"] = kw
+
+    fields = {k: v for k, v in fields.items() if v is not None}
+    if fields:
+        d["fields"] = fields
+
+    return d
+
+
 @app.route("/api/scan/<int:scan_id>/findings")
 @require_auth
 def scan_findings(scan_id):
@@ -236,7 +295,7 @@ def scan_findings(scan_id):
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
             rows = cur.fetchall()
-    return jsonify([dict(r) for r in rows])
+    return jsonify([_enrich_finding(r) for r in rows])
 
 @app.route("/api/scan/<int:scan_id>/log")
 @require_auth
@@ -292,7 +351,7 @@ def api_scan_detail(scan_id):
     return jsonify({
         "scan": s,
         "progress": [dict(e) for e in events],
-        "results": [dict(f) for f in findings],
+        "results": [_enrich_finding(f) for f in findings],
         "trinity_json": s.get("trinity_json"),
         "log_text": s.get("log_text", ""),
     })
@@ -374,7 +433,7 @@ def trinity_scan_submit():
                     + (f" | {h.get('eventType','')}" if h.get('eventType') else "")
                     + (f" | Last Run: {h.get('timestamp','')}" if h.get('timestamp') else "")
                 )
-                cur.execute("""INSERT INTO scan_findings (scan_id, category, severity, detail, created_at)
+                cur.execute("""INSERT INTO scan_findings (scan_id, category, severity, detail, ts)
                                VALUES (%s, %s, %s, %s, %s)""",
                             (scan_id, category, severity, detail[:2000], _now()))
 
