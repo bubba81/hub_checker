@@ -451,17 +451,16 @@ const SCAN_DEFS = [
   { group:"PHASE 1 — FORENSIC", scans:[
     { id:"bam",       label:"BAM Registry",       desc:"Background Activity Monitor registry hive — records every executable Windows logged as having run. Matched against the cheat keyword list. VSS hive copy also scanned.", cats:["bam"] },
     { id:"usn",       label:"USN Journal",         desc:"NTFS USN change journal ($UsnJrnl:$J). Scans every file-change record for cheat keywords in executable filenames. Fallback carver reads raw VSS sectors for rolled-out records.", cats:["usn"] },
-    { id:"prefetch",  label:"Prefetch (PECmd)",    desc:"Windows Prefetch files parsed with PECmd.exe. Records last 8 run timestamps and all loaded DLLs — execution evidence survives binary deletion.", cats:["prefetch","pecmd"] },
-    { id:"amcache",   label:"Amcache",             desc:"Amcache.hve registry hive parsed with AmcacheParser.exe. Records file hash, publisher, and first/last execution for every installed or run program.", cats:["amcache"] },
-    { id:"shimcache", label:"Shimcache",           desc:"AppCompatCache parsed with AppCompatCacheParser.exe. Records paths and last-modified times of every executable touched by the OS compatibility layer.", cats:["shimcache","appcompat","appcompatcache"] },
-    { id:"srum",      label:"SRUM",                desc:"System Resource Usage Monitor (SRUDB.dat) parsed with SrumECmd.exe. Records per-app network usage, CPU and memory — execution evidence even without Prefetch.", cats:["srum"] },
-    { id:"mft",       label:"MFT ($MFT)",          desc:"NTFS Master File Table parsed with MFTECmd.exe. Contains every file ever created including deleted files whose MFT slot hasn't been reused.", cats:["mft"] },
-    { id:"evtx",      label:"Event Logs",          desc:"Windows Event Logs (.evtx) parsed with EvtxECmd.exe. Searches Security, System, and Application logs for execution-related events matching the keyword list.", cats:["evtx","eventlog","event"] },
-    { id:"regedit",   label:"Registry (RECmd)",    desc:"Registry batch queries via RECmd.exe across all hives. Searches for persistence keys, run values, and application install records matching cheat keywords.", cats:["regedit","recmd","registry"] },
-    { id:"bstrings",  label:"bstrings",            desc:"String extraction with bstrings.exe across forensic artifacts. Catches obfuscated or packed executables that evade filename-based detection.", cats:["bstrings"] },
-    { id:"jumplists", label:"Jump Lists / LNK",    desc:"Parses Jump Lists (JLECmd), LNK shortcuts (LECmd), Recycle Bin (RBCmd), Shell Bags (SBECmd), Recent File Cache, Windows Timeline (WxTCmd), and Sum (SumECmd) for cheat references.", cats:["jumplist","lnk","lecmd","jlecmd","rbcmd","sbecmd","recentfilecache","wxtcmd","sumemd"] },
+    { id:"prefetch",  label:"Prefetch (PECmd)",    desc:"Windows Prefetch files parsed with PECmd.exe. Records last 8 run timestamps and all loaded DLLs — execution evidence survives binary deletion.", cats:["prefetch","pecmd"], csvTools:["pecmd"] },
+    { id:"amcache",   label:"Amcache",             desc:"Amcache.hve registry hive parsed with AmcacheParser.exe. Records file hash, publisher, and first/last execution for every installed or run program.", cats:["amcache"], csvTools:["amcacheparser","amcache"] },
+    { id:"shimcache", label:"Shimcache",           desc:"AppCompatCache parsed with AppCompatCacheParser.exe. Records paths and last-modified times of every executable touched by the OS compatibility layer.", cats:["shimcache","appcompat","appcompatcache"], csvTools:["appcompatcacheparser","appcompat"] },
+    { id:"srum",      label:"SRUM",                desc:"System Resource Usage Monitor (SRUDB.dat) parsed with SrumECmd.exe. Records per-app network usage, CPU and memory — execution evidence even without Prefetch.", cats:["srum"], csvTools:["srumemd","srum"] },
+    { id:"mft",       label:"MFT ($MFT)",          desc:"NTFS Master File Table parsed with MFTECmd.exe. Contains every file ever created including deleted files whose MFT slot hasn't been reused.", cats:["mft"], csvTools:["mftemd","mft"] },
+    { id:"evtx",      label:"Event Logs",          desc:"Windows Event Logs (.evtx) parsed with EvtxECmd.exe. Searches Security, System, and Application logs for execution-related events matching the keyword list.", cats:["evtx","eventlog","event"], csvTools:["evtxecmd","evtx"] },
+    { id:"regedit",   label:"Registry (RECmd)",    desc:"Registry batch queries via RECmd.exe across all hives. Searches for persistence keys, run values, and application install records matching cheat keywords.", cats:["regedit","recmd","registry"], csvTools:["recmd","regedit"] },
+    { id:"bstrings",  label:"bstrings",            desc:"String extraction with bstrings.exe across forensic artifacts. Catches obfuscated or packed executables that evade filename-based detection.", cats:["bstrings"], csvTools:["bstrings"] },
+    { id:"jumplists", label:"Jump Lists / LNK",    desc:"Parses Jump Lists (JLECmd), LNK shortcuts (LECmd), Recycle Bin (RBCmd), Shell Bags (SBECmd), Recent File Cache, Windows Timeline (WxTCmd), and Sum (SumECmd) for cheat references.", cats:["jumplist","lnk","lecmd","jlecmd","rbcmd","sbecmd","recentfilecache","wxtcmd","sumemd"], csvTools:["jlecmd","lecmd","rbcmd","sbecmd","recentfilecacheparser","wxtcmd","sumemd"] },
     { id:"signature", label:"Signature Check",     desc:"PE signature check via WinVerifyTrust and Windows catalog for every flagged file. Reports Signed / Not Signed / Fake Signature / Cheat Signature.", cats:["signature","sig"] },
-    { id:"csv",       label:"CSV Output",          desc:"All CSVs produced by Eric Zimmerman tools in C:\\HubOut\\ scanned for cheat keywords. Includes ShimCache position, executed flag, file last-modified time, and source hive.", cats:["csv"] },
   ]},
   { group:"PHASE 2 — TRINITY LIVE", scans:[
     { id:"roblox_mem",    label:"Roblox Memory",      desc:"ReadProcessMemory scan of RobloxPlayerBeta.exe. Checks executable regions for Lua bytecode signatures (LuaQ/LuaR), executor API strings (hookfunction, getrawmetatable…), suspicious URLs, and manually mapped PE headers.", cats:["roblox memory","robloxmemory"] },
@@ -507,10 +506,23 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function rxEsc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function sevCls(s) { return {alert:'alert',warn:'warn',info:'info'}[s]||'info'; }
 
+// CSV findings carry category="CSV" but embed the originating tool in their detail string.
+// e.g. "... (tool: AppCompatCacheParser.exe) | source: appcompat.csv ..."
+// csvTools on each scan def lists lowercase substrings matched against the detail text.
+function csvDetailMatchesDef(detail, def) {
+  if (!def.csvTools || !def.csvTools.length) return false;
+  const dl = detail.toLowerCase();
+  return def.csvTools.some(t => dl.includes(t));
+}
+
 function findingsFor(def) {
-  const cats = def.cats.map(c=>c.toLowerCase());
+  const cats = def.cats.map(c => c.toLowerCase());
   return allFindings.filter(f => {
-    const fc = (f.category||'').toLowerCase();
+    const fc     = (f.category || '').toLowerCase();
+    const detail = (f.detail   || '');
+    // CSV category: route by tool/source name embedded in the detail string
+    if (fc === 'csv') return csvDetailMatchesDef(detail, def);
+    // Normal category match
     return cats.some(c => fc === c || fc.includes(c));
   });
 }
