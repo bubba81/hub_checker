@@ -78,6 +78,16 @@ def init_db():
                     detail   TEXT NOT NULL,
                     ts       TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS scan_pins (
+                    id         SERIAL PRIMARY KEY,
+                    pin        TEXT NOT NULL UNIQUE,
+                    scan_key   TEXT NOT NULL UNIQUE,
+                    label      TEXT NOT NULL DEFAULT '',
+                    used       BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL DEFAULT '',
+                    used_at    TEXT
+                );
             """)
         conn.commit()
 
@@ -93,6 +103,20 @@ try:
         with conn.cursor() as cur:
             cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS trinity_json TEXT")
             cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS log_text TEXT")
+            # scan_pins table (created in init_db above, but guard for older deploys)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS scan_pins (
+                    id         SERIAL PRIMARY KEY,
+                    pin        TEXT NOT NULL UNIQUE,
+                    scan_key   TEXT NOT NULL UNIQUE,
+                    label      TEXT NOT NULL DEFAULT '',
+                    used       BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL DEFAULT '',
+                    used_at    TEXT
+                )
+            """)
+            cur.execute("ALTER TABLE scan_pins ADD COLUMN IF NOT EXISTS expires_at TEXT NOT NULL DEFAULT ''")
         conn.commit()
 except Exception as e:
     print(f"Migration warning: {e}")
@@ -464,6 +488,68 @@ def scanner_complete():
             """, (len(SCAN_PHASES)-1, _now(), scan_key))
         conn.commit()
     return jsonify({"ok": True})
+
+# ── PIN routes ───────────────────────────────────────────────────────────────
+@app.route("/api/pin/generate", methods=["POST"])
+@require_auth
+def api_pin_generate():
+    import random, string as _string
+    from datetime import datetime as _dt, timedelta as _td
+    data     = request.get_json(force=True) or {}
+    label    = data.get("label", "").strip()[:80]
+    pin      = "".join(random.choices(_string.digits, k=6))
+    scan_key = secrets.token_hex(8)
+    now      = _now()
+    expires  = (_dt.utcnow() + _td(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM scan_pins WHERE expires_at <> '' AND expires_at < %s AND used = FALSE", (now,))
+            cur.execute("""INSERT INTO scan_pins (pin, scan_key, label, used, created_at, expires_at)
+                           VALUES (%s, %s, %s, FALSE, %s, %s)""",
+                        (pin, scan_key, label, now, expires))
+        conn.commit()
+    return jsonify({"ok": True, "pin": pin, "scan_key": scan_key, "expires_at": expires})
+
+
+@app.route("/api/pin/validate", methods=["GET"])
+def api_pin_validate():
+    """Called by the C++ scanner to exchange a PIN for a scan_key. No auth required."""
+    pin = request.args.get("pin", "").strip()
+    if not pin:
+        return jsonify({"ok": False, "error": "PIN required"}), 400
+    now = _now()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM scan_pins WHERE pin=%s", (pin,))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({"ok": False, "error": "Invalid PIN"}), 404
+            if row["used"]:
+                return jsonify({"ok": False, "error": "PIN already used"}), 403
+            if row["expires_at"] and row["expires_at"] < now:
+                return jsonify({"ok": False, "error": "PIN expired"}), 403
+            cur.execute("UPDATE scan_pins SET used=TRUE, used_at=%s WHERE pin=%s", (now, pin))
+        conn.commit()
+    return jsonify({"ok": True, "scan_key": row["scan_key"], "label": row["label"]})
+
+
+@app.route("/api/pin/list", methods=["GET"])
+@require_auth
+def api_pin_list():
+    """Return recent pins so the dashboard can show their status."""
+    now = _now()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""SELECT pin, scan_key, label, used, created_at, expires_at, used_at
+                           FROM scan_pins ORDER BY created_at DESC LIMIT 50""")
+            rows = cur.fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["expired"] = bool(d.get("expires_at") and d["expires_at"] < now and not d["used"])
+        result.append(d)
+    return jsonify(result)
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def _now():
