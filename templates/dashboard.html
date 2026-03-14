@@ -710,6 +710,49 @@ nav {
 .toast.error   { border-left-color: var(--red); }
 @keyframes toastIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: none; } }
 
+/* ── PIN modal ───────────────────────────────────────────────────────── */
+.pin-display {
+  text-align: center;
+  padding: 8px 0 20px;
+}
+.pin-code {
+  font-family: var(--display);
+  font-size: 56px;
+  font-weight: 900;
+  color: var(--red);
+  letter-spacing: 14px;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(224,32,32,.4);
+  transition: opacity .4s;
+}
+.pin-code.expired { opacity: .25; }
+.pin-meta {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-top: 10px;
+}
+.pin-scankey {
+  font-size: 10px;
+  color: #333;
+  letter-spacing: 1px;
+  margin-top: 6px;
+  font-family: var(--mono);
+}
+.pin-countdown {
+  display: inline-block;
+  color: #ffa500;
+  font-weight: 600;
+  transition: color .3s;
+}
+.pin-countdown.urgent { color: var(--red); }
+.pin-instructions {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
@@ -793,6 +836,7 @@ nav {
     <button class="filter-btn" data-filter="running">RUNNING</button>
     <button class="filter-btn" data-filter="completed">COMPLETED</button>
     <button class="filter-btn" data-filter="pending">PENDING</button>
+    <button class="filter-btn" onclick="openPinModal()" style="margin-left:auto;border-color:var(--red-dark);color:var(--red);background:var(--red-dim)">⬡ Generate PIN</button>
   </div>
 
   <!-- Scan grid -->
@@ -866,6 +910,52 @@ nav {
         <button class="btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
         <button class="btn-primary" style="background:#8c1414" onclick="submitDelete()">Delete Permanently</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- PIN MODAL -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head">
+      <div class="modal-title">
+        Generate Scan PIN
+        <span class="sub">Authorise a scanner to begin</span>
+      </div>
+      <button class="btn-close" onclick="closePinModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: label form -->
+      <div id="pinStep1">
+        <div class="edit-form">
+          <div class="form-group">
+            <label class="form-label">Label <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+            <input type="text" class="form-input" id="pinLabelInput" placeholder="e.g. John's Desktop" maxlength="80"/>
+          </div>
+          <div class="form-actions">
+            <button class="btn-secondary" onclick="closePinModal()">Cancel</button>
+            <button class="btn-primary" onclick="submitGeneratePin()">Generate PIN</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: show PIN -->
+      <div id="pinStep2" style="display:none">
+        <div class="pin-display">
+          <div class="pin-meta">ENTER THIS PIN ON THE SCANNER</div>
+          <div class="pin-code" id="pinCode">——————</div>
+          <div class="pin-instructions" style="margin-top:14px">
+            Expires in <span class="pin-countdown" id="pinCountdown">5:00</span>
+          </div>
+          <div class="pin-scankey" id="pinScanKeyDisplay"></div>
+        </div>
+        <div class="form-actions" style="margin-top:8px">
+          <button class="btn-secondary" onclick="closePinModal()">Close</button>
+          <button class="btn-primary" onclick="resetPinModal()">New PIN</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1166,7 +1256,87 @@ function toast(msg, type = 'info') {
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .4s'; setTimeout(() => el.remove(), 400); }, 3000);
 }
 
-// ── Utilities ────────────────────────────────────────────────────────────────
+// ── PIN Generation ───────────────────────────────────────────────────────────
+let _pinTimer = null;
+
+function openPinModal() {
+  resetPinModal();
+  openModal('pinModal');
+  setTimeout(() => document.getElementById('pinLabelInput').focus(), 120);
+}
+
+function closePinModal() {
+  if (_pinTimer) { clearInterval(_pinTimer); _pinTimer = null; }
+  closeModal('pinModal');
+}
+
+function resetPinModal() {
+  if (_pinTimer) { clearInterval(_pinTimer); _pinTimer = null; }
+  document.getElementById('pinStep1').style.display = '';
+  document.getElementById('pinStep2').style.display = 'none';
+  document.getElementById('pinLabelInput').value = '';
+  document.getElementById('pinCode').textContent = '——————';
+  document.getElementById('pinCode').classList.remove('expired');
+  document.getElementById('pinCountdown').textContent = '5:00';
+  document.getElementById('pinCountdown').classList.remove('urgent');
+  document.getElementById('pinScanKeyDisplay').textContent = '';
+}
+
+async function submitGeneratePin() {
+  const label   = document.getElementById('pinLabelInput').value.trim();
+  const genBtn  = document.querySelector('#pinStep1 .btn-primary');
+  genBtn.disabled = true;
+  genBtn.textContent = 'Generating...';
+
+  let data;
+  try {
+    data = await apiFetch('/api/pin/generate', {
+      method: 'POST',
+      body: JSON.stringify({ label })
+    });
+  } catch(e) {
+    toast('Failed to reach server', 'error');
+    genBtn.disabled = false;
+    genBtn.textContent = 'Generate PIN';
+    return;
+  }
+
+  if (!data.ok) {
+    toast('Failed to generate PIN', 'error');
+    genBtn.disabled = false;
+    genBtn.textContent = 'Generate PIN';
+    return;
+  }
+
+  // Switch to display step
+  document.getElementById('pinStep1').style.display = 'none';
+  document.getElementById('pinStep2').style.display = '';
+  document.getElementById('pinCode').textContent = data.pin;
+  document.getElementById('pinScanKeyDisplay').textContent = 'KEY: ' + data.scan_key;
+  genBtn.disabled = false;
+  genBtn.textContent = 'Generate PIN';
+
+  // Countdown: 5 minutes
+  let secs = 5 * 60;
+  const countEl    = document.getElementById('pinCountdown');
+  const codeEl     = document.getElementById('pinCode');
+
+  _pinTimer = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(_pinTimer);
+      _pinTimer = null;
+      countEl.textContent = 'EXPIRED';
+      countEl.classList.add('urgent');
+      codeEl.classList.add('expired');
+      return;
+    }
+    const m = Math.floor(secs / 60), s = secs % 60;
+    countEl.textContent = m + ':' + String(s).padStart(2, '0');
+    if (secs <= 60) countEl.classList.add('urgent');
+  }, 1000);
+}
+
 function escHtml(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
