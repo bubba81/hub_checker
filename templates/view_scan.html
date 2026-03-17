@@ -30,188 +30,90 @@
   --mono:      'Fira Code', monospace;
 }
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-html { scroll-behavior:smooth; }
+html,body { height:100%; }
 body {
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--body);
-  font-size:13px;
-  line-height:1.5;
-  min-height:100vh;
-  overflow-x:hidden;
+  background:var(--bg); color:var(--text);
+  font-family:var(--body); font-size:13px; line-height:1.5;
+  overflow:hidden;
+  display:flex; flex-direction:column;
 }
-
-/* noise */
 body::after {
-  content:'';
-  position:fixed; inset:0; z-index:9999; pointer-events:none;
+  content:''; position:fixed; inset:0; z-index:9999; pointer-events:none;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
   opacity:.35;
 }
 
 /* ── TOPBAR ── */
 .topbar {
-  height:52px; display:flex; align-items:stretch;
-  background:var(--bg2); border-bottom:1px solid var(--border);
-  position:sticky; top:0; z-index:200;
+  height:52px; display:flex; align-items:stretch; flex-shrink:0;
+  background:var(--bg2); border-bottom:1px solid var(--border); z-index:100;
 }
-.topbar-brand {
-  display:flex; align-items:center; gap:12px;
-  padding:0 22px; border-right:1px solid var(--border);
-  text-decoration:none;
-}
-.brand-mark {
-  width:22px; height:22px; background:var(--red);
-  clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); flex-shrink:0;
-}
-.brand-name {
-  font-family:var(--display); font-size:20px; letter-spacing:4px; color:#fff;
-}
+.topbar-brand { display:flex; align-items:center; gap:12px; padding:0 22px; border-right:1px solid var(--border); text-decoration:none; }
+.brand-mark { width:22px; height:22px; background:var(--red); clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); flex-shrink:0; }
+.brand-name { font-family:var(--display); font-size:20px; letter-spacing:4px; color:#fff; }
 .brand-name em { color:var(--red); font-style:normal; }
-.topbar-right {
-  display:flex; align-items:center; gap:12px;
-  padding:0 18px; margin-left:auto;
-}
-.live-pill {
-  display:flex; align-items:center; gap:6px;
-  font-family:var(--mono); font-size:9px; letter-spacing:3px; color:var(--orange-hi);
-}
-.live-dot {
-  width:6px; height:6px; border-radius:50%; background:var(--orange-hi);
-  animation:blink 1s step-end infinite;
-}
+.topbar-right { display:flex; align-items:center; gap:12px; padding:0 18px; margin-left:auto; }
+.live-pill { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:9px; letter-spacing:3px; color:var(--orange-hi); }
+.live-dot { width:6px; height:6px; border-radius:50%; background:var(--orange-hi); animation:blink 1s step-end infinite; }
 @keyframes blink { 50%{opacity:.2} }
 .viewer-name { font-family:var(--mono); font-size:10px; color:var(--muted); }
-.btn-back {
-  display:inline-flex; align-items:center; gap:5px;
-  background:transparent; border:1px solid var(--border2);
-  color:var(--muted); padding:5px 12px;
-  font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase;
-  cursor:pointer; text-decoration:none; transition:all .15s;
-}
+.btn-back { display:inline-flex; align-items:center; gap:5px; background:transparent; border:1px solid var(--border2); color:var(--muted); padding:5px 12px; font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; text-decoration:none; transition:all .15s; }
 .btn-back:hover { border-color:var(--red-line); color:var(--red-hi); }
 
-/* ── LAYOUT ── */
-.main { max-width:1440px; margin:0 auto; padding:22px 22px 80px; }
-
-/* ── SCAN HEADER ── */
-.scan-header {
-  display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
-  margin-bottom:18px; padding-bottom:18px;
-  border-bottom:2px solid var(--border2); position:relative;
-}
-.scan-header::after {
-  content:''; position:absolute; bottom:-2px; left:0;
-  width:200px; height:2px; background:var(--red);
-}
-.scan-key-label {
-  font-family:var(--mono); font-size:9px; letter-spacing:3px;
-  text-transform:uppercase; color:var(--red); margin-bottom:4px;
-}
-.scan-title {
-  font-family:var(--display); font-size:32px; letter-spacing:3px; color:#fff;
-  margin-bottom:8px; line-height:1;
-}
-.scan-metas {
-  display:flex; gap:18px; flex-wrap:wrap;
-  font-family:var(--mono); font-size:10px; color:var(--muted);
-}
+/* ── SCAN INFO STRIP ── */
+.info-strip { padding:14px 22px 0; flex-shrink:0; }
+.scan-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding-bottom:12px; border-bottom:2px solid var(--border2); position:relative; }
+.scan-header::after { content:''; position:absolute; bottom:-2px; left:0; width:180px; height:2px; background:var(--red); }
+.scan-key-label { font-family:var(--mono); font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--red); margin-bottom:4px; }
+.scan-title { font-family:var(--display); font-size:26px; letter-spacing:3px; color:#fff; margin-bottom:5px; line-height:1; }
+.scan-metas { display:flex; gap:16px; flex-wrap:wrap; font-family:var(--mono); font-size:10px; color:var(--muted); }
 .meta-kv strong { color:var(--text); }
-.status-badge {
-  font-family:var(--mono); font-size:10px; letter-spacing:2px; text-transform:uppercase;
-  padding:5px 14px; border:1px solid; white-space:nowrap; align-self:flex-start; flex-shrink:0;
-}
+.status-badge { font-family:var(--mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; padding:5px 14px; border:1px solid; white-space:nowrap; align-self:flex-start; flex-shrink:0; }
 .status-badge.complete,.status-badge.completed { border-color:rgba(30,122,48,.5); color:var(--green-hi); background:rgba(30,122,48,.08); }
 .status-badge.running { border-color:rgba(196,117,0,.5); color:var(--orange-hi); background:rgba(196,117,0,.08); animation:blink 1.2s step-end infinite; }
 
-/* ── PROGRESS BAR ── */
-.prog-wrap {
-  background:var(--bg2); border:1px solid var(--border);
-  padding:12px 18px; margin-bottom:18px;
-}
-.prog-top {
-  display:flex; justify-content:space-between; align-items:center;
-  margin-bottom:7px;
-}
+/* ── PROGRESS ── */
+.prog-strip { padding:8px 22px 0; flex-shrink:0; }
+.prog-inner { background:var(--bg2); border:1px solid var(--border); padding:9px 14px; }
+.prog-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
 .prog-label { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.5px; }
-.prog-pct   { font-family:var(--display); font-size:22px; line-height:1; color:var(--red); }
-.bar-track  { background:var(--bg); border:1px solid var(--border); height:3px; overflow:hidden; }
-.bar-fill   { height:100%; background:linear-gradient(90deg,#8b0000,var(--red)); transition:width .5s; }
+.prog-pct { font-family:var(--display); font-size:20px; line-height:1; color:var(--red); }
+.bar-track { background:var(--bg); border:1px solid var(--border); height:3px; overflow:hidden; }
+.bar-fill  { height:100%; background:linear-gradient(90deg,#8b0000,var(--red)); transition:width .5s; }
 
-/* ── TOP NAV ── */
-.top-nav {
-  display:flex; border-bottom:2px solid var(--border);
-  overflow-x:auto; scrollbar-width:none; margin-bottom:0;
-  background:var(--bg2);
-}
-.top-nav::-webkit-scrollbar { display:none; }
-.tnav {
-  display:flex; align-items:center; gap:6px;
-  padding:11px 20px; white-space:nowrap;
-  font-family:var(--mono); font-size:10px; letter-spacing:2px; text-transform:uppercase;
-  background:transparent; border:none; color:var(--muted); cursor:pointer;
-  border-bottom:2px solid transparent; position:relative; top:2px; transition:all .12s;
-}
+/* ── TOP NAV TABS ── */
+.top-nav { display:flex; border-bottom:2px solid var(--border); background:var(--bg2); flex-shrink:0; margin-top:10px; }
+.tnav { display:flex; align-items:center; gap:6px; padding:10px 20px; white-space:nowrap; font-family:var(--mono); font-size:10px; letter-spacing:2px; text-transform:uppercase; background:transparent; border:none; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; position:relative; top:2px; transition:all .12s; }
 .tnav:hover { color:var(--text); }
 .tnav.active { color:var(--red-hi); border-bottom-color:var(--red); }
-.tnav-cnt {
-  font-family:var(--mono); font-size:9px; padding:1px 5px;
-  background:var(--bg3); border:1px solid var(--border);
-}
+.tnav-cnt { font-family:var(--mono); font-size:9px; padding:1px 5px; background:var(--bg3); border:1px solid var(--border); }
 .tnav.active .tnav-cnt { border-color:var(--red-line); color:var(--red-hi); }
 
-/* ── VIEW PANELS ── */
-.view { display:none; }
-.view.active { display:block; }
+/* ── CONTENT SHELL ── */
+.content-shell { flex:1; display:flex; overflow:hidden; }
+.view { display:none; width:100%; }
+.view.active { display:flex; }
+#view-overview,
+#view-phases { flex-direction:column; overflow-y:auto; padding:16px 22px 60px; }
 
 /* ── OVERVIEW ── */
-.ov-grid {
-  display:grid; grid-template-columns:1fr 300px; gap:16px;
-  margin-top:18px;
-}
-@media(max-width:900px){ .ov-grid { grid-template-columns:1fr; } }
-.panel {
-  background:var(--bg2); border:1px solid var(--border); overflow:hidden;
-}
-.panel-head {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px 16px; border-bottom:1px solid var(--border);
-  background:linear-gradient(90deg,#100003,var(--bg2));
-}
-.panel-title {
-  font-family:var(--mono); font-size:9px; letter-spacing:3px;
-  text-transform:uppercase; color:var(--red);
-  display:flex; align-items:center; gap:7px;
-}
-.panel-badge {
-  font-family:var(--mono); font-size:9px; color:var(--muted);
-  background:var(--bg3); border:1px solid var(--border); padding:2px 7px;
-}
-
-/* phase log */
-.ph-row {
-  display:grid; grid-template-columns:22px 1fr;
-  border-bottom:1px solid var(--border);
-}
+.ov-grid { display:grid; grid-template-columns:1fr 290px; gap:14px; }
+@media(max-width:900px){ .ov-grid{grid-template-columns:1fr;} }
+.panel { background:var(--bg2); border:1px solid var(--border); overflow:hidden; }
+.panel-head { display:flex; align-items:center; justify-content:space-between; padding:9px 14px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,#100003,var(--bg2)); }
+.panel-title { font-family:var(--mono); font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--red); display:flex; align-items:center; gap:6px; }
+.panel-badge { font-family:var(--mono); font-size:9px; color:var(--muted); background:var(--bg3); border:1px solid var(--border); padding:2px 6px; }
+.ph-row { display:grid; grid-template-columns:22px 1fr; border-bottom:1px solid var(--border); }
 .ph-row:last-child { border-bottom:none; }
 .ph-row.pending { opacity:.18; }
 .ph-row.active  { background:rgba(196,117,0,.04); }
-.ph-gutter {
-  display:flex; flex-direction:column; align-items:center;
-  padding:10px 0; border-right:1px solid var(--border); position:relative;
-}
-.ph-gutter::before {
-  content:''; position:absolute; top:0; bottom:0; left:50%;
-  width:1px; background:var(--border);
-}
-.ph-dot {
-  width:8px; height:8px; border:1px solid var(--border2);
-  background:var(--border2); position:relative; z-index:1;
-}
+.ph-gutter { display:flex; flex-direction:column; align-items:center; padding:9px 0; border-right:1px solid var(--border); position:relative; }
+.ph-gutter::before { content:''; position:absolute; top:0; bottom:0; left:50%; width:1px; background:var(--border); }
+.ph-dot { width:8px; height:8px; border:1px solid var(--border2); background:var(--border2); position:relative; z-index:1; }
 .ph-row.done   .ph-dot { background:var(--green); border-color:var(--green); }
 .ph-row.active .ph-dot { background:var(--orange-hi); border-color:var(--orange-hi); animation:ping .9s ease-in-out infinite; }
 @keyframes ping { 0%,100%{transform:scale(1)} 50%{transform:scale(1.6)} }
-.ph-body { padding:7px 12px; }
+.ph-body { padding:6px 11px; }
 .ph-top  { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:1px; }
 .ph-name { font-family:var(--mono); font-size:10px; color:var(--muted); }
 .ph-row.done   .ph-name { color:var(--green-hi); }
@@ -219,108 +121,56 @@ body::after {
 .ph-pct  { font-family:var(--mono); font-size:9px; }
 .ph-row.done   .ph-pct { color:var(--green-hi); }
 .ph-row.active .ph-pct { color:var(--orange-hi); }
-.ph-msg  { font-family:var(--mono); font-size:9px; color:#383838; line-height:1.5; }
-.ph-ts   { font-family:var(--mono); font-size:9px; color:#2a2a2a; margin-top:1px; }
-
-/* overview findings sidebar */
-.ov-findings { max-height:520px; overflow-y:auto; }
-.ov-row {
-  padding:8px 12px; border-bottom:1px solid var(--border);
-  border-left:2px solid var(--border2);
-}
+.ph-msg { font-family:var(--mono); font-size:9px; color:#383838; line-height:1.5; }
+.ph-ts  { font-family:var(--mono); font-size:9px; color:#2a2a2a; margin-top:1px; }
+.ov-findings { max-height:480px; overflow-y:auto; }
+.ov-row { padding:7px 12px; border-bottom:1px solid var(--border); border-left:2px solid var(--border2); }
 .ov-row:last-child { border-bottom:none; }
 .ov-row.alert { border-left-color:var(--red); }
 .ov-row.warn  { border-left-color:var(--orange-hi); }
 .ov-row.info  { border-left-color:#2a2a2a; }
-.ov-cat {
-  font-family:var(--mono); font-size:8px; letter-spacing:1px; text-transform:uppercase;
-  padding:1px 5px; border:1px solid;
-  display:inline-block; margin-bottom:3px;
-}
+.ov-cat { font-family:var(--mono); font-size:8px; letter-spacing:1px; text-transform:uppercase; padding:1px 4px; border:1px solid; display:inline-block; margin-bottom:2px; }
 .ov-cat.alert { border-color:rgba(204,0,0,.35); color:var(--red); }
 .ov-cat.warn  { border-color:rgba(196,117,0,.35); color:var(--orange-hi); }
 .ov-cat.info  { border-color:#2a2a2a; color:var(--muted); }
 .ov-detail { font-size:11px; color:var(--text); line-height:1.5; word-break:break-word; }
 .ov-ts { font-family:var(--mono); font-size:8px; color:#282828; margin-top:2px; }
 
-/* ── SCAN RESULTS PANEL ── */
-.scan-layout {
-  display:grid; grid-template-columns:220px 1fr;
-  border:1px solid var(--border); margin-top:18px;
-  min-height:700px;
-}
-@media(max-width:860px){ .scan-layout { grid-template-columns:1fr; } }
+/* ── FINDINGS VIEW ── (left sidebar + right pane, full height) */
+#view-scans { flex-direction:row; overflow:hidden; }
 
-/* Sidebar */
-.scan-sidebar {
-  border-right:1px solid var(--border); overflow-y:auto;
-  background:var(--bg2);
-}
-.sb-group-label {
-  font-family:var(--mono); font-size:8px; letter-spacing:3px; text-transform:uppercase;
-  color:var(--red); padding:8px 12px 5px;
-  background:linear-gradient(90deg,#100003,var(--bg2));
-  border-bottom:1px solid var(--border);
-  position:sticky; top:0; z-index:5;
-}
-.si {
-  display:flex; align-items:center; gap:7px;
-  padding:9px 11px; cursor:pointer;
-  border-bottom:1px solid var(--border);
-  transition:background .1s; background:var(--bg2);
-}
-.si:last-child { border-bottom:none; }
+/* LEFT SIDEBAR */
+.scan-sidebar { width:230px; min-width:230px; border-right:1px solid var(--border); background:var(--bg2); overflow-y:auto; display:flex; flex-direction:column; flex-shrink:0; }
+.sb-header { padding:8px 10px; border-bottom:1px solid var(--border); background:var(--bg3); flex-shrink:0; position:sticky; top:0; z-index:10; }
+.sb-search-inp { width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:10px; padding:5px 8px; outline:none; transition:border-color .15s; }
+.sb-search-inp:focus { border-color:var(--red-line); }
+.sb-search-inp::placeholder { color:#222; }
+.sb-group { font-family:var(--mono); font-size:8px; letter-spacing:3px; text-transform:uppercase; color:var(--red); padding:8px 12px 4px; background:linear-gradient(90deg,#100003,var(--bg2)); border-bottom:1px solid var(--border); }
+.si { display:flex; align-items:center; gap:7px; padding:8px 11px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .1s; background:var(--bg2); }
 .si:hover { background:rgba(204,0,0,.04); }
-.si.active {
-  background:rgba(204,0,0,.08);
-  border-left:2px solid var(--red);
-  padding-left:9px;
-}
+.si.active { background:rgba(204,0,0,.09); border-left:2px solid var(--red); padding-left:9px; }
 .si-dot { width:5px; height:5px; flex-shrink:0; }
 .si-dot.hit  { background:var(--red);       box-shadow:0 0 5px rgba(204,0,0,.5); }
-.si-dot.warn { background:var(--orange-hi); box-shadow:0 0 5px rgba(196,117,0,.4); }
+.si-dot.warn { background:var(--orange-hi); box-shadow:0 0 4px rgba(196,117,0,.4); }
 .si-dot.none { background:#1e1e1e; }
-.si-name {
-  font-family:var(--mono); font-size:9px; color:var(--muted); flex:1; line-height:1.4;
-}
+.si-name { font-family:var(--mono); font-size:9px; color:var(--muted); flex:1; line-height:1.35; word-break:break-word; }
 .si.active .si-name { color:var(--red-hi); }
-.si-cnt {
-  font-family:var(--mono); font-size:8px; padding:1px 5px;
-  background:var(--bg3); border:1px solid var(--border); flex-shrink:0;
-}
+.si-cnt { font-family:var(--mono); font-size:8px; padding:1px 4px; background:var(--bg3); border:1px solid var(--border); flex-shrink:0; }
 .si.active .si-cnt { border-color:var(--red-line); color:var(--red-hi); }
 
-/* Pane */
-.scan-pane { display:flex; flex-direction:column; background:var(--bg2); }
-.pane-head {
-  padding:14px 18px 12px; border-bottom:1px solid var(--border);
-  background:linear-gradient(90deg,#100003,var(--bg2));
-  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
-}
-.pane-title {
-  font-family:var(--display); font-size:16px; letter-spacing:2px; color:#fff; margin-bottom:3px;
-}
-.pane-desc  { font-size:11px; color:var(--muted2); line-height:1.6; max-width:600px; }
-.pane-badge {
-  font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 9px;
-  border:1px solid; text-transform:uppercase; white-space:nowrap; flex-shrink:0; margin-top:2px;
-}
+/* RIGHT PANE */
+.scan-pane { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg2); }
+.pane-head { padding:13px 17px 11px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,#100003,var(--bg2)); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-shrink:0; }
+.pane-title { font-family:var(--display); font-size:16px; letter-spacing:2px; color:#fff; margin-bottom:3px; }
+.pane-desc  { font-size:11px; color:var(--muted2); line-height:1.6; max-width:660px; }
+.pane-badge { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 9px; border:1px solid; text-transform:uppercase; white-space:nowrap; flex-shrink:0; margin-top:2px; }
 .pane-badge.hits    { border-color:var(--red-line); color:var(--red-hi); background:var(--red-dim); }
 .pane-badge.clean   { border-color:rgba(30,122,48,.4); color:var(--green-hi); background:rgba(30,122,48,.06); }
 .pane-badge.pending { border-color:var(--border2); color:var(--muted); }
-
-/* search row */
-.pane-search-row {
-  display:flex; align-items:center; gap:8px; padding:9px 14px;
-  border-bottom:1px solid var(--border); background:var(--bg3); flex-wrap:wrap;
-}
+.pane-search-row { display:flex; align-items:center; gap:8px; padding:7px 13px; border-bottom:1px solid var(--border); background:var(--bg3); flex-shrink:0; flex-wrap:wrap; }
 .psearch-wrap { flex:1; min-width:130px; position:relative; display:flex; align-items:center; }
 .psearch-ico  { position:absolute; left:9px; pointer-events:none; color:#282828; }
-.psearch {
-  width:100%; background:var(--bg2); border:1px solid var(--border);
-  color:var(--text); font-family:var(--mono); font-size:10px;
-  padding:6px 28px 6px 30px; outline:none; transition:border-color .15s;
-}
+.psearch { width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:10px; padding:5px 26px 5px 28px; outline:none; transition:border-color .15s; }
 .psearch:focus { border-color:var(--red-line); }
 .psearch::placeholder { color:#222; }
 .psearch-x { position:absolute; right:7px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; padding:2px; display:none; }
@@ -328,49 +178,27 @@ body::after {
 .match-count { font-family:var(--mono); font-size:9px; color:#3a3a3a; white-space:nowrap; }
 .match-count b { color:var(--muted); }
 .sev-btns { display:flex; gap:1px; }
-.sv {
-  font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:5px 8px;
-  border:1px solid var(--border); background:var(--bg2); color:var(--muted);
-  cursor:pointer; text-transform:uppercase; transition:all .12s;
-}
+.sv { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 7px; border:1px solid var(--border); background:var(--bg2); color:var(--muted); cursor:pointer; text-transform:uppercase; transition:all .12s; }
 .sv:hover { color:var(--text); }
 .sv.aa { border-color:#383838; color:var(--text); }
 .sv.al { border-color:var(--red-line); color:var(--red-hi); background:var(--red-dim); }
 .sv.aw { border-color:rgba(196,117,0,.4); color:var(--orange-hi); }
 .sv.ai { border-color:#282828; color:var(--muted); }
-
-/* finding rows */
-.pane-body { flex:1; overflow-y:auto; max-height:600px; }
-.pf {
-  padding:12px 16px; border-bottom:1px solid var(--border);
-  border-left:2px solid transparent; transition:background .1s;
-}
+.pane-body { flex:1; overflow-y:auto; }
+.pf { padding:11px 15px; border-bottom:1px solid var(--border); border-left:2px solid transparent; transition:background .1s; }
 .pf:last-child { border-bottom:none; }
 .pf:hover { background:rgba(255,255,255,.01); }
 .pf.alert { border-left-color:var(--red); }
 .pf.warn  { border-left-color:var(--orange-hi); }
 .pf.info  { border-left-color:#222; }
 .pf.hid   { display:none; }
-.pf-hdr   { display:flex; align-items:center; gap:7px; margin-bottom:8px; flex-wrap:wrap; }
-.pf-cat {
-  font-family:var(--mono); font-size:8px; letter-spacing:1px; text-transform:uppercase;
-  padding:2px 6px; border:1px solid;
-}
+.pf-hdr   { display:flex; align-items:center; gap:7px; margin-bottom:6px; flex-wrap:wrap; }
+.pf-cat { font-family:var(--mono); font-size:8px; letter-spacing:1px; text-transform:uppercase; padding:2px 5px; border:1px solid; }
 .pf-cat.alert { border-color:rgba(204,0,0,.4); color:var(--red); background:rgba(204,0,0,.06); }
 .pf-cat.warn  { border-color:rgba(196,117,0,.4); color:var(--orange-hi); background:rgba(196,117,0,.05); }
 .pf-cat.info  { border-color:#282828; color:var(--muted); }
-.pf-kw {
-  font-family:var(--mono); font-size:8px; padding:2px 6px;
-  border:1px solid var(--red-line); color:var(--red); background:var(--red-dim);
-}
+.pf-kw { font-family:var(--mono); font-size:8px; padding:2px 5px; border:1px solid var(--red-line); color:var(--red); background:var(--red-dim); }
 .pf-ts { font-family:var(--mono); font-size:8px; color:#242424; margin-left:auto; }
-.pf-fields { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; }
-.pf-fk { font-family:var(--mono); font-size:9px; color:var(--muted); white-space:nowrap; padding-top:1px; align-self:start; }
-.pf-fv { font-family:var(--mono); font-size:10px; color:var(--text); word-break:break-all; line-height:1.55; }
-.pf-fv.path  { color:#5ba8d8; }
-.pf-fv.hit   { color:var(--red-hi); font-weight:500; }
-.pf-fv.clean { color:var(--green-hi); }
-.pf-fv mark  { background:rgba(204,0,0,.3); color:#fff; padding:0 1px; }
 .pf-info-block { font-family:var(--mono); font-size:10px; color:var(--text); line-height:1.7; word-break:break-word; }
 .pf-info-block mark { background:rgba(204,0,0,.3); color:#fff; padding:0 1px; }
 .pane-empty { padding:50px 20px; text-align:center; font-family:var(--mono); font-size:11px; }
@@ -378,10 +206,6 @@ body::after {
 .pane-empty.default { color:#222; font-size:18px; }
 .pane-empty .sub    { font-size:10px; color:#1e1e1e; margin-top:8px; }
 
-/* phases panel */
-.phases-panel { margin-top:18px; }
-
-/* scrollbar */
 ::-webkit-scrollbar { width:3px; height:3px; }
 ::-webkit-scrollbar-track { background:var(--bg); }
 ::-webkit-scrollbar-thumb { background:var(--border2); }
@@ -390,6 +214,7 @@ body::after {
 </head>
 <body>
 
+<!-- TOPBAR -->
 <div class="topbar">
   <a href="/" class="topbar-brand">
     <div class="brand-mark"></div>
@@ -407,9 +232,8 @@ body::after {
   </div>
 </div>
 
-<div class="main">
-
-  <!-- SCAN HEADER -->
+<!-- SCAN INFO -->
+<div class="info-strip">
   <div class="scan-header">
     <div>
       <div class="scan-key-label">◈ SCAN KEY: {{ scan.scan_key }}</div>
@@ -425,64 +249,62 @@ body::after {
       {% if scan.status in ('complete','completed') %}✓ COMPLETE{% else %}⬤ SCANNING{% endif %}
     </div>
   </div>
+</div>
 
-  <!-- PROGRESS -->
-  {% set total = phases|length %}
-  {% set pi = scan.phase_index or 0 %}
-  {% set pct = 100 if scan.status in ('complete','completed') else ((pi / (total - 1) * 100)|int if pi else 0) %}
-  <div class="prog-wrap">
+<!-- PROGRESS -->
+{% set total = phases|length %}
+{% set pi = scan.phase_index or 0 %}
+{% set pct = 100 if scan.status in ('complete','completed') else ((pi / (total - 1) * 100)|int if pi else 0) %}
+<div class="prog-strip">
+  <div class="prog-inner">
     <div class="prog-top">
       <div class="prog-label" id="progLabel">
         {% if scan.status in ('complete','completed') %}ALL PHASES COMPLETE
-        {% else %}PHASE {{ pi + 1 }}/{{ total }} — {{ phases[pi] if pi < total else '' }}
-        {% endif %}
+        {% else %}PHASE {{ pi + 1 }}/{{ total }} — {{ phases[pi] if pi < total else '' }}{% endif %}
       </div>
       <div class="prog-pct" id="progPct">{{ pct }}%</div>
     </div>
     <div class="bar-track"><div class="bar-fill" id="barFill" style="width:{{ pct }}%"></div></div>
   </div>
+</div>
 
-  <!-- TOP NAV -->
-  <div class="top-nav">
-    <button class="tnav active" data-view="overview">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      OVERVIEW
-    </button>
-    <button class="tnav" data-view="scans">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-      FINDINGS
-      <span class="tnav-cnt" id="tcTotal">{{ findings|length }}</span>
-    </button>
-    <button class="tnav" data-view="phases">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      PHASES <span class="tnav-cnt">{{ phases|length }}</span>
-    </button>
-  </div>
+<!-- TOP NAV -->
+<div class="top-nav">
+  <button class="tnav active" data-view="overview">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    OVERVIEW
+  </button>
+  <button class="tnav" data-view="scans">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+    FINDINGS <span class="tnav-cnt" id="tcTotal">{{ findings|length }}</span>
+  </button>
+  <button class="tnav" data-view="phases">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    PHASES <span class="tnav-cnt">{{ phases|length }}</span>
+  </button>
+</div>
 
-  <!-- ══════ OVERVIEW ══════ -->
+<!-- CONTENT SHELL -->
+<div class="content-shell">
+
+  <!-- ══ OVERVIEW ══ -->
   <div class="view active" id="view-overview">
     <div class="ov-grid">
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            SCAN PHASES
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>SCAN PHASES
           </div>
           <div class="panel-badge" id="phaseCount">{{ events|length }}/{{ phases|length }}</div>
         </div>
         <div class="phase-log" id="phaseLogOv">
           {% for phase in phases %}
-            {% set i=loop.index0 %}
-            {% set ev=(events|selectattr('phase_index','equalto',i)|list) %}
-            {% set e=ev[0] if ev else none %}
+            {% set i=loop.index0 %}{% set ev=(events|selectattr('phase_index','equalto',i)|list) %}{% set e=ev[0] if ev else none %}
             {% set rc='done' if (scan.status in ('complete','completed') or i<pi) else ('active' if i==pi else 'pending') %}
             <div class="ph-row {{rc}}">
               <div class="ph-gutter"><div class="ph-dot"></div></div>
               <div class="ph-body">
-                <div class="ph-top">
-                  <div class="ph-name">{{'{:02d}'.format(i)}}. {{phase}}</div>
-                  {% if e %}<div class="ph-pct">{{e.pct}}%</div>{% endif %}
-                </div>
+                <div class="ph-top"><div class="ph-name">{{'{:02d}'.format(i)}}. {{phase}}</div>{% if e %}<div class="ph-pct">{{e.pct}}%</div>{% endif %}</div>
                 {% if e %}{% if e.message %}<div class="ph-msg">{{e.message}}</div>{% endif %}<div class="ph-ts">{{e.ts}}</div>{% endif %}
               </div>
             </div>
@@ -492,14 +314,12 @@ body::after {
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-            RECENT FINDINGS
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>RECENT FINDINGS
           </div>
           <div class="panel-badge" id="findingCount">{{ findings|length }}</div>
         </div>
         <div class="ov-findings" id="ovFindings">
-          {% if not findings %}
-            <div class="pane-empty default" style="padding:40px 16px">◈<div class="sub">No findings yet</div></div>
+          {% if not findings %}<div class="pane-empty default" style="padding:36px 16px">◈<div class="sub">No findings yet</div></div>
           {% else %}
             {% for f in findings[:20] %}
             <div class="ov-row {{f.severity}}">
@@ -508,73 +328,67 @@ body::after {
               <div class="ov-ts">{{f.ts}}</div>
             </div>
             {% endfor %}
-            {% if findings|length > 20 %}
-            <div style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--muted);">
-              +{{ findings|length - 20 }} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red);">View all</a>
-            </div>
-            {% endif %}
+            {% if findings|length > 20 %}<div style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--muted);">+{{ findings|length-20 }} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red);">View all</a></div>{% endif %}
           {% endif %}
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══════ SCAN RESULTS ══════ -->
+  <!-- ══ FINDINGS — left sidebar + right pane ══ -->
   <div class="view" id="view-scans">
-    <div class="scan-layout">
-      <div class="scan-sidebar" id="scanSidebar"></div>
-      <div class="scan-pane">
-        <div class="pane-head">
-          <div>
-            <div class="pane-title" id="paneTitle">SELECT A SCAN</div>
-            <div class="pane-desc"  id="paneDesc">Choose a scan type from the left to view its findings.</div>
-          </div>
-          <div class="pane-badge pending" id="paneBadge">—</div>
+
+    <div class="scan-sidebar" id="scanSidebar">
+      <div class="sb-header">
+        <input class="sb-search-inp" id="sbSearch" type="text" placeholder="Filter scans...">
+      </div>
+      <!-- populated by JS -->
+    </div>
+
+    <div class="scan-pane">
+      <div class="pane-head">
+        <div>
+          <div class="pane-title" id="paneTitle">SELECT A SCAN</div>
+          <div class="pane-desc"  id="paneDesc">Choose a scan type from the left sidebar.</div>
         </div>
-        <div class="pane-search-row">
-          <div class="psearch-wrap">
-            <svg class="psearch-ico" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="psearch" id="paneSearch" type="text" placeholder="Search findings... (press /)">
-            <button class="psearch-x" id="paneSearchX">✕</button>
-          </div>
-          <div class="match-count"><b id="matchCount">0</b> results</div>
-          <div class="sev-btns">
-            <button class="sv aa" data-ps="all">ALL</button>
-            <button class="sv" data-ps="alert">ALERT</button>
-            <button class="sv" data-ps="warn">WARN</button>
-            <button class="sv" data-ps="info">INFO</button>
-          </div>
+        <div class="pane-badge pending" id="paneBadge">—</div>
+      </div>
+      <div class="pane-search-row">
+        <div class="psearch-wrap">
+          <svg class="psearch-ico" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="psearch" id="paneSearch" type="text" placeholder="Search findings... (/)">
+          <button class="psearch-x" id="paneSearchX">✕</button>
         </div>
-        <div class="pane-body" id="paneBody">
-          <div class="pane-empty default">◈<div class="sub">Select a scan from the left</div></div>
+        <div class="match-count"><b id="matchCount">0</b> results</div>
+        <div class="sev-btns">
+          <button class="sv aa" data-ps="all">ALL</button>
+          <button class="sv" data-ps="alert">ALERT</button>
+          <button class="sv" data-ps="warn">WARN</button>
+          <button class="sv" data-ps="info">INFO</button>
         </div>
       </div>
+      <div class="pane-body" id="paneBody">
+        <div class="pane-empty default">◈<div class="sub">Select a scan from the left</div></div>
+      </div>
     </div>
+
   </div>
 
-  <!-- ══════ PHASES ══════ -->
+  <!-- ══ PHASES ══ -->
   <div class="view" id="view-phases">
-    <div class="panel phases-panel">
+    <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          ALL PHASES
-        </div>
+        <div class="panel-title"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>ALL PHASES</div>
         <div class="panel-badge">{{ phases|length }} total</div>
       </div>
       <div class="phase-log" id="phaseLogFull">
         {% for phase in phases %}
-          {% set i=loop.index0 %}
-          {% set ev=(events|selectattr('phase_index','equalto',i)|list) %}
-          {% set e=ev[0] if ev else none %}
+          {% set i=loop.index0 %}{% set ev=(events|selectattr('phase_index','equalto',i)|list) %}{% set e=ev[0] if ev else none %}
           {% set rc='done' if (scan.status in ('complete','completed') or i<pi) else ('active' if i==pi else 'pending') %}
           <div class="ph-row {{rc}}">
             <div class="ph-gutter"><div class="ph-dot"></div></div>
             <div class="ph-body">
-              <div class="ph-top">
-                <div class="ph-name">{{'{:02d}'.format(i)}}. {{phase}}</div>
-                {% if e %}<div class="ph-pct">{{e.pct}}%</div>{% endif %}
-              </div>
+              <div class="ph-top"><div class="ph-name">{{'{:02d}'.format(i)}}. {{phase}}</div>{% if e %}<div class="ph-pct">{{e.pct}}%</div>{% endif %}</div>
               {% if e %}{% if e.message %}<div class="ph-msg">{{e.message}}</div>{% endif %}<div class="ph-ts">{{e.ts}}</div>{% endif %}
             </div>
           </div>
@@ -583,227 +397,150 @@ body::after {
     </div>
   </div>
 
-</div><!-- /.main -->
+</div><!-- /.content-shell -->
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// SCAN DEFINITIONS — one per JSON file written by WriteScanJson /
-// WriteResultsDeltaJson in the C++ scanner.
-// id    : matches finding.category (case-insensitive, spaces/underscores ignored)
-// label : display name
-// desc  : shown in pane header
-// group : sidebar section heading
+// SCAN DEFINITIONS — one entry per JSON file the C++ scanner writes.
+// id must match finding.category exactly (after normalisation).
 // ─────────────────────────────────────────────────────────────────────────────
 const SCAN_DEFS = [
   { group:"PHASE 1 — FORENSIC", scans:[
-    { id:"BAM",
-      label:"BAM Registry",
-      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets." },
-    { id:"BamIntegrity",
-      label:"BAM Integrity",
-      desc:"BAM service checked for disabled state (Start=4) or suspiciously few UserSettings entries." },
-    { id:"USNJournal",
-      label:"USN Journal",
-      desc:"Live NTFS USN change journal ($UsnJrnl:$J) + VSS carve for rolled-out records. Full ReasonMask and FRN path resolution." },
-    { id:"Amcache_Shimcache",
-      label:"Amcache / Shimcache",
-      desc:"AmcacheParser + AppCompatCacheParser: file hashes, publisher, first/last execution, and every executable path touched by the OS loader." },
-    { id:"AmcacheIntegrity",
-      label:"Amcache Integrity",
-      desc:"Amcache.hve file size and last-modified timestamp checked for clearing or wiping." },
-    { id:"ShimcacheIntegrity",
-      label:"Shimcache Integrity",
-      desc:"SYSTEM hive last-write time checked for recent modification indicating AppCompatCache tampering." },
-    { id:"Prefetch_SRUM_Registry_Bstrings",
-      label:"Prefetch / SRUM / Registry / Strings",
-      desc:"PECmd (Prefetch), SrumECmd (SRUM), RECmd (registry batch queries), bstrings (pagefile/hiberfil string extraction)." },
-    { id:"PrefetchIntegrity",
-      label:"Prefetch Integrity",
-      desc:"Prefetch folder checked for existence, empty state, or suspicious recent modification." },
-    { id:"SrumIntegrity",
-      label:"SRUM Integrity",
-      desc:"SRUDB.dat file size and last-modified time checked for wiping." },
-    { id:"JumpLists_LNK_RecycleBin_ShellBags_RecentFileCache_Timeline_SUM",
-      label:"Jump Lists / LNK / Shell Bags",
-      desc:"JLECmd (Jump Lists), LECmd (LNK shortcuts), RBCmd (Recycle Bin), SBECmd (Shell Bags), WxTCmd (Windows Timeline), SumECmd, RecentFileCacheParser." },
-    { id:"MFT_EventLogs",
-      label:"MFT / Event Logs",
-      desc:"MFTECmd: every file ever created including deleted. EvtxECmd: process creation (4688), service install (7045), task scheduler, log clear (1102/104)." },
-    { id:"Signature",
-      label:"Signature Check",
-      desc:"PE signature check via WinVerifyTrust + catalog for every flagged file. Reports: Signed / Not Signed / Cheat Signature (known cheat publishers)." },
-  ]},
-  { group:"PHASE 2 — LIVE SCANS", scans:[
-    { id:"GeneralInfo",
-      label:"General Info",
-      desc:"System services scan, Windows install date, and overall system fingerprint." },
-    { id:"RobloxMemory",
-      label:"Roblox Memory",
-      desc:"ReadProcessMemory scan of RobloxPlayerBeta.exe for Lua bytecode sigs, executor API strings, suspicious URLs, and manually mapped PE headers." },
-    { id:"InjectedModules",
-      label:"Injected DLLs",
-      desc:"VirtualQueryEx + GetMappedFileNameA walk of all Roblox process regions. Detects unlinked/manually injected DLLs not visible in the normal module list." },
-    { id:"DiscordMemory",
-      label:"Discord Memory",
-      desc:"Discord process memory scanned for executor API strings, token-shaped strings, and suspicious signatures." },
-    { id:"BrowserMemory",
-      label:"Browser Memory",
-      desc:"Chrome, Edge, Brave, and Firefox processes scanned for cheat strings, executor API names, and suspicious URLs." },
-    { id:"DiscordAccounts",
-      label:"Discord Accounts",
-      desc:"Discord LevelDB (discord, ptb, canary, vesktop) and renderer logs scanned for account IDs and tokens." },
-    { id:"RobloxAccounts",
-      label:"Roblox Accounts",
-      desc:"Roblox LocalStorage LevelDB, process memory, GlobalSettings XML, and registry scanned for linked Roblox user IDs." },
-    { id:"RobloxProfileUrls",
-      label:"Roblox Profiles",
-      desc:"Roblox profile URLs extracted from local storage and cookies." },
-    { id:"BrowserCookies",
-      label:"Browser Cookies",
-      desc:"Cookie SQLite files across Chrome, Edge, Brave, Firefox for Discord tokens (AES-GCM decrypted) and Roblox .ROBLOSECURITY cookies." },
-    { id:"RobloxLogs",
-      label:"Roblox Logs",
-      desc:"Roblox local log files scanned line-by-line for cheat keywords, executor names, and suspicious URLs." },
-    { id:"RobloxFFlags",
-      label:"Roblox FFlags",
-      desc:"Roblox ClientSettings checked for non-default modifications that disable anti-cheat telemetry or enable debug exploits." },
+    { id:"BAM",             label:"BAM Registry",       desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets." },
+    { id:"USNJournal",      label:"USN Journal",        desc:"Live NTFS USN change journal ($UsnJrnl:$J) + VSS carve for rolled-over records. Full ReasonMask and FRN path resolution." },
+    { id:"Amcache",         label:"Amcache",            desc:"AmcacheParser: file hash, publisher, first/last execution. Multiple CSV sub-types: shortcuts, unassociated files, device PnPs, drive binaries." },
+    { id:"Shimcache",       label:"Shimcache",          desc:"AppCompatCacheParser: every executable path touched by the OS loader. ShimCache position indicates execution recency." },
+    { id:"Prefetch",        label:"Prefetch",           desc:"PECmd: Prefetch files (.pf) — up to 8 run timestamps, loaded DLL list, and run count. Execution evidence persists after binary deletion." },
+    { id:"MFT",             label:"MFT ($MFT)",         desc:"MFTECmd: NTFS Master File Table — every file ever created including deleted ones whose slot hasn't been reused. SI/FN timestamps and FRN." },
+    { id:"EventLogs",       label:"Event Logs",         desc:"EvtxECmd: process creation (4688), service install (7045), task scheduler (4698-4702), log clear (1102/104)." },
+    { id:"SRUM",            label:"SRUM",               desc:"SrumECmd: System Resource Usage Monitor — per-app CPU, memory, and network usage. Execution evidence even without Prefetch." },
+    { id:"Registry",        label:"Registry (RECmd)",   desc:"RECmd batch queries: AppCompatFlags, UserAssist, WordWheelQuery, OpenSavePidlMRU, FeatureUsage, Uninstall entries." },
+    { id:"Bstrings",        label:"Bstrings",           desc:"String extraction across pagefile.sys, hiberfil.sys, swapfile.sys. Catches obfuscated or packed executables." },
+    { id:"JumpLists",       label:"Jump Lists",         desc:"JLECmd: Windows Jump List files — recently accessed files and executed apps per program." },
+    { id:"LNK",             label:"LNK Shortcuts",      desc:"LECmd: Windows shortcut files (.lnk) — target path, timestamps, volume serial, remote share MAC address." },
+    { id:"RecycleBin",      label:"Recycle Bin",        desc:"RBCmd: Recycle Bin $I metadata — original path, deletion timestamp, and size of deleted files." },
+    { id:"ShellBags",       label:"Shell Bags",         desc:"SBECmd: Shell Bag entries — every folder the user opened in Explorer, including USB and network paths." },
+    { id:"RecentFileCache", label:"Recent File Cache",  desc:"RecentFileCacheParser: RecentFileCache.bcf — execution artefacts for programs without a Prefetch entry." },
+    { id:"WindowsTimeline", label:"Windows Timeline",   desc:"WxTCmd: ActivitiesCache.db — Windows Timeline entries recording app usage and document opens with timestamps." },
+    { id:"SUM",             label:"SUM",                desc:"SumECmd: Windows User Access Logging — per-user network and local access events." },
+    { id:"Signature",       label:"Signature Check",    desc:"WinVerifyTrust + catalog check for every flagged file. Reports Signed / Not Signed / Cheat Signature (known cheat publisher certs)." },
   ]},
   { group:"INTEGRITY CHECKS", scans:[
-    { id:"RunKeys",
-      label:"Run Keys",
-      desc:"HKCU / HKLM Run and RunOnce registry keys checked for suspicious auto-execute entries." },
-    { id:"RecentItems",
-      label:"Recent Items",
-      desc:"Windows Recent folder scanned for LNK shortcuts whose target matches a cheat keyword." },
-    { id:"UserAssist",
-      label:"UserAssist",
-      desc:"UserAssist registry key decoded (ROT13) for GUI execution history: run count and last-run timestamp per program." },
-    { id:"ServicesCheck",
-      label:"Services Check",
-      desc:"Windows services enumerated for keyword-matching names and executables in user-writable suspicious directories." },
-    { id:"UsbHistory",
-      label:"USB History",
-      desc:"USBSTOR registry key enumerated for all historically connected USB storage devices." },
-    { id:"SystemRestorePoints",
-      label:"Restore Points",
-      desc:"VSS shadow copy inventory checked for deleted or suspicious restore points." },
-    { id:"RecentFolderIntegrity",
-      label:"Recent Folder",
-      desc:"Recent folder checked for clearing, missing entries, or modification after the last logon." },
-    { id:"DefenderIntegrity",
-      label:"Defender Integrity",
-      desc:"Windows Defender Operational event log checked for cleared state, RT protection off (5001), or exclusion added (5007)." },
-    { id:"UnsignedExecutables",
-      label:"Unsigned Executables",
-      desc:"User directories scanned for unsigned or known-cheat-signed executables present on disk." },
+    { id:"AmcacheIntegrity",       label:"Amcache Integrity",       desc:"Amcache.hve file size and last-modified timestamp checked for clearing or wiping." },
+    { id:"ShimcacheIntegrity",     label:"Shimcache Integrity",     desc:"SYSTEM hive last-write time checked for recent modification indicating AppCompatCache tampering." },
+    { id:"PrefetchIntegrity",      label:"Prefetch Integrity",      desc:"Prefetch folder checked for existence, empty state, or suspicious recent modification." },
+    { id:"SrumIntegrity",          label:"SRUM Integrity",          desc:"SRUDB.dat file size and last-modified time checked for wiping." },
+    { id:"BamIntegrity",           label:"BAM Integrity",           desc:"BAM service checked for disabled state (Start=4) or suspiciously few UserSettings entries." },
+    { id:"DefenderIntegrity",      label:"Defender Integrity",      desc:"Defender Operational log checked for cleared state, RT protection off (5001), or exclusion added (5007)." },
+    { id:"RecentFolderIntegrity",  label:"Recent Folder Integrity", desc:"Recent folder checked for clearing, missing entries, or modification after the last logon." },
+    { id:"SystemRestorePoints",    label:"Restore Points",          desc:"VSS shadow copy inventory checked for deleted or suspicious restore points." },
+    { id:"UsbHistory",             label:"USB History",             desc:"USBSTOR registry key enumerated for all historically connected USB storage devices." },
+  ]},
+  { group:"PHASE 2 — LIVE SCANS", scans:[
+    { id:"GeneralInfo",         label:"General Info",         desc:"System services overview, Windows install date, and overall system fingerprint." },
+    { id:"RobloxMemory",        label:"Roblox Memory",        desc:"ReadProcessMemory scan of RobloxPlayerBeta.exe for Lua bytecode sigs, executor API strings, suspicious URLs, and manually mapped PE headers." },
+    { id:"InjectedModules",     label:"Injected DLLs",        desc:"VirtualQueryEx + GetMappedFileNameA walk of all Roblox process regions. Detects unlinked/manually injected DLLs." },
+    { id:"DiscordMemory",       label:"Discord Memory",       desc:"Discord process memory scanned for executor API strings, token-shaped strings, and suspicious signatures." },
+    { id:"BrowserMemory",       label:"Browser Memory",       desc:"Chrome, Edge, Brave, and Firefox processes scanned for cheat strings, executor API names, and suspicious URLs." },
+    { id:"DiscordAccounts",     label:"Discord Accounts",     desc:"Discord LevelDB (discord, ptb, canary, vesktop) and renderer logs scanned for account IDs and tokens." },
+    { id:"RobloxAccounts",      label:"Roblox Accounts",      desc:"Roblox LocalStorage LevelDB, process memory, GlobalSettings XML, and registry scanned for linked user IDs." },
+    { id:"RobloxProfileUrls",   label:"Roblox Profiles",      desc:"Roblox profile URLs extracted from local storage and browser cookies." },
+    { id:"BrowserCookies",      label:"Browser Cookies",      desc:"Cookie SQLite files (Chrome, Edge, Brave, Firefox) for Discord tokens and Roblox .ROBLOSECURITY cookies." },
+    { id:"RobloxLogs",          label:"Roblox Logs",          desc:"Roblox local log files scanned line-by-line for cheat keywords, executor names, and suspicious URLs." },
+    { id:"RobloxFFlags",        label:"Roblox FFlags",        desc:"Roblox ClientSettings checked for modifications that disable anti-cheat telemetry or enable debug exploits." },
+    { id:"RunKeys",             label:"Run Keys",             desc:"HKCU / HKLM Run and RunOnce registry keys checked for suspicious auto-execute entries." },
+    { id:"RecentItems",         label:"Recent Items",         desc:"Windows Recent folder scanned for LNK shortcuts whose target matches a cheat keyword." },
+    { id:"UserAssist",          label:"UserAssist",           desc:"UserAssist registry key (ROT13 decoded) for GUI execution history: run count and last-run timestamp per program." },
+    { id:"ServicesCheck",       label:"Services Check",       desc:"Windows services enumerated for keyword-matching names and executables in user-writable directories." },
+    { id:"UnsignedExecutables", label:"Unsigned Executables", desc:"User directories scanned for unsigned or known-cheat-signed executables present on disk." },
   ]},
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Runtime state
-// ─────────────────────────────────────────────────────────────────────────────
-const scanId     = {{ scan.id }};
-const phases     = {{ phases|tojson }};
+const scanId      = {{ scan.id }};
+const phases      = {{ phases|tojson }};
 let   allFindings = {{ findings|tojson }};
 let   activeScanId = null;
-let   paneQuery   = '';
-let   paneSev     = 'all';
-let   isDone      = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
+let   paneQuery    = '';
+let   paneSev      = 'all';
+let   sbFilter     = '';
+let   isDone       = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
 
-// ─────────────────────────────────────────────────────────────────────────────
-// View switching (overview / scans / phases)
-// ─────────────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.tnav').forEach(btn => {
-  btn.addEventListener('click', () => switchView(btn.dataset.view));
-});
+// view switching
+document.querySelectorAll('.tnav').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
 function switchView(name) {
-  document.querySelectorAll('.tnav').forEach(b => b.classList.toggle('active', b.dataset.view===name));
-  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id==='view-'+name));
+  document.querySelectorAll('.tnav').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sidebar builder
-// Each SCAN_DEF entry gets a sidebar item. The dot colour is driven by whether
-// any findings exist for that scan id (after normalising the category string).
-// ─────────────────────────────────────────────────────────────────────────────
-function normalise(s) {
-  return (s||'').toLowerCase().replace(/[\s_\-]/g,'');
-}
+// utils
+function norm(s) { return (s||'').toLowerCase().replace(/[\s_\-]/g,''); }
+function esc(s)  { if(!s)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function sevCls(s){ return s==='alert'?'alert':(s==='warn'||s==='warning'?'warn':'info'); }
+function findingsFor(def){ const n=norm(def.id); return allFindings.filter(f=>norm(f.category)===n); }
 
-function findingsFor(def) {
-  const nid = normalise(def.id);
-  return allFindings.filter(f => normalise(f.category) === nid);
-}
-
+// ─── Sidebar ────────────────────────────────────────────────────────────────
 function buildSidebar() {
-  let html = '';
+  const sb   = document.getElementById('scanSidebar');
+  const filt = sbFilter.toLowerCase();
+  let html   = `<div class="sb-header"><input class="sb-search-inp" id="sbSearch" type="text" placeholder="Filter scans..." value="${esc(sbFilter)}"></div>`;
+
   SCAN_DEFS.forEach(group => {
-    html += `<div class="sb-group-label">${esc(group.group)}</div>`;
-    group.scans.forEach(scan => {
+    const vis = group.scans.filter(s => !filt || s.label.toLowerCase().includes(filt) || s.id.toLowerCase().includes(filt));
+    if (!vis.length) return;
+    html += `<div class="sb-group">${esc(group.group)}</div>`;
+    vis.forEach(scan => {
       const hits   = findingsFor(scan);
-      const alerts = hits.filter(f => f.severity==='alert').length;
-      const warns  = hits.filter(f => f.severity==='warn' || f.severity==='warning').length;
-      const dotCls = alerts ? 'hit' : warns ? 'warn' : 'none';
-      const active = activeScanId === scan.id ? ' active' : '';
-      html += `<div class="si${active}" data-id="${esc(scan.id)}" onclick="selectScan('${esc(scan.id)}')">
-        <div class="si-dot ${dotCls}"></div>
+      const alerts = hits.filter(f=>f.severity==='alert').length;
+      const warns  = hits.filter(f=>f.severity==='warn'||f.severity==='warning').length;
+      const dot    = alerts?'hit':warns?'warn':'none';
+      const active = activeScanId===scan.id?' active':'';
+      html += `<div class="si${active}" onclick="selectScan('${esc(scan.id)}')">
+        <div class="si-dot ${dot}"></div>
         <div class="si-name">${esc(scan.label)}</div>
         <div class="si-cnt">${hits.length}</div>
       </div>`;
     });
   });
-  document.getElementById('scanSidebar').innerHTML = html;
+
+  sb.innerHTML = html;
+  const inp = document.getElementById('sbSearch');
+  if (inp) {
+    inp.addEventListener('input', () => { sbFilter = inp.value; buildSidebar(); });
+    if (document.activeElement && document.activeElement.id === 'sbSearch') {
+      inp.focus(); const l = inp.value.length; inp.setSelectionRange(l,l);
+    }
+  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Pane renderer
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Pane ───────────────────────────────────────────────────────────────────
 function selectScan(id) {
   activeScanId = id;
-  buildSidebar(); // re-render to update active class
-
+  buildSidebar();
   let def = null;
-  for (const g of SCAN_DEFS) { def = g.scans.find(s => s.id===id); if (def) break; }
+  for (const g of SCAN_DEFS) { def = g.scans.find(s=>s.id===id); if(def)break; }
   if (!def) return;
-
   const hits = findingsFor(def);
   document.getElementById('paneTitle').textContent = def.label.toUpperCase();
   document.getElementById('paneDesc').textContent  = def.desc;
-
   const badge = document.getElementById('paneBadge');
-  if (!hits.length) {
-    badge.textContent = '— CLEAN';
-    badge.className   = 'pane-badge clean';
-  } else {
-    badge.textContent = hits.length + ' FINDING' + (hits.length!==1?'S':'');
-    badge.className   = 'pane-badge hits';
-  }
-
-  paneQuery = '';
-  document.getElementById('paneSearch').value = '';
-  document.getElementById('paneSearchX').classList.remove('vis');
+  if (!hits.length) { badge.textContent='— CLEAN'; badge.className='pane-badge clean'; }
+  else { badge.textContent=hits.length+' FINDING'+(hits.length!==1?'S':''); badge.className='pane-badge hits'; }
+  paneQuery=''; document.getElementById('paneSearch').value=''; document.getElementById('paneSearchX').classList.remove('vis');
   renderPane(hits);
 }
 
-function sevCls(s) {
-  if (s==='alert') return 'alert';
-  if (s==='warn' || s==='warning') return 'warn';
-  return 'info';
-}
-
 function renderFinding(f, q) {
-  const sc     = sevCls(f.severity);
-  const detail = f.detail || '';
-  const hiDetail = q ? detail.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), m => `<mark>${esc(m)}</mark>`) : esc(detail);
-  const kw = f.keyword ? `<span class="pf-kw">${esc(f.keyword)}</span>` : '';
-  const ts = f.ts ? `<span class="pf-ts">${esc(f.ts)}</span>` : '';
+  const sc = sevCls(f.severity);
+  const d  = f.detail||'';
+  const hi = q ? d.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark>${esc(m)}</mark>`) : esc(d);
   return `<div class="pf ${sc}">
     <div class="pf-hdr">
       <span class="pf-cat ${sc}">${esc(f.category||'')}</span>
-      ${kw}
+      ${f.keyword?`<span class="pf-kw">${esc(f.keyword)}</span>`:''}
       <span class="pf-ts">${esc(f.ts||'')}</span>
     </div>
-    <div class="pf-info-block">${hiDetail}</div>
+    <div class="pf-info-block">${hi}</div>
   </div>`;
 }
 
@@ -811,173 +548,98 @@ function renderPane(hits) {
   const body = document.getElementById('paneBody');
   const q    = paneQuery.trim().toLowerCase();
   const sf   = paneSev;
-
   if (!hits.length) {
-    body.innerHTML = `<div class="pane-empty clean">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
-      <div class="sub">This scan is clean — no findings.</div>
-    </div>`;
-    document.getElementById('matchCount').textContent = 0;
-    return;
+    body.innerHTML=`<div class="pane-empty clean"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg><div class="sub">Clean — no findings.</div></div>`;
+    document.getElementById('matchCount').textContent=0; return;
   }
-
-  let visible = 0;
-  const rows = hits.map(f => {
-    const sc    = sevCls(f.severity);
-    const raw   = (f.detail||'').toLowerCase();
-    const sevOk = sf==='all' || f.severity===sf || (sf==='warn' && f.severity==='warning');
-    const qOk   = !q || raw.includes(q) || (f.keyword||'').toLowerCase().includes(q);
-    if (sevOk && qOk) visible++;
-    const html = renderFinding(f, q);
-    return sevOk && qOk ? html : html.replace(`class="pf ${sc}"`, `class="pf ${sc} hid"`);
+  let vis=0;
+  const rows=hits.map(f=>{
+    const sc=sevCls(f.severity);
+    const raw=(f.detail||'').toLowerCase();
+    const sevOk=sf==='all'||f.severity===sf||(sf==='warn'&&f.severity==='warning');
+    const qOk=!q||raw.includes(q)||(f.keyword||'').toLowerCase().includes(q);
+    if(sevOk&&qOk)vis++;
+    const h=renderFinding(f,q);
+    return sevOk&&qOk?h:h.replace(`class="pf ${sc}"`,`class="pf ${sc} hid"`);
   }).join('');
-
-  body.innerHTML = rows || `<div class="pane-empty default">◈<div class="sub">No matches${q ? ` for "${esc(q)}"` : ''}.</div></div>`;
-  document.getElementById('matchCount').textContent = visible;
+  body.innerHTML=rows||`<div class="pane-empty default">◈<div class="sub">No matches${q?` for "${esc(q)}"`:''}.</div></div>`;
+  document.getElementById('matchCount').textContent=vis;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Search + severity filter
-// ─────────────────────────────────────────────────────────────────────────────
-const searchEl = document.getElementById('paneSearch');
-const searchX  = document.getElementById('paneSearchX');
+function rerender(){
+  if(!activeScanId)return;
+  let def=null; for(const g of SCAN_DEFS){def=g.scans.find(s=>s.id===activeScanId);if(def)break;}
+  if(def)renderPane(findingsFor(def));
+}
 
-searchEl.addEventListener('input', () => {
-  paneQuery = searchEl.value;
-  searchX.classList.toggle('vis', paneQuery.length > 0);
-  rerender();
-});
-searchX.addEventListener('click', () => {
-  searchEl.value = ''; paneQuery = '';
-  searchX.classList.remove('vis');
-  rerender();
-});
-document.addEventListener('keydown', e => {
-  if (document.getElementById('view-scans').classList.contains('active')) {
-    if (e.key==='/' && document.activeElement!==searchEl) { e.preventDefault(); searchEl.focus(); }
-    if (e.key==='Escape') searchEl.blur();
+// search / sev filter
+document.getElementById('paneSearch').addEventListener('input',function(){ paneQuery=this.value; document.getElementById('paneSearchX').classList.toggle('vis',paneQuery.length>0); rerender(); });
+document.getElementById('paneSearchX').addEventListener('click',()=>{ document.getElementById('paneSearch').value=''; paneQuery=''; document.getElementById('paneSearchX').classList.remove('vis'); rerender(); });
+document.addEventListener('keydown',e=>{
+  const vs=document.getElementById('view-scans');
+  const ps=document.getElementById('paneSearch');
+  const sb=document.getElementById('sbSearch');
+  if(vs.classList.contains('active')){
+    if(e.key==='/'&&document.activeElement!==ps&&document.activeElement!==sb){e.preventDefault();ps.focus();}
+    if(e.key==='Escape')ps.blur();
   }
 });
-
-const sevMap = { all:'aa', alert:'al', warn:'aw', info:'ai' };
-document.querySelectorAll('.sv').forEach(btn => {
-  btn.addEventListener('click', () => {
-    paneSev = btn.dataset.ps;
-    document.querySelectorAll('.sv').forEach(b => {
-      b.className = 'sv' + (b.dataset.ps===paneSev ? ' '+sevMap[paneSev] : '');
-    });
+const sevMap={all:'aa',alert:'al',warn:'aw',info:'ai'};
+document.querySelectorAll('.sv').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    paneSev=btn.dataset.ps;
+    document.querySelectorAll('.sv').forEach(b=>{b.className='sv'+(b.dataset.ps===paneSev?' '+sevMap[paneSev]:'');});
     rerender();
   });
 });
 
-function rerender() {
-  if (!activeScanId) return;
-  let def = null;
-  for (const g of SCAN_DEFS) { def = g.scans.find(s => s.id===activeScanId); if (def) break; }
-  if (def) renderPane(findingsFor(def));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Phase log renderer (for polling updates)
-// ─────────────────────────────────────────────────────────────────────────────
-function renderPhaseLog(events, pi, done) {
-  const evMap = {};
-  for (const ev of events) evMap[ev.phase_index] = ev;
-  return phases.map((phase, i) => {
-    const ev  = evMap[i];
-    const cls = (done || i < pi) ? 'done' : i===pi ? 'active' : 'pending';
-    return `<div class="ph-row ${cls}">
-      <div class="ph-gutter"><div class="ph-dot"></div></div>
-      <div class="ph-body">
-        <div class="ph-top">
-          <div class="ph-name">${String(i).padStart(2,'0')}. ${esc(phase)}</div>
-          ${ev ? `<div class="ph-pct">${ev.pct}%</div>` : ''}
-        </div>
-        ${ev && ev.message ? `<div class="ph-msg">${esc(ev.message)}</div>` : ''}
-        ${ev ? `<div class="ph-ts">${esc(ev.ts)}</div>` : ''}
-      </div>
-    </div>`;
+// ─── Phase log ──────────────────────────────────────────────────────────────
+function renderPhaseLog(events,pi,done){
+  const em={};for(const ev of events)em[ev.phase_index]=ev;
+  return phases.map((p,i)=>{
+    const ev=em[i]; const cls=(done||i<pi)?'done':i===pi?'active':'pending';
+    return `<div class="ph-row ${cls}"><div class="ph-gutter"><div class="ph-dot"></div></div><div class="ph-body"><div class="ph-top"><div class="ph-name">${String(i).padStart(2,'0')}. ${esc(p)}</div>${ev?`<div class="ph-pct">${ev.pct}%</div>`:''}</div>${ev&&ev.message?`<div class="ph-msg">${esc(ev.message)}</div>`:''} ${ev?`<div class="ph-ts">${esc(ev.ts)}</div>`:''}</div></div>`;
   }).join('');
 }
 
-function renderOvFindings(findings) {
-  const recent = findings.slice(0, 20);
-  if (!recent.length)
-    return `<div class="pane-empty default" style="padding:36px 16px">◈<div class="sub">No findings yet</div></div>`;
-  const rows = recent.map(f => {
-    const sc = sevCls(f.severity);
-    const detail = (f.detail||'').slice(0,110) + ((f.detail||'').length>110?'…':'');
-    return `<div class="ov-row ${sc}">
-      <span class="ov-cat ${sc}">${esc(f.category||'')}</span>
-      <div class="ov-detail">${esc(detail)}</div>
-      <div class="ov-ts">${esc(f.ts||'')}</div>
-    </div>`;
-  }).join('');
-  const more = findings.length > 20
-    ? `<div style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--muted);">+${findings.length-20} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red);">View all</a></div>`
-    : '';
-  return rows + more;
+function renderOvFindings(findings){
+  if(!findings.length)return`<div class="pane-empty default" style="padding:36px 16px">◈<div class="sub">No findings yet</div></div>`;
+  const rows=findings.slice(0,20).map(f=>{const sc=sevCls(f.severity);const d=(f.detail||'').slice(0,110)+((f.detail||'').length>110?'…':'');return`<div class="ov-row ${sc}"><span class="ov-cat ${sc}">${esc(f.category||'')}</span><div class="ov-detail">${esc(d)}</div><div class="ov-ts">${esc(f.ts||'')}</div></div>`;}).join('');
+  const more=findings.length>20?`<div style="padding:8px 12px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--muted);">+${findings.length-20} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red);">View all</a></div>`:'';
+  return rows+more;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Polling
-// ─────────────────────────────────────────────────────────────────────────────
-async function poll() {
-  try {
-    const [pRes, fRes] = await Promise.all([
-      fetch(`/api/scan/${scanId}/progress`),
-      fetch(`/api/scan/${scanId}/findings`)
-    ]);
-    const d        = await pRes.json();
-    const findings = fRes.ok ? await fRes.json() : allFindings;
-    allFindings    = findings;
-
-    const total = d.total_phases || phases.length;
-    const pi    = d.phase_index  || 0;
-    const done  = d.status==='complete' || d.status==='completed';
-    const pct   = done ? 100 : Math.round(pi / Math.max(total-1, 1) * 100);
-
-    document.getElementById('barFill').style.width  = pct + '%';
-    document.getElementById('progPct').textContent  = pct + '%';
-
-    if (done) {
-      document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
-      document.getElementById('statusBadge').className   = 'status-badge complete';
-      document.getElementById('statusBadge').textContent = '✓ COMPLETE';
-      const lp = document.getElementById('livePill'); if (lp) lp.style.display='none';
-      isDone = true;
-    } else {
-      document.getElementById('progLabel').textContent = `PHASE ${pi+1}/${total} — ${phases[Math.min(pi,phases.length-1)]}`;
+// ─── Poll ───────────────────────────────────────────────────────────────────
+async function poll(){
+  try{
+    const [pR,fR]=await Promise.all([fetch(`/api/scan/${scanId}/progress`),fetch(`/api/scan/${scanId}/findings`)]);
+    const d=await pR.json(); const findings=fR.ok?await fR.json():allFindings; allFindings=findings;
+    const total=d.total_phases||phases.length; const pi=d.phase_index||0;
+    const done=d.status==='complete'||d.status==='completed';
+    const pct=done?100:Math.round(pi/Math.max(total-1,1)*100);
+    document.getElementById('barFill').style.width=pct+'%';
+    document.getElementById('progPct').textContent=pct+'%';
+    if(done){
+      document.getElementById('progLabel').textContent='ALL PHASES COMPLETE';
+      document.getElementById('statusBadge').className='status-badge complete';
+      document.getElementById('statusBadge').textContent='✓ COMPLETE';
+      const lp=document.getElementById('livePill');if(lp)lp.style.display='none';
+      isDone=true;
+    }else{
+      document.getElementById('progLabel').textContent=`PHASE ${pi+1}/${total} — ${phases[Math.min(pi,phases.length-1)]}`;
     }
-
-    const phHtml = renderPhaseLog(d.events||[], pi, done);
-    document.getElementById('phaseLogOv').innerHTML   = phHtml;
-    document.getElementById('phaseLogFull').innerHTML = phHtml;
-    document.getElementById('phaseCount').textContent = `${(d.events||[]).length}/${phases.length}`;
-    document.getElementById('tcTotal').textContent    = findings.length;
-    document.getElementById('findingCount').textContent = findings.length;
-    document.getElementById('ovFindings').innerHTML   = renderOvFindings(findings);
-
-    buildSidebar();
-    rerender();
-
-    if (!done) setTimeout(poll, 2500);
-  } catch(e) {
-    if (!isDone) setTimeout(poll, 4000);
-  }
+    const ph=renderPhaseLog(d.events||[],pi,done);
+    document.getElementById('phaseLogOv').innerHTML=ph;
+    document.getElementById('phaseLogFull').innerHTML=ph;
+    document.getElementById('phaseCount').textContent=`${(d.events||[]).length}/${phases.length}`;
+    document.getElementById('tcTotal').textContent=findings.length;
+    document.getElementById('findingCount').textContent=findings.length;
+    document.getElementById('ovFindings').innerHTML=renderOvFindings(findings);
+    buildSidebar(); rerender();
+    if(!done)setTimeout(poll,2500);
+  }catch(e){if(!isDone)setTimeout(poll,4000);}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Utils
-// ─────────────────────────────────────────────────────────────────────────────
-function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Init
-// ─────────────────────────────────────────────────────────────────────────────
 buildSidebar();
 poll();
 </script>
