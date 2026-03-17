@@ -117,6 +117,8 @@ try:
                 )
             """)
             cur.execute("ALTER TABLE scan_pins ADD COLUMN IF NOT EXISTS expires_at TEXT NOT NULL DEFAULT ''")
+            cur.execute("ALTER TABLE scan_findings ADD COLUMN IF NOT EXISTS keyword TEXT NOT NULL DEFAULT ''")
+            cur.execute("ALTER TABLE scan_findings ADD COLUMN IF NOT EXISTS fields_json TEXT NOT NULL DEFAULT ''")
         conn.commit()
 except Exception as e:
     print(f"Migration warning: {e}")
@@ -206,8 +208,10 @@ def view_scan(scan_id):
             events = cur.fetchall()
             cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
             findings = cur.fetchall()
+    log_text = (scan.get("log_text") or "") if scan else ""
     return render_template("view_scan.html", scan=scan, events=events,
                            findings=findings, phases=SCAN_PHASES,
+                           log_text=log_text,
                            username=session.get("global_name"),
                            avatar=session.get("avatar"))
 
@@ -219,7 +223,12 @@ def api_scans():
     """Returns all scans as JSON for the dashboard frontend."""
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans ORDER BY created_at DESC")
+            cur.execute("""
+                SELECT s.*, COUNT(sf.id) AS findings_count
+                FROM scans s
+                LEFT JOIN scan_findings sf ON sf.scan_id = s.id
+                GROUP BY s.id ORDER BY s.created_at DESC
+            """)
             rows = cur.fetchall()
     # Normalise: DB stores 'complete', JS expects 'completed'
     result = []
@@ -351,7 +360,7 @@ def api_scan_rename(scan_id):
 @app.route("/api/scan", methods=["POST"])
 def trinity_scan_submit():
     """POST /api/scan — receives full structured JSON from the C++ exe.
-    Stores everything: trinity detail + all hits array."""
+    Stores everything: trinity detail + all hits array with structured fields."""
     import json as _json
     data = request.get_json(force=True) or {}
 
@@ -382,29 +391,52 @@ def trinity_scan_submit():
             # Ensure columns exist
             cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS trinity_json TEXT")
             cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS log_text TEXT")
+            cur.execute("ALTER TABLE scan_findings ADD COLUMN IF NOT EXISTS keyword TEXT NOT NULL DEFAULT ''")
+            cur.execute("ALTER TABLE scan_findings ADD COLUMN IF NOT EXISTS fields_json TEXT NOT NULL DEFAULT ''")
 
             # Store the full JSON blob + raw log
             raw_log = data.get("rawLog", "")
             cur.execute("UPDATE scans SET trinity_json=%s, log_text=%s, updated_at=%s WHERE id=%s",
                         (_json.dumps(data), raw_log, _now(), scan_id))
 
-            # Also insert every hit from the hits array into scan_findings
+            # Replace any prior flat findings with fully structured ones from the hits array.
+            # The individual /api/scanner/finding posts during the scan stored flat text.
+            # The full JSON from the C++ has every field (keyword, tool, path, eventType, etc.)
+            # so we clear and re-insert the rich version here.
             hits = data.get("hits", [])
-            for h in hits:
-                severity = h.get("severity", "alert")
-                category = h.get("category", "")
-                detail = (
-                    f"[{h.get('tool','')}] {h.get('path') or h.get('filename','')}"
-                    + (f" | {h.get('eventType','')}" if h.get('eventType') else "")
-                    + (f" | Last Run: {h.get('timestamp','')}" if h.get('timestamp') else "")
-                )
-                cur.execute("""INSERT INTO scan_findings (scan_id, category, severity, detail, created_at)
-                               VALUES (%s, %s, %s, %s, %s)""",
-                            (scan_id, category, severity, detail[:2000], _now()))
+            if hits:
+                cur.execute("DELETE FROM scan_findings WHERE scan_id=%s", (scan_id,))
+                for h in hits:
+                    severity    = h.get("severity", "alert") or "alert"
+                    category    = h.get("category", "") or ""
+                    keyword     = h.get("keyword", "") or ""
+                    # Build a human-readable detail line (fallback for text display)
+                    path_or_fn  = h.get("path") or h.get("filename", "")
+                    detail_parts = []
+                    if keyword:       detail_parts.append(f"[{keyword}]")
+                    if path_or_fn:    detail_parts.append(path_or_fn)
+                    if h.get("tool"): detail_parts.append(f"(tool: {h['tool']})")
+                    if h.get("eventType"): detail_parts.append(f"| {h['eventType']}")
+                    if h.get("timestamp"):  detail_parts.append(f"@ {h['timestamp']}")
+                    if h.get("source"):     detail_parts.append(f"| source: {h['source']}")
+                    if h.get("inSession"):  detail_parts.append(f"| in-session: {h['inSession']}")
+                    if h.get("signature"):  detail_parts.append(f"| sig: {h['signature']}")
+                    if h.get("signer"):     detail_parts.append(f"| signer: {h['signer']}")
+                    if h.get("onDisk"):     detail_parts.append(f"| on-disk: {h['onDisk']}")
+                    if h.get("bamSeqNum"):  detail_parts.append(f"| BAM-seq: {h['bamSeqNum']}")
+                    if h.get("runCount"):   detail_parts.append(f"| runs: {h['runCount']}")
+                    if h.get("patterns"):   detail_parts.append(f"| patterns: {'; '.join(h['patterns'])}")
+                    detail = " ".join(detail_parts)[:2000]
+                    # Store the full structured hit as JSON for rich frontend rendering
+                    fields_json = _json.dumps(h)
+                    cur.execute("""INSERT INTO scan_findings
+                                   (scan_id, category, severity, detail, keyword, fields_json, ts)
+                                   VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                                (scan_id, category, severity, detail, keyword, fields_json, _now()))
 
         conn.commit()
 
-    return jsonify({"ok": True, "scan_id": scan_id, "hits_stored": len(data.get("hits", []))})
+    return jsonify({"ok": True, "scan_id": scan_id, "hits_stored": len(hits)})
 
 # ── Scanner API (called by C++ exe) ──────────────────────────────────────────
 @app.route("/api/scanner/start", methods=["POST"])
@@ -467,10 +499,11 @@ def scanner_finding():
             if not scan:
                 abort(404)
             cur.execute("""
-                INSERT INTO scan_findings (scan_id,category,severity,detail,ts)
-                VALUES (%s,%s,%s,%s,%s)
+                INSERT INTO scan_findings (scan_id,category,severity,detail,keyword,ts)
+                VALUES (%s,%s,%s,%s,%s,%s)
             """, (scan["id"], data.get("category","general"),
-                  data.get("severity","warn"), data.get("detail",""), _now()))
+                  data.get("severity","warn"), data.get("detail",""),
+                  data.get("keyword",""), _now()))
         conn.commit()
     return jsonify({"ok": True})
 
