@@ -2,643 +2,954 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>HubChecker // {{ scan.desktop_name }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HubChecker — {{ scan.desktop_name }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --red:      #cc0000;
-  --red-hi:   #ff1a1a;
-  --red-dim:  rgba(204,0,0,.10);
-  --red-line: rgba(204,0,0,.35);
-  --bg:       #060606;
-  --bg2:      #0a0a0a;
-  --bg3:      #0f0f0f;
-  --bg4:      #151515;
-  --border:   #1c1c1c;
-  --border2:  #252525;
-  --text:     #d0d0d0;
-  --muted:    #484848;
-  --muted2:   #2e2e2e;
-  --green:    #1e7a30;
-  --green-hi: #25a33f;
-  --orange:   #c47500;
-  --orhi:     #e08000;
-  --display:  'Bebas Neue', sans-serif;
-  --body:     'Archivo', sans-serif;
-  --mono:     'Fira Code', monospace;
+  --red:       #e5001a;
+  --red-dim:   #8b0010;
+  --red-glow:  rgba(229,0,26,0.25);
+  --bg:        #080808;
+  --bg2:       #0d0d0d;
+  --bg3:       #121212;
+  --bg4:       #171717;
+  --border:    #1e1e1e;
+  --border-r:  #3a0008;
+  --text:      #e2e2e2;
+  --text-mid:  #a0a0a0;
+  --text-dim:  #555;
+  --green:     #22c55e;
+  --green-dim: #14532d;
+  --orange:    #f97316;
+  --orange-dim:#7c2d12;
+  --yellow:    #eab308;
+  --mono:      'JetBrains Mono', monospace;
+  --ui:        'Inter', sans-serif;
+  --title:     'Orbitron', sans-serif;
 }
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-html,body { height:100%; overflow:hidden; }
-body {
-  background:var(--bg); color:var(--text);
-  font-family:var(--body); font-size:13px; line-height:1.5;
-  display:flex; flex-direction:column;
-}
-body::after {
-  content:''; position:fixed; inset:0; z-index:9999; pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-  opacity:.35;
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0 }
+html { scroll-behavior:smooth }
+body { background:var(--bg); color:var(--text); font-family:var(--ui); font-size:14px; line-height:1.6; min-height:100vh; }
+
+/* scanline overlay */
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.05) 3px,rgba(0,0,0,.05) 4px);
 }
 
-/* ─── TOPBAR ─────────────────────────────────────────────────────────── */
+/* ── TOPBAR ── */
 .topbar {
-  height:50px; flex-shrink:0; display:flex; align-items:stretch;
-  background:var(--bg2); border-bottom:1px solid var(--border); z-index:100;
-}
-.topbar-brand { display:flex; align-items:center; gap:12px; padding:0 20px; border-right:1px solid var(--border); text-decoration:none; }
-.brand-mark { width:20px; height:20px; background:var(--red); clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%); flex-shrink:0; }
-.brand-name { font-family:var(--display); font-size:19px; letter-spacing:4px; color:#fff; }
-.brand-name em { color:var(--red); font-style:normal; }
-.topbar-mid {
-  flex:1; display:flex; align-items:center; gap:0;
-  padding:0 16px; overflow:hidden;
-}
-.scan-key-tag { font-family:var(--mono); font-size:9px; letter-spacing:2px; color:var(--red); margin-right:10px; white-space:nowrap; }
-.scan-name-tag { font-family:var(--display); font-size:17px; letter-spacing:2px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.topbar-right { display:flex; align-items:center; gap:10px; padding:0 16px; margin-left:auto; flex-shrink:0; border-left:1px solid var(--border); }
-.live-pill { display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:9px; letter-spacing:2px; color:var(--orhi); }
-.live-dot  { width:6px; height:6px; border-radius:50%; background:var(--orhi); animation:blink 1s step-end infinite; }
-@keyframes blink { 50%{opacity:.2} }
-.viewer-tag { font-family:var(--mono); font-size:10px; color:var(--muted); }
-.status-chip { font-family:var(--mono); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; padding:3px 9px; border:1px solid; white-space:nowrap; }
-.status-chip.complete,.status-chip.completed { border-color:rgba(30,122,48,.5); color:var(--green-hi); }
-.status-chip.running { border-color:rgba(196,117,0,.5); color:var(--orhi); animation:blink 1.2s step-end infinite; }
-.btn-back { display:inline-flex; align-items:center; gap:5px; background:transparent; border:1px solid var(--border2); color:var(--muted); padding:4px 11px; font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; text-decoration:none; transition:all .15s; }
-.btn-back:hover { border-color:var(--red-line); color:var(--red-hi); }
-
-/* ─── PROGRESS STRIP ─────────────────────────────────────────────────── */
-.prog-strip { flex-shrink:0; display:flex; align-items:center; gap:12px; padding:5px 16px; background:var(--bg2); border-bottom:1px solid var(--border); }
-.prog-label { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.5px; white-space:nowrap; flex-shrink:0; }
-.prog-track { flex:1; height:3px; background:var(--bg); border:1px solid var(--border); overflow:hidden; }
-.prog-fill  { height:100%; background:linear-gradient(90deg,#8b0000,var(--red)); transition:width .5s; }
-.prog-pct   { font-family:var(--display); font-size:16px; color:var(--red); flex-shrink:0; line-height:1; }
-
-/* ─── BODY: sidebar + pane ───────────────────────────────────────────── */
-.body-row { flex:1; display:flex; overflow:hidden; }
-
-/* ─── SIDEBAR ────────────────────────────────────────────────────────── */
-.sidebar {
-  width:236px; min-width:236px; flex-shrink:0;
-  border-right:1px solid var(--border);
-  background:var(--bg2);
-  display:flex; flex-direction:column;
-  overflow:hidden;
-}
-
-/* sidebar search */
-.sb-search { padding:7px 9px; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--bg3); }
-.sb-inp { width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:10px; padding:5px 8px; outline:none; transition:border-color .15s; }
-.sb-inp:focus { border-color:var(--red-line); }
-.sb-inp::placeholder { color:#1e1e1e; }
-
-/* sidebar scrollable area */
-.sb-scroll { flex:1; overflow-y:auto; }
-
-/* collapsible section headers */
-.sb-section {
   display:flex; align-items:center; justify-content:space-between;
-  padding:7px 11px 6px;
-  font-family:var(--mono); font-size:8px; letter-spacing:3px; text-transform:uppercase;
-  color:var(--red); background:linear-gradient(90deg,#100003,var(--bg2));
-  border-bottom:1px solid var(--border);
-  cursor:pointer; user-select:none; flex-shrink:0;
-  position:sticky; top:0; z-index:5;
+  padding:0 28px; height:58px; border-bottom:1px solid var(--border-r);
+  background:linear-gradient(90deg,#0d0003,var(--bg) 35%,var(--bg) 65%,#0d0003);
+  position:sticky; top:0; z-index:200; box-shadow:0 2px 20px rgba(229,0,26,.12);
 }
-.sb-section-arrow { font-size:10px; transition:transform .15s; color:var(--muted); }
-.sb-section.collapsed .sb-section-arrow { transform:rotate(-90deg); }
-.sb-section-body { overflow:hidden; }
-.sb-section-body.collapsed { display:none; }
+.brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.brand-name { font-family:var(--title); font-size:16px; font-weight:900; letter-spacing:3px; color:#fff; }
+.brand-name em { color:var(--red); font-style:normal; }
+.topbar-right { display:flex; align-items:center; gap:14px; }
+.btn-back {
+  display:inline-flex; align-items:center; gap:6px;
+  background:transparent; border:1px solid var(--border-r); color:var(--text-dim);
+  padding:6px 14px; font-family:var(--mono); font-size:11px; letter-spacing:.5px;
+  cursor:pointer; text-decoration:none; transition:all .18s;
+}
+.btn-back:hover { border-color:var(--red); color:var(--red); }
+.viewer { font-family:var(--mono); font-size:12px; color:var(--text-dim); }
+.live-pill { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--orange); }
+.live-dot { width:7px; height:7px; border-radius:50%; background:var(--orange); animation:pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.75)} }
 
-/* phase log inside sidebar */
-.sb-phase-log { }
-.sb-ph { display:flex; align-items:center; gap:7px; padding:6px 11px; border-bottom:1px solid var(--border); }
-.sb-ph:last-child { border-bottom:none; }
-.sb-ph.pending { opacity:.2; }
-.sb-ph-dot { width:7px; height:7px; border:1px solid var(--border2); background:var(--border2); flex-shrink:0; }
-.sb-ph.done   .sb-ph-dot { background:var(--green); border-color:var(--green); }
-.sb-ph.active .sb-ph-dot { background:var(--orhi); border-color:var(--orhi); animation:ping .9s ease-in-out infinite; }
+/* ── LAYOUT ── */
+.main { max-width:1380px; margin:0 auto; padding:28px 28px 80px; }
+
+/* ── SCAN HEADER ── */
+.scan-header {
+  display:flex; align-items:flex-start; justify-content:space-between; gap:20px;
+  padding-bottom:22px; border-bottom:1px solid var(--border); margin-bottom:22px; position:relative;
+}
+.scan-header::after { content:''; position:absolute; bottom:-1px; left:0; width:180px; height:1px; background:linear-gradient(90deg,var(--red),transparent); }
+.scan-key { font-family:var(--mono); font-size:10px; color:var(--red); letter-spacing:2px; margin-bottom:5px; }
+.scan-title { font-family:var(--title); font-size:22px; font-weight:900; letter-spacing:2.5px; color:#fff; margin-bottom:10px; }
+.scan-metas { display:flex; gap:20px; flex-wrap:wrap; }
+.meta { font-size:12px; color:var(--text-dim); font-family:var(--mono); }
+.meta strong { color:var(--text-mid); font-weight:500; }
+.status-badge { font-family:var(--mono); font-size:10px; letter-spacing:1.5px; padding:5px 14px; border:1px solid; text-transform:uppercase; align-self:flex-start; white-space:nowrap; }
+.status-badge.complete,.status-badge.completed { border-color:var(--green); color:var(--green); background:rgba(34,197,94,.06); }
+.status-badge.running { border-color:var(--orange); color:var(--orange); background:rgba(249,115,22,.06); animation:blink 1.2s step-end infinite; }
+@keyframes blink { 50%{opacity:.4} }
+
+/* ── PROGRESS ── */
+.prog-wrap { background:var(--bg2); border:1px solid var(--border); padding:16px 24px; margin-bottom:22px; }
+.prog-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.prog-label { font-family:var(--mono); font-size:11px; color:var(--text-dim); letter-spacing:.5px; }
+.prog-pct { font-family:var(--mono); font-size:18px; font-weight:600; color:var(--red); }
+.bar-track { background:#0a0a0a; border:1px solid var(--border); height:4px; overflow:hidden; }
+.bar-fill { height:100%; background:linear-gradient(90deg,var(--red-dim),var(--red)); transition:width .5s ease; }
+
+/* ── TOP NAV ── */
+.top-nav { display:flex; border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:none; margin-bottom:0; }
+.top-nav::-webkit-scrollbar { display:none; }
+.tnav {
+  display:flex; align-items:center; gap:7px;
+  font-family:var(--mono); font-size:11px; letter-spacing:1px; padding:11px 18px;
+  border:none; background:transparent; color:var(--text-dim); cursor:pointer;
+  white-space:nowrap; border-bottom:2px solid transparent; transition:all .15s;
+  text-transform:uppercase; position:relative; top:1px;
+}
+.tnav:hover { color:var(--text-mid); }
+.tnav.active { color:var(--red); border-bottom-color:var(--red); }
+.tnav-cnt { font-family:var(--mono); font-size:9px; padding:1px 6px; background:var(--bg3); border:1px solid var(--border); }
+.tnav.active .tnav-cnt { border-color:var(--red-dim); color:var(--red); }
+
+/* ── VIEWS ── */
+.view { display:none; }
+.view.active { display:block; }
+
+/* ── PANEL ── */
+.panel { background:var(--bg2); border:1px solid var(--border); overflow:hidden; }
+.panel-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 18px; border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg,#0d0003,var(--bg2));
+}
+.panel-title { font-family:var(--mono); font-size:10px; letter-spacing:2.5px; color:var(--red); text-transform:uppercase; display:flex; align-items:center; gap:7px; }
+.panel-badge { font-family:var(--mono); font-size:10px; color:var(--text-dim); background:var(--bg3); border:1px solid var(--border); padding:2px 8px; }
+
+/* ── OVERVIEW ── */
+.ov-grid { display:grid; grid-template-columns:1fr 320px; gap:18px; margin-top:22px; }
+@media(max-width:900px){ .ov-grid { grid-template-columns:1fr; } }
+
+/* Phase log */
+.phase-log { padding:0; }
+.ph-row { display:grid; grid-template-columns:26px 1fr; border-bottom:1px solid var(--border); }
+.ph-row:last-child { border-bottom:none; }
+.ph-row.pending { opacity:.2; }
+.ph-row.active  { background:rgba(249,115,22,.035); }
+.ph-gutter { display:flex; flex-direction:column; align-items:center; padding:12px 0; border-right:1px solid var(--border); position:relative; }
+.ph-gutter::before { content:''; position:absolute; top:0; bottom:0; left:50%; width:1px; background:var(--border); }
+.ph-dot { width:9px; height:9px; border-radius:50%; border:1px solid var(--border); background:var(--border); position:relative; z-index:1; transition:all .3s; }
+.ph-row.done   .ph-dot { background:var(--green);  border-color:var(--green);  box-shadow:0 0 6px rgba(34,197,94,.4); }
+.ph-row.active .ph-dot { background:var(--orange); border-color:var(--orange); box-shadow:0 0 8px rgba(249,115,22,.6); animation:ping .9s ease-in-out infinite; }
 @keyframes ping { 0%,100%{transform:scale(1)} 50%{transform:scale(1.5)} }
-.sb-ph-name { font-family:var(--mono); font-size:9px; color:var(--muted); flex:1; line-height:1.3; }
-.sb-ph.done   .sb-ph-name { color:var(--green-hi); }
-.sb-ph.active .sb-ph-name { color:var(--orhi); }
-.sb-ph-pct { font-family:var(--mono); font-size:8px; color:var(--muted2); flex-shrink:0; }
-.sb-ph.done   .sb-ph-pct { color:var(--green-hi); }
-.sb-ph.active .sb-ph-pct { color:var(--orhi); }
+.ph-body { padding:8px 14px; }
+.ph-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:2px; }
+.ph-name { font-family:var(--mono); font-size:11px; color:var(--text-dim); }
+.ph-row.done   .ph-name { color:var(--green); }
+.ph-row.active .ph-name { color:var(--orange); }
+.ph-pct { font-family:var(--mono); font-size:10px; }
+.ph-row.done   .ph-pct { color:var(--green); }
+.ph-row.active .ph-pct { color:var(--orange); }
+.ph-msg { font-family:var(--mono); font-size:10px; color:#444; line-height:1.5; }
+.ph-ts  { font-family:var(--mono); font-size:9px; color:#333; margin-top:2px; }
 
-/* scan list group label */
-.sb-group { font-family:var(--mono); font-size:8px; letter-spacing:2.5px; text-transform:uppercase; color:var(--red); padding:7px 11px 4px; border-bottom:1px solid var(--border); background:var(--bg3); }
-
-/* scan item */
-.si { display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .1s; background:var(--bg2); }
-.si:hover { background:rgba(204,0,0,.04); }
-.si.active { background:rgba(204,0,0,.09); border-left:2px solid var(--red); padding-left:8px; }
-.si-dot { width:5px; height:5px; flex-shrink:0; }
-.si-dot.hit  { background:var(--red);  box-shadow:0 0 5px rgba(204,0,0,.5); }
-.si-dot.warn { background:var(--orhi); box-shadow:0 0 4px rgba(196,117,0,.4); }
-.si-dot.none { background:#1e1e1e; }
-.si-name { font-family:var(--mono); font-size:9px; color:var(--muted); flex:1; line-height:1.3; word-break:break-word; }
-.si.active .si-name { color:var(--red-hi); }
-.si-cnt { font-family:var(--mono); font-size:8px; padding:1px 4px; background:var(--bg3); border:1px solid var(--border); flex-shrink:0; }
-.si.active .si-cnt { border-color:var(--red-line); color:var(--red-hi); }
-
-/* ─── RIGHT PANE ─────────────────────────────────────────────────────── */
-.pane { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg2); }
-
-/* pane: overview mode (recent findings list) */
-.pane-overview { flex:1; overflow-y:auto; }
-.ov-row { padding:9px 14px; border-bottom:1px solid var(--border); border-left:2px solid var(--border2); }
+/* Overview findings sidebar */
+.ov-findings { max-height:500px; overflow-y:auto; }
+.ov-row { padding:9px 14px; border-bottom:1px solid var(--border); border-left:2px solid; }
 .ov-row:last-child { border-bottom:none; }
 .ov-row.alert { border-left-color:var(--red); }
-.ov-row.warn  { border-left-color:var(--orhi); }
-.ov-row.info  { border-left-color:#222; }
-.ov-cat { font-family:var(--mono); font-size:8px; letter-spacing:1px; text-transform:uppercase; padding:1px 5px; border:1px solid; display:inline-block; margin-bottom:3px; }
-.ov-cat.alert { border-color:rgba(204,0,0,.35); color:var(--red); }
-.ov-cat.warn  { border-color:rgba(196,117,0,.35); color:var(--orhi); }
-.ov-cat.info  { border-color:#2a2a2a; color:var(--muted); }
-.ov-detail { font-size:12px; color:var(--text); line-height:1.5; word-break:break-word; }
-.ov-ts { font-family:var(--mono); font-size:8px; color:#282828; margin-top:2px; }
-.ov-more { padding:9px 14px; text-align:center; font-family:var(--mono); font-size:9px; color:var(--muted2); cursor:pointer; }
-.ov-more:hover { color:var(--red); }
+.ov-row.warn  { border-left-color:var(--orange); }
+.ov-row.info  { border-left-color:#333; }
+.ov-top { display:flex; align-items:center; gap:6px; margin-bottom:3px; flex-wrap:wrap; }
+.ov-cat { font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; padding:1px 6px; border:1px solid; }
+.ov-cat.alert { border-color:var(--red-dim); color:var(--red); }
+.ov-cat.warn  { border-color:var(--orange-dim); color:var(--orange); }
+.ov-cat.info  { border-color:#333; color:var(--text-dim); }
+.ov-kw { font-family:var(--mono); font-size:9px; background:rgba(229,0,26,.1); border:1px solid var(--red-dim); color:var(--red); padding:1px 6px; }
+.ov-detail { font-size:12px; color:var(--text-mid); line-height:1.5; word-break:break-word; }
+.ov-ts { font-family:var(--mono); font-size:9px; color:#2e2e2e; margin-top:2px; }
 
-/* pane header (shown when a scan is selected) */
+/* ── SCAN RESULTS VIEW ── */
+.scan-layout { display:grid; grid-template-columns:220px 1fr; border:1px solid var(--border); margin-top:22px; min-height:680px; }
+@media(max-width:860px){ .scan-layout { grid-template-columns:1fr; } }
+
+/* Sidebar */
+.scan-sidebar { border-right:1px solid var(--border); overflow-y:auto; background:var(--bg2); }
+.sg-label {
+  font-family:var(--mono); font-size:9px; letter-spacing:2px; color:var(--red); text-transform:uppercase;
+  padding:9px 14px 6px; background:linear-gradient(90deg,#0d0003,var(--bg2));
+  border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5;
+}
+.si {
+  display:flex; align-items:center; gap:7px; padding:9px 12px; cursor:pointer;
+  border-bottom:1px solid var(--border); transition:background .12s; background:var(--bg2);
+}
+.si:last-child { border-bottom:none; }
+.si:hover { background:rgba(229,0,26,.035); }
+.si.active { background:rgba(229,0,26,.07); border-left:2px solid var(--red); padding-left:10px; }
+.si-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.si-dot.hit  { background:var(--red);    box-shadow:0 0 5px rgba(229,0,26,.5); }
+.si-dot.warn { background:var(--orange); box-shadow:0 0 5px rgba(249,115,22,.4); }
+.si-dot.none { background:#222; }
+.si-name { font-family:var(--mono); font-size:10px; color:var(--text-dim); flex:1; line-height:1.4; }
+.si.active .si-name { color:var(--red); }
+.si-cnt { font-family:var(--mono); font-size:9px; padding:1px 5px; background:var(--bg3); border:1px solid var(--border); flex-shrink:0; }
+.si.active .si-cnt { border-color:var(--red-dim); color:var(--red); }
+
+/* Pane */
+.scan-pane { display:flex; flex-direction:column; min-height:680px; background:var(--bg2); }
 .pane-head {
-  padding:12px 16px 10px; border-bottom:1px solid var(--border);
-  background:linear-gradient(90deg,#100003,var(--bg2));
-  display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-shrink:0;
+  padding:16px 20px 13px; border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg,#0d0003,var(--bg2));
+  display:flex; align-items:flex-start; justify-content:space-between; gap:14px;
 }
-.pane-title { font-family:var(--display); font-size:15px; letter-spacing:2px; color:#fff; margin-bottom:2px; }
-.pane-desc  { font-size:11px; color:var(--muted2); line-height:1.55; max-width:680px; }
-.pane-badge { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:3px 8px; border:1px solid; text-transform:uppercase; white-space:nowrap; flex-shrink:0; margin-top:1px; }
-.pane-badge.hits  { border-color:var(--red-line); color:var(--red-hi); background:var(--red-dim); }
-.pane-badge.clean { border-color:rgba(30,122,48,.4); color:var(--green-hi); background:rgba(30,122,48,.06); }
-.pane-badge.none  { border-color:var(--border2); color:var(--muted); }
+.pane-title { font-family:var(--title); font-size:12px; letter-spacing:2px; color:#fff; margin-bottom:5px; }
+.pane-desc  { font-size:12px; color:#3a3a3a; line-height:1.6; max-width:660px; }
+.pane-badge { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 10px; border:1px solid; text-transform:uppercase; white-space:nowrap; flex-shrink:0; margin-top:2px; }
+.pane-badge.hits    { border-color:var(--red-dim); color:var(--red);    background:rgba(229,0,26,.07); }
+.pane-badge.clean   { border-color:var(--green-dim); color:var(--green); background:rgba(34,197,94,.05); }
+.pane-badge.pending { border-color:#2a2a2a; color:var(--text-dim); }
 
-/* pane search/filter row */
-.pane-filter { display:flex; align-items:center; gap:7px; padding:7px 12px; border-bottom:1px solid var(--border); background:var(--bg3); flex-shrink:0; flex-wrap:wrap; }
-.pf-search-wrap { flex:1; min-width:120px; position:relative; display:flex; align-items:center; }
-.pf-search-ico  { position:absolute; left:8px; pointer-events:none; color:#282828; }
-.pf-search { width:100%; background:var(--bg2); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:10px; padding:5px 24px 5px 27px; outline:none; transition:border-color .15s; }
-.pf-search:focus { border-color:var(--red-line); }
-.pf-search::placeholder { color:#1e1e1e; }
-.pf-clear { position:absolute; right:7px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:11px; padding:2px; display:none; }
-.pf-clear.vis { display:block; }
-.pf-count { font-family:var(--mono); font-size:9px; color:#3a3a3a; white-space:nowrap; }
-.pf-count b { color:var(--muted); }
-.sev-btns { display:flex; gap:1px; }
-.sv { font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:4px 7px; border:1px solid var(--border); background:var(--bg2); color:var(--muted); cursor:pointer; text-transform:uppercase; transition:all .12s; }
-.sv:hover { color:var(--text); }
-.sv.aa { border-color:#383838; color:var(--text); }
-.sv.al { border-color:var(--red-line); color:var(--red-hi); background:var(--red-dim); }
-.sv.aw { border-color:rgba(196,117,0,.4); color:var(--orhi); }
-.sv.ai { border-color:#282828; color:var(--muted); }
+/* Search row */
+.pane-search-row {
+  display:flex; align-items:center; gap:10px; padding:10px 16px;
+  border-bottom:1px solid var(--border); background:var(--bg3); flex-wrap:wrap;
+}
+.psearch-wrap { flex:1; min-width:150px; position:relative; display:flex; align-items:center; }
+.psearch-ico { position:absolute; left:10px; pointer-events:none; color:#333; }
+.psearch {
+  width:100%; background:var(--bg2); border:1px solid var(--border);
+  color:var(--text); font-family:var(--mono); font-size:11px;
+  padding:7px 30px 7px 32px; outline:none; transition:border-color .2s;
+}
+.psearch:focus { border-color:var(--red-dim); }
+.psearch::placeholder { color:#252525; }
+.psearch-x { position:absolute; right:8px; background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:13px; padding:2px; display:none; }
+.psearch-x.vis { display:block; }
+.match-count { font-family:var(--mono); font-size:10px; color:#444; white-space:nowrap; }
+.match-count b { color:var(--text-mid); }
+.sev-btns { display:flex; gap:2px; }
+.sv {
+  font-family:var(--mono); font-size:9px; letter-spacing:1px; padding:5px 9px;
+  border:1px solid var(--border); background:var(--bg2); color:var(--text-dim);
+  cursor:pointer; text-transform:uppercase; transition:all .12s;
+}
+.sv:hover { color:var(--text-mid); }
+.sv.aa { border-color:#444;          color:var(--text-mid);  background:rgba(80,80,80,.08); }
+.sv.al { border-color:var(--red-dim); color:var(--red);       background:rgba(229,0,26,.06); }
+.sv.aw { border-color:var(--orange-dim); color:var(--orange); background:rgba(249,115,22,.06); }
+.sv.ai { border-color:#333;           color:var(--text-dim);  background:rgba(40,40,40,.08); }
 
-/* finding rows */
-.pane-body { flex:1; overflow-y:auto; }
-.pf { padding:11px 15px; border-bottom:1px solid var(--border); border-left:2px solid transparent; }
+/* Finding rows */
+.pane-body { flex:1; overflow-y:auto; max-height:580px; }
+.pf {
+  padding:14px 18px; border-bottom:1px solid var(--border);
+  border-left:2px solid transparent; transition:background .1s;
+}
 .pf:last-child { border-bottom:none; }
-.pf:hover { background:rgba(255,255,255,.01); }
+.pf:hover { background:rgba(255,255,255,.012); }
 .pf.alert { border-left-color:var(--red); }
-.pf.warn  { border-left-color:var(--orhi); }
-.pf.info  { border-left-color:#222; }
+.pf.warn  { border-left-color:var(--orange); }
+.pf.info  { border-left-color:#2a2a2a; }
 .pf.hid   { display:none; }
-.pf-hdr { display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
-.pf-cat { font-family:var(--mono); font-size:8px; letter-spacing:1px; text-transform:uppercase; padding:2px 5px; border:1px solid; }
-.pf-cat.alert { border-color:rgba(204,0,0,.4); color:var(--red); background:rgba(204,0,0,.06); }
-.pf-cat.warn  { border-color:rgba(196,117,0,.4); color:var(--orhi); background:rgba(196,117,0,.05); }
-.pf-cat.info  { border-color:#282828; color:var(--muted); }
-.pf-kw { font-family:var(--mono); font-size:8px; padding:2px 5px; border:1px solid var(--red-line); color:var(--red); background:var(--red-dim); }
-.pf-ts { font-family:var(--mono); font-size:8px; color:#242424; margin-left:auto; }
-.pf-body { font-family:var(--mono); font-size:10px; color:var(--text); line-height:1.7; word-break:break-word; }
-.pf-body mark { background:rgba(204,0,0,.3); color:#fff; padding:0 1px; }
-.pane-empty { padding:60px 20px; text-align:center; font-family:var(--mono); font-size:11px; }
-.pane-empty.clean   { color:var(--green-hi); }
-.pane-empty.default { color:#222; font-size:20px; }
-.pane-empty .sub { font-size:10px; color:#1e1e1e; margin-top:8px; }
 
-/* pane placeholder (nothing selected) */
-.pane-placeholder {
-  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  font-family:var(--mono); font-size:11px; color:#1a1a1a;
+/* Finding header row */
+.pf-hdr { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.pf-cat { font-family:var(--mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; padding:2px 7px; border:1px solid; }
+.pf-cat.alert { border-color:var(--red-dim); color:var(--red); background:rgba(229,0,26,.06); }
+.pf-cat.warn  { border-color:var(--orange-dim); color:var(--orange); background:rgba(249,115,22,.05); }
+.pf-cat.info  { border-color:#333; color:var(--text-dim); }
+.pf-kw { font-family:var(--mono); font-size:9px; padding:2px 7px; border:1px solid var(--red-dim); color:var(--red); background:rgba(229,0,26,.08); }
+.pf-sev { font-family:var(--mono); font-size:9px; text-transform:uppercase; }
+.pf-sev.alert { color:var(--red); }
+.pf-sev.warn  { color:var(--orange); }
+.pf-sev.info  { color:var(--text-dim); }
+.pf-ts { font-family:var(--mono); font-size:9px; color:#2a2a2a; margin-left:auto; }
+
+/* Finding fields table */
+.pf-fields { display:grid; grid-template-columns:auto 1fr; gap:3px 14px; }
+.pf-fk {
+  font-family:var(--mono); font-size:10px; color:var(--text-dim);
+  white-space:nowrap; padding-top:1px; align-self:start;
 }
-.pane-placeholder .glyph { font-family:var(--display); font-size:80px; color:#111; line-height:1; margin-bottom:12px; }
+.pf-fv {
+  font-family:var(--mono); font-size:11px; color:var(--text); word-break:break-all; line-height:1.55;
+}
+.pf-fv.path   { color:#7dd3fc; }
+.pf-fv.event  { color:var(--yellow); font-weight:500; }
+.pf-fv.hit    { color:var(--red); font-weight:500; }
+.pf-fv.clean  { color:var(--green); }
+.pf-fv.muted  { color:var(--text-dim); }
+.pf-fv mark   { background:rgba(229,0,26,.28); color:#fff; padding:0 1px; }
 
-::-webkit-scrollbar { width:3px; height:3px; }
+/* Prev runs indent */
+.pf-prev { margin-left:0; margin-top:3px; }
+.pf-prev-item { font-family:var(--mono); font-size:10px; color:#555; padding:1px 0; }
+.pf-prev-item::before { content:'↳ '; color:#333; }
+
+/* Integrity / info finding (non-HIT) */
+.pf-info-block { font-family:var(--mono); font-size:11px; color:var(--text-mid); line-height:1.7; word-break:break-word; }
+.pf-info-block mark { background:rgba(229,0,26,.28); color:#fff; padding:0 1px; }
+
+/* Empty state */
+.pane-empty { padding:60px 24px; text-align:center; font-family:var(--mono); font-size:12px; }
+.pane-empty.clean { color:var(--green); }
+.pane-empty.default { color:#2a2a2a; font-size:20px; }
+.pane-empty .sub { font-size:11px; color:#252525; margin-top:8px; }
+
+/* ── PHASES VIEW ── */
+.phases-panel { margin-top:22px; }
+
+/* scrollbar */
+::-webkit-scrollbar { width:4px; height:4px; }
 ::-webkit-scrollbar-track { background:var(--bg); }
-::-webkit-scrollbar-thumb { background:var(--border2); }
-::-webkit-scrollbar-thumb:hover { background:var(--red); }
+::-webkit-scrollbar-thumb { background:var(--border-r); border-radius:2px; }
 </style>
 </head>
 <body>
 
-<!-- ─── TOPBAR ──────────────────────────────────────────────────────────── -->
 <div class="topbar">
-  <a href="/" class="topbar-brand">
-    <div class="brand-mark"></div>
-    <div class="brand-name">HUB<em>CHECKER</em></div>
-  </a>
-  <div class="topbar-mid">
-    <span class="scan-key-tag">◈ {{ scan.scan_key }}</span>
-    <span class="scan-name-tag" id="scanNameTag">{{ scan.desktop_name }}</span>
-  </div>
+  <a href="/" class="brand"><span class="brand-name">HUB<em>CHECKER</em></span></a>
   <div class="topbar-right">
     {% if scan.status not in ('complete','completed') %}
     <div class="live-pill" id="livePill"><div class="live-dot"></div>LIVE</div>
     {% endif %}
-    <span class="status-chip {{ scan.status }}" id="statusChip">{% if scan.status in ('complete','completed') %}✓ COMPLETE{% else %}⬤ SCANNING{% endif %}</span>
-    <span class="viewer-tag">{{ username }}</span>
+    <span class="viewer">{{ username }}</span>
     <a href="/" class="btn-back">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>BACK
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>BACK
     </a>
   </div>
 </div>
 
-<!-- ─── PROGRESS STRIP ──────────────────────────────────────────────────── -->
-{% set total = phases|length %}
-{% set pi    = scan.phase_index or 0 %}
-{% set pct   = 100 if scan.status in ('complete','completed') else ((pi / (total-1) * 100)|int if pi else 0) %}
-<div class="prog-strip">
-  <div class="prog-label" id="progLabel">
-    {% if scan.status in ('complete','completed') %}ALL PHASES COMPLETE
-    {% else %}PHASE {{ pi+1 }}/{{ total }} — {{ phases[pi] if pi < total else '' }}{% endif %}
-  </div>
-  <div class="prog-track"><div class="prog-fill" id="barFill" style="width:{{ pct }}%"></div></div>
-  <div class="prog-pct" id="progPct">{{ pct }}%</div>
-</div>
+<main class="main">
 
-<!-- ─── BODY ROW ────────────────────────────────────────────────────────── -->
-<div class="body-row">
-
-  <!-- ═══ SIDEBAR ════════════════════════════════════════════════════════ -->
-  <div class="sidebar">
-
-    <!-- Search -->
-    <div class="sb-search">
-      <input class="sb-inp" id="sbSearch" type="text" placeholder="Filter scans...">
+  <!-- HEADER -->
+  <div class="scan-header">
+    <div>
+      <div class="scan-key">◈ SCAN KEY: {{ scan.scan_key }}</div>
+      <div class="scan-title" id="scanTitle">{{ scan.desktop_name }}</div>
+      <div class="scan-metas">
+        <div class="meta">HOST <strong>{{ scan.hostname or '—' }}</strong></div>
+        <div class="meta">USER <strong>{{ scan.username or '—' }}</strong></div>
+        <div class="meta">OS <strong>{{ scan.os_version or '—' }}</strong></div>
+        <div class="meta">STARTED <strong>{{ scan.created_at }}</strong></div>
+      </div>
     </div>
+    <div class="status-badge {{ scan.status }}" id="statusBadge">
+      {% if scan.status in ('complete','completed') %}✓ COMPLETE{% else %}⬤ SCANNING{% endif %}
+    </div>
+  </div>
 
-    <div class="sb-scroll" id="sbScroll">
-
-      <!-- Overview section -->
-      <div class="sb-section" id="secOvHead" onclick="toggleSection('secOv')">
-        <span>OVERVIEW</span><span class="sb-section-arrow" id="secOvArrow">▾</span>
+  <!-- PROGRESS -->
+  {% set total = phases|length %}
+  {% set pi = scan.phase_index or 0 %}
+  {% set pct = 100 if scan.status in ('complete','completed') else ((pi / (total - 1) * 100)|int if pi else 0) %}
+  <div class="prog-wrap">
+    <div class="prog-top">
+      <div class="prog-label" id="progLabel">
+        {% if scan.status in ('complete','completed') %}ALL PHASES COMPLETE
+        {% else %}PHASE {{ pi + 1 }}/{{ total }} — {{ phases[pi] if pi < total else '' }}{% endif %}
       </div>
-      <div class="sb-section-body" id="secOvBody">
-        <!-- host/user info -->
-        <div style="padding:7px 11px 6px;border-bottom:1px solid var(--border);">
-          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.9">
-            <div>HOST <span style="color:var(--text)">{{ scan.hostname or '—' }}</span></div>
-            <div>USER <span style="color:var(--text)">{{ scan.username or '—' }}</span></div>
-            <div>OS <span style="color:var(--text)">{{ scan.os_version or '—' }}</span></div>
-            <div>STARTED <span style="color:var(--text)">{{ scan.created_at }}</span></div>
+      <div class="prog-pct" id="progPct">{{ pct }}%</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="barFill" style="width:{{ pct }}%"></div></div>
+  </div>
+
+  <!-- TOP NAV -->
+  <div class="top-nav">
+    <button class="tnav active" data-view="overview">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      OVERVIEW
+    </button>
+    <button class="tnav" data-view="scans">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+      FINDINGS
+      <span class="tnav-cnt" id="tcTotal">{{ findings|length }}</span>
+    </button>
+    <button class="tnav" data-view="phases">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      PHASES <span class="tnav-cnt">{{ phases|length }}</span>
+    </button>
+  </div>
+
+  <!-- ══════ OVERVIEW ══════ -->
+  <div class="view active" id="view-overview">
+    <div class="ov-grid">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            SCAN PHASES
           </div>
+          <div class="panel-badge" id="phaseCount">{{ events|length }}/{{ phases|length }}</div>
         </div>
-        <!-- recent findings summary -->
-        <div id="ovFindings">
-          {% if not findings %}
-            <div class="pane-empty default" style="padding:20px 11px;font-size:11px">◈<div class="sub">No findings yet</div></div>
-          {% else %}
-            {% for f in findings[:10] %}
-            <div class="ov-row {{ f.severity }}">
-              <span class="ov-cat {{ f.severity }}">{{ f.category }}</span>
-              <div class="ov-detail">{{ f.detail|truncate(80) }}</div>
-              <div class="ov-ts">{{ f.ts }}</div>
-            </div>
-            {% endfor %}
-            {% if findings|length > 10 %}
-            <div class="ov-more" onclick="selectFirstScan()">+{{ findings|length - 10 }} more findings →</div>
-            {% endif %}
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Phases section -->
-      <div class="sb-section collapsed" id="secPhHead" onclick="toggleSection('secPh')">
-        <span>PHASES <span style="color:var(--muted2);font-size:7px;letter-spacing:1px" id="phaseCount">{{ events|length }}/{{ phases|length }}</span></span>
-        <span class="sb-section-arrow" id="secPhArrow">▾</span>
-      </div>
-      <div class="sb-section-body collapsed" id="secPhBody">
-        <div class="sb-phase-log" id="phaseLog">
+        <div class="phase-log" id="phaseLogOv">
           {% for phase in phases %}
-            {% set i   = loop.index0 %}
-            {% set ev  = (events|selectattr('phase_index','equalto',i)|list) %}
-            {% set e   = ev[0] if ev else none %}
-            {% set cls = 'done' if (scan.status in ('complete','completed') or i<pi) else ('active' if i==pi else 'pending') %}
-            <div class="sb-ph {{ cls }}">
-              <div class="sb-ph-dot"></div>
-              <div class="sb-ph-name">{{ '{:02d}'.format(i) }}. {{ phase }}</div>
-              {% if e %}<div class="sb-ph-pct">{{ e.pct }}%</div>{% endif %}
+            {% set i=loop.index0 %}
+            {% set ev=(events|selectattr('phase_index','equalto',i)|list) %}
+            {% set e=ev[0] if ev else none %}
+            {% set rc='done' if (scan.status in ('complete','completed') or i<pi) else ('active' if i==pi else 'pending') %}
+            <div class="ph-row {{rc}}">
+              <div class="ph-gutter"><div class="ph-dot"></div></div>
+              <div class="ph-body">
+                <div class="ph-top">
+                  <div class="ph-name">{{'{:02d}'.format(i)}}. {{phase}}</div>
+                  {% if e %}<div class="ph-pct">{{e.pct}}%</div>{% endif %}
+                </div>
+                {% if e %}{% if e.message %}<div class="ph-msg">{{e.message}}</div>{% endif %}<div class="ph-ts">{{e.ts}}</div>{% endif %}
+              </div>
             </div>
           {% endfor %}
         </div>
       </div>
-
-      <!-- Scan list -->
-      <div id="scanList"><!-- populated by buildScanList() --></div>
-
-    </div><!-- /.sb-scroll -->
-  </div><!-- /.sidebar -->
-
-  <!-- ═══ RIGHT PANE ══════════════════════════════════════════════════════ -->
-  <div class="pane" id="pane">
-
-    <!-- Placeholder shown until a scan is selected -->
-    <div class="pane-placeholder" id="panePlaceholder">
-      <div class="glyph">◈</div>
-      Select a scan from the left
-    </div>
-
-    <!-- Scan detail (hidden until a scan is selected) -->
-    <div id="paneDetail" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden">
-      <div class="pane-head">
-        <div>
-          <div class="pane-title" id="paneTitle"></div>
-          <div class="pane-desc"  id="paneDesc"></div>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            RECENT FINDINGS
+          </div>
+          <div class="panel-badge" id="findingCount">{{ findings|length }}</div>
         </div>
-        <div class="pane-badge none" id="paneBadge">—</div>
-      </div>
-      <div class="pane-filter">
-        <div class="pf-search-wrap">
-          <svg class="pf-search-ico" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="pf-search" id="paneSearch" type="text" placeholder="Search findings... (/)">
-          <button class="pf-clear" id="paneClear">✕</button>
-        </div>
-        <div class="pf-count"><b id="matchCount">0</b> results</div>
-        <div class="sev-btns">
-          <button class="sv aa" data-ps="all">ALL</button>
-          <button class="sv" data-ps="alert">ALERT</button>
-          <button class="sv" data-ps="warn">WARN</button>
-          <button class="sv" data-ps="info">INFO</button>
+        <div class="ov-findings" id="ovFindings">
+          {% if not findings %}
+            <div class="pane-empty default" style="padding:40px 20px">◈<div class="sub">No findings yet</div></div>
+          {% else %}
+            {% for f in findings[:20] %}
+            <div class="ov-row {{f.severity}}">
+              <div class="ov-top">
+                <span class="ov-cat {{f.severity}}">{{f.category}}</span>
+                {% if f.keyword %}<span class="ov-kw">{{f.keyword}}</span>{% endif %}
+              </div>
+              <div class="ov-detail">{{f.detail|truncate(120)}}</div>
+              <div class="ov-ts">{{f.ts}}</div>
+            </div>
+            {% endfor %}
+            {% if findings|length > 20 %}
+            <div style="padding:9px 14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);">
+              +{{ findings|length - 20 }} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red);">View all findings</a>
+            </div>
+            {% endif %}
+          {% endif %}
         </div>
       </div>
-      <div class="pane-body" id="paneBody"></div>
     </div>
+  </div>
 
-  </div><!-- /.pane -->
+  <!-- ══════ SCAN RESULTS ══════ -->
+  <div class="view" id="view-scans">
+    <div class="scan-layout">
+      <div class="scan-sidebar" id="scanSidebar"></div>
+      <div class="scan-pane">
+        <div class="pane-head">
+          <div>
+            <div class="pane-title" id="paneTitle">SELECT A SCAN</div>
+            <div class="pane-desc"  id="paneDesc">Choose a scan type from the left to view its findings.</div>
+          </div>
+          <div class="pane-badge pending" id="paneBadge">—</div>
+        </div>
+        <div class="pane-search-row">
+          <div class="psearch-wrap">
+            <svg class="psearch-ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="psearch" id="paneSearch" type="text" placeholder="Search this scan... (press /)">
+            <button class="psearch-x" id="paneSearchX">✕</button>
+          </div>
+          <div class="match-count"><b id="matchCount">0</b> results</div>
+          <div class="sev-btns">
+            <button class="sv aa" data-ps="all">ALL</button>
+            <button class="sv" data-ps="alert">ALERT</button>
+            <button class="sv" data-ps="warn">WARN</button>
+            <button class="sv" data-ps="info">INFO</button>
+          </div>
+        </div>
+        <div class="pane-body" id="paneBody">
+          <div class="pane-empty default">◈<div class="sub">Select a scan from the left</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-</div><!-- /.body-row -->
+  <!-- ══════ PHASES ══════ -->
+  <div class="view" id="view-phases">
+    <div class="panel phases-panel">
+      <div class="panel-head">
+        <div class="panel-title"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>ALL PHASES</div>
+        <div class="panel-badge">{{ phases|length }} total</div>
+      </div>
+      <div class="phase-log" id="phaseLogFull">
+        {% for phase in phases %}
+          {% set i=loop.index0 %}
+          {% set ev=(events|selectattr('phase_index','equalto',i)|list) %}
+          {% set e=ev[0] if ev else none %}
+          {% set rc='done' if (scan.status in ('complete','completed') or i<pi) else ('active' if i==pi else 'pending') %}
+          <div class="ph-row {{rc}}">
+            <div class="ph-gutter"><div class="ph-dot"></div></div>
+            <div class="ph-body">
+              <div class="ph-top">
+                <div class="ph-name">{{'{:02d}'.format(i)}}. {{phase}}</div>
+                {% if e %}<div class="ph-pct">{{e.pct}}%</div>{% endif %}
+              </div>
+              {% if e %}{% if e.message %}<div class="ph-msg">{{e.message}}</div>{% endif %}<div class="ph-ts">{{e.ts}}</div>{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</main>
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// SCAN DEFINITIONS — one per JSON file from the C++ scanner
+// SCAN DEFINITIONS
+// Each scan has: id, label, desc, cats[] (matched against finding.category),
+// csvTools[] (matched against finding.detail when category=CSV)
 // ─────────────────────────────────────────────────────────────────────────────
 const SCAN_DEFS = [
   { group:"PHASE 1 — FORENSIC", scans:[
-    { id:"BAM",             label:"BAM Registry",      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets." },
-    { id:"USNJournal",      label:"USN Journal",       desc:"Live NTFS USN change journal ($UsnJrnl:$J) + VSS carve for rolled-over records. Full ReasonMask and FRN path resolution." },
-    { id:"Amcache",         label:"Amcache",           desc:"AmcacheParser: file hash, publisher, first/last execution. Sub-types: shortcuts, unassociated files, device PnPs, drive binaries." },
-    { id:"Shimcache",       label:"Shimcache",         desc:"AppCompatCacheParser: every executable path touched by the OS loader. ShimCache position indicates execution recency." },
-    { id:"Prefetch",        label:"Prefetch",          desc:"PECmd: Prefetch files (.pf) — up to 8 run timestamps, loaded DLL list, run count. Evidence persists after binary deletion." },
-    { id:"MFT",             label:"MFT ($MFT)",        desc:"MFTECmd: NTFS Master File Table — every file ever created including deleted ones whose MFT slot hasn't been reused." },
-    { id:"EventLogs",       label:"Event Logs",        desc:"EvtxECmd: process creation (4688), service install (7045), task scheduler (4698-4702), log clear (1102/104)." },
-    { id:"SRUM",            label:"SRUM",              desc:"SrumECmd: System Resource Usage Monitor — per-app CPU, memory, and network usage. Execution evidence without Prefetch." },
-    { id:"Registry",        label:"Registry (RECmd)",  desc:"RECmd batch queries: AppCompatFlags, UserAssist, WordWheelQuery, OpenSavePidlMRU, FeatureUsage, Uninstall entries." },
-    { id:"Bstrings",        label:"Bstrings",          desc:"String extraction across pagefile.sys, hiberfil.sys, swapfile.sys. Catches obfuscated or packed executables." },
-    { id:"JumpLists_LNK_RecycleBin_ShellBags_RecentFileCache_Timeline_SUM", label:"Jump Lists / LNK / Shell",
-      desc:"JLECmd (Jump Lists), LECmd (LNK shortcuts), RBCmd (Recycle Bin), SBECmd (Shell Bags), WxTCmd (Windows Timeline), SumECmd, RecentFileCacheParser." },
-    { id:"Signature",       label:"Signature Check",   desc:"WinVerifyTrust + catalog check for every flagged file. Reports Signed / Not Signed / Cheat Signature (known cheat certs)." },
-  ]},
-  { group:"INTEGRITY CHECKS", scans:[
-    { id:"AmcacheIntegrity",       label:"Amcache Integrity",       desc:"Amcache.hve file size and last-modified timestamp checked for clearing or wiping." },
-    { id:"ShimcacheIntegrity",     label:"Shimcache Integrity",     desc:"SYSTEM hive last-write time checked for recent modification indicating AppCompatCache tampering." },
-    { id:"PrefetchIntegrity",      label:"Prefetch Integrity",      desc:"Prefetch folder checked for existence, empty state, or suspicious recent modification." },
-    { id:"SrumIntegrity",          label:"SRUM Integrity",          desc:"SRUDB.dat file size and last-modified time checked for wiping." },
-    { id:"BamIntegrity",           label:"BAM Integrity",           desc:"BAM service checked for disabled state (Start=4) or suspiciously few UserSettings entries." },
-    { id:"DefenderIntegrity",      label:"Defender Integrity",      desc:"Defender log checked for cleared state, RT protection off (5001), or exclusion added (5007)." },
-    { id:"RecentFolderIntegrity",  label:"Recent Folder Integrity", desc:"Recent folder checked for clearing, missing entries, or modification after last logon." },
-    { id:"SystemRestorePoints",    label:"Restore Points",          desc:"VSS shadow copy inventory checked for deleted or suspicious restore points." },
-    { id:"UsbHistory",             label:"USB History",             desc:"USBSTOR registry key enumerated for all historically connected USB storage devices." },
+    { id:"bam",       label:"BAM Registry",
+      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets.",
+      cats:["bam","bam integrity"] },
+    { id:"usn",       label:"USN Journal",
+      desc:"Live NTFS USN change journal ($UsnJrnl:$J) + VSS carve for rolled-out records. Full ReasonMask and FRN path resolution.",
+      cats:["usn"] },
+    { id:"shimcache", label:"Shimcache",
+      desc:"AppCompatCache parsed by AppCompatCacheParser.exe from VSS hive. Records every executable path touched by the OS loader. ShimCache Position indicates recency.",
+      cats:["shimcache","appcompat","appcompatcache","shimcache integrity"], csvTools:["appcompatcacheparser","appcompat"] },
+    { id:"amcache",   label:"Amcache",
+      desc:"Amcache.hve parsed by AmcacheParser.exe. File hash, publisher, first/last execution. Multiple CSV sub-types: shortcuts, unassociated file entries, device PnPs, drive binaries.",
+      cats:["amcache","amcache integrity"], csvTools:["amcacheparser","amcache"] },
+    { id:"prefetch",  label:"Prefetch (PECmd)",
+      desc:"Windows Prefetch files (.pf) parsed by PECmd.exe. Records up to 8 run timestamps, loaded DLL list, and run count. Execution evidence persists after binary deletion.",
+      cats:["prefetch","pecmd"], csvTools:["pecmd","prefetch"] },
+    { id:"srum",      label:"SRUM",
+      desc:"System Resource Usage Monitor (SRUDB.dat) parsed by SrumECmd.exe. Per-app CPU, memory, and network usage. Evidence of execution even without Prefetch.",
+      cats:["srum","srum integrity"], csvTools:["srumemd","srum"] },
+    { id:"mft",       label:"MFT / $MFT",
+      desc:"NTFS Master File Table parsed by MFTECmd.exe. Contains every file ever created — including deleted files whose MFT slot hasn't been reused. SI/FN timestamps and FRN.",
+      cats:["mft"], csvTools:["mftemd","mft"] },
+    { id:"evtx",      label:"Event Logs",
+      desc:"Windows Event Logs parsed by EvtxECmd.exe. Events 4688 (process create), 7045/4697 (service install), 4698-4702 (task scheduler), 1102/104 (log clear).",
+      cats:["evtx","eventlog","event"], csvTools:["evtxecmd","evtx"] },
+    { id:"recmd",     label:"Registry (RECmd)",
+      desc:"Registry batch queries via RECmd.exe across NTUSER.DAT, SOFTWARE, SAM, and SYSTEM hives. AppCompatFlags, UserAssist, WordWheelQuery, OpenSavePidlMRU, FeatureUsage, Uninstall entries.",
+      cats:["regedit","recmd","registry"], csvTools:["recmd","regedit"] },
+    { id:"bstrings",  label:"bstrings",
+      desc:"String extraction across forensic artifacts (pagefile.sys, hiberfil.sys, swapfile.sys) using bstrings.exe. Catches obfuscated or packed executables.",
+      cats:["bstrings"], csvTools:["bstrings"] },
+    { id:"jumplists", label:"Jump Lists / LNK / Shell",
+      desc:"JLECmd (Jump Lists), LECmd (LNK shortcuts), RBCmd (Recycle Bin $I files), SBECmd (Shell Bags), WxTCmd (Windows Timeline), SumECmd, RecentFileCacheParser.",
+      cats:["jumplist","lnk","lecmd","jlecmd","rbcmd","sbecmd","recentfilecache","wxtcmd","sumemd"],
+      csvTools:["jlecmd","lecmd","rbcmd","sbecmd","recentfilecacheparser","wxtcmd","sumemd"] },
+    { id:"signature", label:"Signature Check",
+      desc:"PE signature check via WinVerifyTrust + Windows catalog for every flagged file. Reports: Signed / Not Signed / Fake Signature / Cheat Signature (known cheat publishers).",
+      cats:["signature","sig"] },
   ]},
   { group:"PHASE 2 — LIVE SCANS", scans:[
-    { id:"GeneralInfo",         label:"General Info",         desc:"System services overview, Windows install date, and overall system fingerprint." },
-    { id:"RobloxMemory",        label:"Roblox Memory",        desc:"ReadProcessMemory scan of RobloxPlayerBeta.exe for Lua bytecode sigs, executor API strings, suspicious URLs, manually mapped PE headers." },
-    { id:"InjectedModules",     label:"Injected DLLs",        desc:"VirtualQueryEx + GetMappedFileNameA walk of all Roblox process regions. Detects unlinked/manually injected DLLs." },
-    { id:"DiscordMemory",       label:"Discord Memory",       desc:"Discord process memory scanned for executor API strings, token-shaped strings, and suspicious signatures." },
-    { id:"BrowserMemory",       label:"Browser Memory",       desc:"Chrome, Edge, Brave, and Firefox processes scanned for cheat strings, executor API names, and suspicious URLs." },
-    { id:"DiscordAccounts",     label:"Discord Accounts",     desc:"Discord LevelDB (discord, ptb, canary, vesktop) and renderer logs scanned for account IDs and tokens." },
-    { id:"RobloxAccounts",      label:"Roblox Accounts",      desc:"Roblox LocalStorage LevelDB, process memory, GlobalSettings XML, and registry scanned for linked user IDs." },
-    { id:"RobloxProfileUrls",   label:"Roblox Profiles",      desc:"Roblox profile URLs extracted from local storage and browser cookies." },
-    { id:"BrowserCookies",      label:"Browser Cookies",      desc:"Cookie SQLite files (Chrome, Edge, Brave, Firefox) for Discord tokens and Roblox .ROBLOSECURITY cookies." },
-    { id:"RobloxLogs",          label:"Roblox Logs",          desc:"Roblox local log files scanned line-by-line for cheat keywords, executor names, and suspicious URLs." },
-    { id:"RobloxFFlags",        label:"Roblox FFlags",        desc:"Roblox ClientSettings checked for modifications that disable anti-cheat telemetry or enable debug exploits." },
-    { id:"RunKeys",             label:"Run Keys",             desc:"HKCU / HKLM Run and RunOnce registry keys checked for suspicious auto-execute entries." },
-    { id:"RecentItems",         label:"Recent Items",         desc:"Windows Recent folder scanned for LNK shortcuts whose target matches a cheat keyword." },
-    { id:"UserAssist",          label:"UserAssist",           desc:"UserAssist registry key (ROT13 decoded) for GUI execution history: run count and last-run timestamp per program." },
-    { id:"ServicesCheck",       label:"Services Check",       desc:"Windows services enumerated for keyword-matching names and executables in user-writable directories." },
-    { id:"UnsignedExecutables", label:"Unsigned Executables", desc:"User directories scanned for unsigned or known-cheat-signed executables present on disk." },
+    { id:"roblox_mem",    label:"Roblox Memory",
+      desc:"ReadProcessMemory scan of RobloxPlayerBeta.exe. Checks for Lua bytecode sigs (LuaQ/LuaR), executor API strings (hookfunction, getrawmetatable…), suspicious URLs, and manually mapped PE headers.",
+      cats:["roblox memory","robloxmemory"] },
+    { id:"injected",      label:"Injected DLLs",
+      desc:"VirtualQueryEx + GetMappedFileNameA walk of all Roblox process memory regions. Detects unlinked/manually injected DLLs not visible in the normal module list.",
+      cats:["injected","injectedmodule","injected module"] },
+    { id:"discord_mem",   label:"Discord Memory",
+      desc:"All Discord process memory regions scanned (15 s timeout) for executor API strings, token-shaped strings, and suspicious signatures.",
+      cats:["discord memory","discordmemory"] },
+    { id:"browser_mem",   label:"Browser Memory",
+      desc:"Running Chrome, Edge, Brave, and Firefox processes scanned for cheat strings, executor API names, and suspicious URLs active in the current session.",
+      cats:["browser memory","browsermemory"] },
+    { id:"roblox_logs",   label:"Roblox Logs",
+      desc:"Roblox local log files read line-by-line for cheat keywords, executor names, and suspicious URLs. Logs persist across restarts.",
+      cats:["roblox log","robloxlog"] },
+    { id:"roblox_fflags", label:"Roblox FFlags",
+      desc:"Roblox FFlags config (ClientSettings) checked for non-default modifications that can disable anti-cheat telemetry or enable debug exploits.",
+      cats:["fflag","roblox fflag"] },
+    { id:"run_keys",      label:"Run Keys",
+      desc:"HKCU\\...\\Run and RunOnce registry keys checked for suspicious or keyword-matching auto-execute entries.",
+      cats:["runkey","run key","registry run"] },
+    { id:"recent",        label:"Recent Items",
+      desc:"Windows Recent folder scanned for LNK shortcuts whose target path matches a cheat keyword. Created on file open — not just execution.",
+      cats:["recent","recent item"] },
+    { id:"userassist",    label:"UserAssist",
+      desc:"UserAssist registry key decoded (ROT13) for GUI execution history. Records run count and last-run timestamp per program.",
+      cats:["userassist","user assist"] },
+    { id:"discord_accts", label:"Discord Accounts",
+      desc:"Discord LevelDB Local Storage (discord, discordptb, discordcanary, vesktop) and renderer_js.log scanned for account IDs, tokens, and usernames.",
+      cats:["discord account","discordaccount","discord"] },
+    { id:"roblox_accts",  label:"Roblox Accounts",
+      desc:"Roblox LocalStorage LevelDB, process memory, GlobalSettings XML, registry, and log files scanned for Roblox user IDs linked to this machine.",
+      cats:["roblox account","robloxaccount","roblox"] },
+    { id:"cookies",       label:"Browser Cookies",
+      desc:"Cookie SQLite files for Chrome, Edge, Brave, Vivaldi, Opera, and Firefox scanned across all profiles for Discord auth tokens (AES-GCM decrypted) and Roblox .ROBLOSECURITY cookies.",
+      cats:["cookie","browser cookie"] },
+    { id:"leveldb",       label:"Browser LevelDB",
+      desc:"Chromium browser LevelDB Local Storage parsed for Discord account IDs and usernames via structured SSTable + WAL log parsing.",
+      cats:["leveldb","browser leveldb"] },
+  ]},
+  { group:"INTEGRITY CHECKS", scans:[
+    { id:"int_prefetch",  label:"Prefetch Integrity",
+      desc:"Prefetch folder checked for existence, empty state, or suspicious recent modification.",
+      cats:["prefetch integrity"] },
+    { id:"int_amcache",   label:"Amcache Integrity",
+      desc:"Amcache.hve file size and last-modified timestamp checked for clearing or wiping.",
+      cats:["amcache integrity"] },
+    { id:"int_shimcache", label:"Shimcache Integrity",
+      desc:"SYSTEM hive last-write time checked for recent modification indicating AppCompatCache tampering.",
+      cats:["shimcache integrity"] },
+    { id:"int_srum",      label:"SRUM Integrity",
+      desc:"SRUDB.dat file size and last-modified time checked for wiping.",
+      cats:["srum integrity"] },
+    { id:"int_defender",  label:"Defender Integrity",
+      desc:"Windows Defender Operational event log checked for near-empty size (cleared), event 5001 (RT protection off), or event 5007 (exclusion added).",
+      cats:["defender integrity","defender"] },
+    { id:"int_bam",       label:"BAM Integrity",
+      desc:"BAM service checked for disabled state (Start=4) or suspiciously few UserSettings entries.",
+      cats:["bam integrity"] },
+    { id:"usb",           label:"USB History",
+      desc:"USBSTOR registry key enumerated for all historically connected USB storage devices.",
+      cats:["usb","usbstor","usb history"] },
+    { id:"restore",       label:"System Restore / VSS",
+      desc:"Presence or absence of system restore points and Volume Shadow Copies checked.",
+      cats:["restore","system restore","vss"] },
+    { id:"int_recent",    label:"Recent Folder Integrity",
+      desc:"Recent folder entry count and last-modification time checked for manual wiping.",
+      cats:["recent folder integrity"] },
+    { id:"services",      label:"Services Scan",
+      desc:"All installed Windows services scanned for cheat keywords in name, display name, and binary path.",
+      cats:["service","services"] },
+    { id:"unsigned",      label:"Unsigned Executables",
+      desc:"User-writable directories walked for unsigned .exe/.dll files. Patterns: packer detection, anti-debug imports.",
+      cats:["unsigned","unsigned executable"] },
   ]},
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-const scanId       = {{ scan.id }};
-const phases       = {{ phases|tojson }};
-let   allFindings  = {{ findings|tojson }};
-let   activeScanId = null;
-let   paneQuery    = '';
-let   paneSev      = 'all';
-let   sbFilter     = '';
-let   isDone       = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
+// ─── State ───────────────────────────────────────────────────────────────────
+const scanId     = {{ scan.id }};
+const phases     = {{ phases|tojson }};
+let isDone       = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
+let allFindings  = {{ findings|tojson }};
+let activeScanId = null;
+let paneSev      = 'all';
+let paneQuery    = '';
 
-// ─── utils ───────────────────────────────────────────────────────────────────
-function norm(s)  { return (s||'').toLowerCase().replace(/[\s_\-]/g,''); }
-function esc(s)   { if(!s)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function sev(s)   { return s==='alert'?'alert':(s==='warn'||s==='warning'?'warn':'info'); }
-function hitsFor(def){ const n=norm(def.id); return allFindings.filter(f=>norm(f.category)===n); }
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const esc    = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const rxEsc  = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const sevCls = s => ({alert:'alert',warn:'warn',info:'info'}[s]||'info');
 
-// ─── sidebar section toggle ───────────────────────────────────────────────────
-const sectionState = { secOv: true, secPh: false };
-function toggleSection(id) {
-  sectionState[id] = !sectionState[id];
-  document.getElementById(id+'Head').classList.toggle('collapsed', !sectionState[id]);
-  document.getElementById(id+'Arrow').style.transform = sectionState[id] ? '' : 'rotate(-90deg)';
-  document.getElementById(id+'Body').classList.toggle('collapsed', !sectionState[id]);
+function csvMatchesDef(detail, def) {
+  if (!def.csvTools || !def.csvTools.length) return false;
+  const dl = detail.toLowerCase();
+  return def.csvTools.some(t => dl.includes(t));
 }
-// wire up initial collapsed states
-document.getElementById('secOvHead').classList.toggle('collapsed', !sectionState.secOv);
-document.getElementById('secPhHead').classList.toggle('collapsed', !sectionState.secPh);
-document.getElementById('secOvBody').classList.toggle('collapsed', !sectionState.secOv);
-document.getElementById('secPhBody').classList.toggle('collapsed', !sectionState.secPh);
+function findingsFor(def) {
+  const cats = def.cats.map(c => c.toLowerCase());
+  return allFindings.filter(f => {
+    const fc = (f.category||'').toLowerCase();
+    if (fc === 'csv') return csvMatchesDef(f.detail||'', def);
+    return cats.some(c => fc === c || fc.includes(c));
+  });
+}
 
-// ─── scan list builder ────────────────────────────────────────────────────────
-function buildScanList() {
-  const filt = sbFilter.toLowerCase();
+// ─── View switching ───────────────────────────────────────────────────────────
+function switchView(name) {
+  document.querySelectorAll('.tnav').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  if (name === 'scans' && !activeScanId) activateScan(SCAN_DEFS[0].scans[0].id);
+}
+document.querySelectorAll('.tnav').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+function buildSidebar() {
   let html = '';
-  SCAN_DEFS.forEach(group => {
-    const vis = group.scans.filter(s => !filt || s.label.toLowerCase().includes(filt) || s.id.toLowerCase().includes(filt));
-    if (!vis.length) return;
-    html += `<div class="sb-group">${esc(group.group)}</div>`;
-    vis.forEach(s => {
-      const hits   = hitsFor(s);
-      const alerts = hits.filter(f=>f.severity==='alert').length;
-      const warns  = hits.filter(f=>f.severity==='warn'||f.severity==='warning').length;
-      const dot    = alerts?'hit':warns?'warn':'none';
-      const active = activeScanId===s.id?' active':'';
-      html += `<div class="si${active}" onclick="selectScan('${esc(s.id)}')">
+  for (const grp of SCAN_DEFS) {
+    html += `<div><div class="sg-label">${grp.group}</div>`;
+    for (const s of grp.scans) {
+      const hits   = findingsFor(s);
+      const alerts = hits.filter(f => f.severity === 'alert').length;
+      const warns  = hits.filter(f => f.severity === 'warn').length;
+      const dot    = alerts > 0 ? 'hit' : warns > 0 ? 'warn' : 'none';
+      const active = s.id === activeScanId ? ' active' : '';
+      html += `<div class="si${active}" data-sid="${s.id}">
         <div class="si-dot ${dot}"></div>
         <div class="si-name">${esc(s.label)}</div>
         <div class="si-cnt">${hits.length}</div>
       </div>`;
-    });
-  });
-  document.getElementById('scanList').innerHTML = html;
+    }
+    html += '</div>';
+  }
+  const sb = document.getElementById('scanSidebar');
+  sb.innerHTML = html;
+  sb.querySelectorAll('.si').forEach(el => el.addEventListener('click', () => activateScan(el.dataset.sid)));
 }
 
-document.getElementById('sbSearch').addEventListener('input', function() {
-  sbFilter = this.value; buildScanList();
-});
-
-// ─── pane selection ───────────────────────────────────────────────────────────
-function selectScan(id) {
+// ─── Activate scan pane ───────────────────────────────────────────────────────
+function activateScan(id) {
   activeScanId = id;
-  buildScanList();
+  paneSev = 'all'; paneQuery = '';
+  document.getElementById('paneSearch').value = '';
+  document.getElementById('paneSearchX').classList.remove('vis');
+  document.querySelectorAll('.sv').forEach(b => { b.className = 'sv' + (b.dataset.ps === 'all' ? ' aa' : ''); });
+
   let def = null;
-  for (const g of SCAN_DEFS) { def = g.scans.find(s=>s.id===id); if(def)break; }
+  for (const g of SCAN_DEFS) { def = g.scans.find(s => s.id === id); if (def) break; }
   if (!def) return;
 
-  const hits = hitsFor(def);
-  document.getElementById('panePlaceholder').style.display = 'none';
-  const pd = document.getElementById('paneDetail');
-  pd.style.display = 'flex';
+  const hits = findingsFor(def);
+  buildSidebar();
 
   document.getElementById('paneTitle').textContent = def.label.toUpperCase();
   document.getElementById('paneDesc').textContent  = def.desc;
   const badge = document.getElementById('paneBadge');
-  if (!hits.length) { badge.textContent='— CLEAN'; badge.className='pane-badge clean'; }
-  else { badge.textContent=hits.length+' FINDING'+(hits.length!==1?'S':''); badge.className='pane-badge hits'; }
-
-  paneQuery = '';
-  document.getElementById('paneSearch').value = '';
-  document.getElementById('paneClear').classList.remove('vis');
+  if (!hits.length) {
+    badge.textContent = '✓ CLEAN'; badge.className = 'pane-badge clean';
+  } else {
+    const a = hits.filter(f => f.severity === 'alert').length;
+    badge.textContent = a > 0 ? `${a} ALERT${a > 1 ? 'S' : ''}` : `${hits.length} FINDING${hits.length > 1 ? 'S' : ''}`;
+    badge.className = 'pane-badge hits';
+  }
   renderPane(hits);
 }
 
-function selectFirstScan() {
-  for (const g of SCAN_DEFS) {
-    for (const s of g.scans) {
-      if (hitsFor(s).length) { selectScan(s.id); return; }
-    }
-  }
-  if (SCAN_DEFS[0]?.scans[0]) selectScan(SCAN_DEFS[0].scans[0].id);
-}
-
-// ─── pane renderer ────────────────────────────────────────────────────────────
+// ─── Render finding fields ────────────────────────────────────────────────────
+// Handles the rich structured fields from HubChecker's [HIT] blocks
 function renderFinding(f, q) {
-  const sc = sev(f.severity);
-  const d  = f.detail||'';
-  const hi = q ? d.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), m=>`<mark>${esc(m)}</mark>`) : esc(d);
-  return `<div class="pf ${sc}">
-    <div class="pf-hdr">
-      <span class="pf-cat ${sc}">${esc(f.category||'')}</span>
-      ${f.keyword?`<span class="pf-kw">${esc(f.keyword)}</span>`:''}
-      <span class="pf-ts">${esc(f.ts||'')}</span>
-    </div>
-    <div class="pf-body">${hi}</div>
+  const sc  = sevCls(f.severity);
+  const raw = f.detail || '';
+
+  // Build header badges
+  const kwBadge  = f.keyword ? `<span class="pf-kw">${esc(f.keyword)}</span>` : '';
+  const hdr = `<div class="pf-hdr">
+    <span class="pf-cat ${sc}">${esc(f.category||'')}</span>
+    ${kwBadge}
+    <span class="pf-sev ${sc}">${esc(f.severity)}</span>
+    <span class="pf-ts">${esc(f.ts||'')}</span>
+  </div>`;
+
+  // If the finding has structured fields (from API parsing of [HIT] blocks), render them as a field table
+  // Expected fields: tool, csv, path, fileName, eventType, shimPos, executed, sourceHive,
+  //   keyLastWrite, lnkName, programName, fileSize, deletedOn, sourceName,
+  //   runCount, lastRun, prevRuns[], siCreated, siModified, siAccessed, frn, inUse,
+  //   keyPath, valueName, valueData, hive, category(sub), lastWrite,
+  //   signerName, sigStatus, patterns, present, runTime
+  if (f.fields && Object.keys(f.fields).length) {
+    const fd = f.fields;
+    const rows = [];
+
+    const addRow = (k, v, cls) => {
+      if (v == null || v === '' || v === undefined) return;
+      const hi = q ? esc(String(v)).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(String(v));
+      rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv ${cls||''}">${hi}</div>`);
+    };
+
+    addRow('Tool',       fd.tool);
+    addRow('CSV',        fd.csv,          'muted');
+    addRow('Event Type', fd.eventType,    'event');
+    addRow('Path',       fd.path,         'path');
+    addRow('File Name',  fd.fileName);
+    addRow('Run Time',   fd.runTime);
+    addRow('Last Run',   fd.lastRun);
+    addRow('Run Count',  fd.runCount);
+    addRow('Executed',   fd.executed);
+    addRow('Present',    fd.present);
+    addRow('ShimCache Position', fd.shimPos, 'muted');
+    addRow('Executed Flag',      fd.executedFlag);
+    addRow('Source Hive',        fd.sourceHive, 'muted');
+    addRow('Key Last Write',     fd.keyLastWrite);
+    addRow('Last Write',         fd.lastWrite);
+    addRow('Key Path',           fd.keyPath);
+    addRow('Value Name',         fd.valueName);
+    addRow('Value Data',         fd.valueData);
+    addRow('Registry Category',  fd.regCategory);
+    addRow('LNK Name',           fd.lnkName,    'path');
+    addRow('Program Name',       fd.programName);
+    addRow('Source Name ($I)',    fd.sourceName, 'muted');
+    addRow('File Size',          fd.fileSize,   'muted');
+    addRow('Deleted On',         fd.deletedOn);
+    addRow('SI Created',         fd.siCreated);
+    addRow('SI Modified',        fd.siModified);
+    addRow('SI Accessed',        fd.siAccessed, 'muted');
+    addRow('FRN',                fd.frn,        'muted');
+    addRow('In Use',             fd.inUse,      'muted');
+    addRow('Signature Status',   fd.sigStatus,  fd.sigStatus && fd.sigStatus.toLowerCase().includes('not') ? 'hit' : fd.sigStatus && fd.sigStatus.toLowerCase().includes('fake') ? 'hit' : 'clean');
+    addRow('Signer',             fd.signerName);
+    addRow('Patterns',           fd.patterns,   'hit');
+    addRow('Hive',               fd.hive,       'muted');
+    addRow('File Last Modified', fd.fileLastModified);
+
+    // Previous runs
+    if (fd.prevRuns && fd.prevRuns.length) {
+      const prevHtml = fd.prevRuns.map(r => `<div class="pf-prev-item">${esc(r)}</div>`).join('');
+      rows.push(`<div class="pf-fk">Prev Runs</div><div class="pf-fv"><div class="pf-prev">${prevHtml}</div></div>`);
+    }
+
+    return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">
+      ${hdr}
+      <div class="pf-fields">${rows.join('')}</div>
+    </div>`;
+  }
+
+  // Fallback: render raw detail as a text block with search highlighting
+  const hi = q
+    ? esc(raw).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>')
+    : esc(raw);
+  return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">
+    ${hdr}
+    <div class="pf-info-block">${hi}</div>
   </div>`;
 }
 
+// ─── Render pane ─────────────────────────────────────────────────────────────
 function renderPane(hits) {
   const body = document.getElementById('paneBody');
   const q    = paneQuery.trim().toLowerCase();
   const sf   = paneSev;
+
   if (!hits.length) {
-    body.innerHTML=`<div class="pane-empty clean"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg><div class="sub">Clean — no findings.</div></div>`;
-    document.getElementById('matchCount').textContent=0; return;
+    body.innerHTML = `<div class="pane-empty clean">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+      <div class="sub">This scan came back clean — no findings.</div>
+    </div>`;
+    document.getElementById('matchCount').textContent = 0;
+    return;
   }
-  let vis=0;
-  const rows=hits.map(f=>{
-    const sc=sev(f.severity);
-    const sevOk=sf==='all'||f.severity===sf||(sf==='warn'&&f.severity==='warning');
-    const qOk=!q||(f.detail||'').toLowerCase().includes(q)||(f.keyword||'').toLowerCase().includes(q);
-    if(sevOk&&qOk)vis++;
-    const h=renderFinding(f,q);
-    return sevOk&&qOk?h:h.replace(`class="pf ${sc}"`,`class="pf ${sc} hid"`);
+
+  let visible = 0;
+  const rows = hits.map(f => {
+    const sc     = sevCls(f.severity);
+    const raw    = (f.detail || '').toLowerCase();
+    const sevOk  = sf === 'all' || f.severity === sf;
+    const qOk    = !q || raw.includes(q) || (f.keyword||'').toLowerCase().includes(q);
+    if (sevOk && qOk) visible++;
+    const html = renderFinding(f, q);
+    // inject hid class if filtered out
+    return sevOk && qOk ? html : html.replace(`class="pf ${sc}"`, `class="pf ${sc} hid"`);
   }).join('');
-  body.innerHTML=rows||`<div class="pane-empty default">◈<div class="sub">No matches${q?` for "${esc(q)}"`:''}.</div></div>`;
-  document.getElementById('matchCount').textContent=vis;
+
+  body.innerHTML = rows || `<div class="pane-empty default">◈<div class="sub">No matches${q ? ` for "${esc(q)}"` : ''}.</div></div>`;
+  document.getElementById('matchCount').textContent = visible;
 }
 
-function rerender(){
-  if(!activeScanId)return;
-  let def=null; for(const g of SCAN_DEFS){def=g.scans.find(s=>s.id===activeScanId);if(def)break;}
-  if(def)renderPane(hitsFor(def));
-}
+// ─── Search ───────────────────────────────────────────────────────────────────
+const searchEl = document.getElementById('paneSearch');
+const searchX  = document.getElementById('paneSearchX');
 
-// search + sev filter
-document.getElementById('paneSearch').addEventListener('input',function(){
-  paneQuery=this.value; document.getElementById('paneClear').classList.toggle('vis',paneQuery.length>0); rerender();
+searchEl.addEventListener('input', () => {
+  paneQuery = searchEl.value;
+  searchX.classList.toggle('vis', paneQuery.length > 0);
+  rerender();
 });
-document.getElementById('paneClear').addEventListener('click',()=>{
-  document.getElementById('paneSearch').value=''; paneQuery='';
-  document.getElementById('paneClear').classList.remove('vis'); rerender();
+searchX.addEventListener('click', () => {
+  searchEl.value = ''; paneQuery = '';
+  searchX.classList.remove('vis');
+  rerender();
 });
-document.addEventListener('keydown',e=>{
-  const ps=document.getElementById('paneSearch');
-  const sb=document.getElementById('sbSearch');
-  if(e.key==='/'&&document.activeElement!==ps&&document.activeElement!==sb){e.preventDefault();ps.focus();}
-  if(e.key==='Escape')ps.blur();
+document.addEventListener('keydown', e => {
+  if (document.getElementById('view-scans').classList.contains('active')) {
+    if (e.key === '/' && document.activeElement !== searchEl) { e.preventDefault(); searchEl.focus(); }
+    if (e.key === 'Escape') searchEl.blur();
+  }
 });
-const sevMap={all:'aa',alert:'al',warn:'aw',info:'ai'};
-document.querySelectorAll('.sv').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    paneSev=btn.dataset.ps;
-    document.querySelectorAll('.sv').forEach(b=>{b.className='sv'+(b.dataset.ps===paneSev?' '+sevMap[paneSev]:'');});
+
+// ─── Severity filter ──────────────────────────────────────────────────────────
+const sevMap = { all:'aa', alert:'al', warn:'aw', info:'ai' };
+document.querySelectorAll('.sv').forEach(btn => {
+  btn.addEventListener('click', () => {
+    paneSev = btn.dataset.ps;
+    document.querySelectorAll('.sv').forEach(b => { b.className = 'sv' + (b.dataset.ps === paneSev ? ' ' + sevMap[paneSev] : ''); });
     rerender();
   });
 });
 
-// ─── phase log updater ────────────────────────────────────────────────────────
+function rerender() {
+  if (!activeScanId) return;
+  let def = null;
+  for (const g of SCAN_DEFS) { def = g.scans.find(s => s.id === activeScanId); if (def) break; }
+  if (def) renderPane(findingsFor(def));
+}
+
+// ─── Phase log renderer ───────────────────────────────────────────────────────
 function renderPhaseLog(events, pi, done) {
-  const em={};for(const ev of events)em[ev.phase_index]=ev;
-  const html=phases.map((p,i)=>{
-    const ev=em[i]; const cls=(done||i<pi)?'done':i===pi?'active':'pending';
-    return `<div class="sb-ph ${cls}">
-      <div class="sb-ph-dot"></div>
-      <div class="sb-ph-name">${String(i).padStart(2,'0')}. ${esc(p)}</div>
-      ${ev?`<div class="sb-ph-pct">${ev.pct}%</div>`:''}
+  const evMap = {};
+  for (const ev of events) evMap[ev.phase_index] = ev;
+  return phases.map((phase, i) => {
+    const ev  = evMap[i];
+    const cls = (done || i < pi) ? 'done' : i === pi ? 'active' : 'pending';
+    return `<div class="ph-row ${cls}">
+      <div class="ph-gutter"><div class="ph-dot"></div></div>
+      <div class="ph-body">
+        <div class="ph-top">
+          <div class="ph-name">${String(i).padStart(2,'0')}. ${esc(phase)}</div>
+          ${ev ? `<div class="ph-pct">${ev.pct}%</div>` : ''}
+        </div>
+        ${ev && ev.message ? `<div class="ph-msg">${esc(ev.message)}</div>` : ''}
+        ${ev ? `<div class="ph-ts">${esc(ev.ts)}</div>` : ''}
+      </div>
     </div>`;
   }).join('');
-  document.getElementById('phaseLog').innerHTML=html;
-  document.getElementById('phaseCount').textContent=`${(events||[]).length}/${phases.length}`;
 }
 
-// ─── overview findings updater ────────────────────────────────────────────────
+// ─── Overview findings renderer ───────────────────────────────────────────────
 function renderOvFindings(findings) {
-  if(!findings.length){ document.getElementById('ovFindings').innerHTML=`<div class="pane-empty default" style="padding:20px 11px;font-size:11px">◈<div class="sub">No findings yet</div></div>`; return; }
-  let html=findings.slice(0,10).map(f=>{const sc=sev(f.severity);const d=(f.detail||'').slice(0,80)+((f.detail||'').length>80?'…':'');return`<div class="ov-row ${sc}"><span class="ov-cat ${sc}">${esc(f.category||'')}</span><div class="ov-detail">${esc(d)}</div><div class="ov-ts">${esc(f.ts||'')}</div></div>`;}).join('');
-  if(findings.length>10)html+=`<div class="ov-more" onclick="selectFirstScan()">+${findings.length-10} more →</div>`;
-  document.getElementById('ovFindings').innerHTML=html;
+  const recent = findings.slice(0, 20);
+  if (!recent.length) {
+    return `<div class="pane-empty default" style="padding:40px 20px">◈<div class="sub">No findings yet</div></div>`;
+  }
+  const rows = recent.map(f => {
+    const sc = sevCls(f.severity);
+    const kw = f.keyword ? `<span class="ov-kw">${esc(f.keyword)}</span>` : '';
+    const detail = (f.detail || '').slice(0, 120) + ((f.detail||'').length > 120 ? '…' : '');
+    return `<div class="ov-row ${sc}">
+      <div class="ov-top"><span class="ov-cat ${sc}">${esc(f.category||'')}</span>${kw}</div>
+      <div class="ov-detail">${esc(detail)}</div>
+      <div class="ov-ts">${esc(f.ts||'')}</div>
+    </div>`;
+  }).join('');
+  const more = findings.length > 20
+    ? `<div style="padding:9px 14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);">+${findings.length-20} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red);">View all</a></div>`
+    : '';
+  return rows + more;
 }
 
-// ─── polling ──────────────────────────────────────────────────────────────────
-async function poll(){
-  try{
-    const [pR,fR]=await Promise.all([fetch(`/api/scan/${scanId}/progress`),fetch(`/api/scan/${scanId}/findings`)]);
-    const d=await pR.json(); const findings=fR.ok?await fR.json():allFindings; allFindings=findings;
-    const total=d.total_phases||phases.length; const pi=d.phase_index||0;
-    const done=d.status==='complete'||d.status==='completed';
-    const pct=done?100:Math.round(pi/Math.max(total-1,1)*100);
-    document.getElementById('barFill').style.width=pct+'%';
-    document.getElementById('progPct').textContent=pct+'%';
-    if(done){
-      document.getElementById('progLabel').textContent='ALL PHASES COMPLETE';
-      document.getElementById('statusChip').className='status-chip complete';
-      document.getElementById('statusChip').textContent='✓ COMPLETE';
-      const lp=document.getElementById('livePill');if(lp)lp.style.display='none';
-      isDone=true;
-    }else{
-      document.getElementById('progLabel').textContent=`PHASE ${pi+1}/${total} — ${phases[Math.min(pi,phases.length-1)]}`;
+// ─── Polling ──────────────────────────────────────────────────────────────────
+async function poll() {
+  try {
+    const [pRes, fRes] = await Promise.all([
+      fetch(`/api/scan/${scanId}/progress`),
+      fetch(`/api/scan/${scanId}/findings`)
+    ]);
+    const d = await pRes.json();
+    const findings = fRes.ok ? await fRes.json() : allFindings;
+    allFindings = findings;
+
+    const total = d.total_phases || phases.length;
+    const pi    = d.phase_index  || 0;
+    const done  = d.status === 'complete' || d.status === 'completed';
+    const pct   = done ? 100 : Math.round(pi / Math.max(total - 1, 1) * 100);
+
+    document.getElementById('barFill').style.width  = pct + '%';
+    document.getElementById('progPct').textContent  = pct + '%';
+
+    if (done) {
+      document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
+      document.getElementById('statusBadge').className   = 'status-badge complete';
+      document.getElementById('statusBadge').textContent = '✓ COMPLETE';
+      const lp = document.getElementById('livePill'); if (lp) lp.style.display = 'none';
+      isDone = true;
+    } else {
+      document.getElementById('progLabel').textContent = `PHASE ${pi+1}/${total} — ${phases[Math.min(pi, phases.length-1)]}`;
     }
-    renderPhaseLog(d.events||[],pi,done);
-    renderOvFindings(findings);
-    buildScanList();
+
+    const phHtml = renderPhaseLog(d.events || [], pi, done);
+    document.getElementById('phaseLogOv').innerHTML   = phHtml;
+    document.getElementById('phaseLogFull').innerHTML = phHtml;
+    document.getElementById('phaseCount').textContent = `${(d.events||[]).length}/${phases.length}`;
+    document.getElementById('tcTotal').textContent    = findings.length;
+    document.getElementById('findingCount').textContent = findings.length;
+    document.getElementById('ovFindings').innerHTML   = renderOvFindings(findings);
+
+    buildSidebar();
     rerender();
-    if(!done)setTimeout(poll,2500);
-  }catch(e){if(!isDone)setTimeout(poll,4000);}
+
+    if (!done) setTimeout(poll, 2500);
+  } catch(e) {
+    if (!isDone) setTimeout(poll, 4000);
+  }
 }
 
-// ─── init ─────────────────────────────────────────────────────────────────────
-buildScanList();
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildSidebar();
 poll();
 </script>
 </body>
