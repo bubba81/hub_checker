@@ -3,792 +3,976 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>HubChecker // Dashboard</title>
+<title>Scan Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo:wght@400;500;600;700;900&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
 <style>
 :root {
-  --red:       #cc0000;
-  --red-hi:    #ff1a1a;
-  --red-dim:   rgba(204,0,0,.12);
-  --red-line:  rgba(204,0,0,.35);
-  --bg:        #060606;
-  --bg2:       #0b0b0b;
-  --bg3:       #101010;
-  --bg4:       #161616;
-  --border:    #1c1c1c;
-  --border2:   #252525;
-  --text:      #d8d8d8;
-  --muted:     #4a4a4a;
-  --muted2:    #333;
-  --display:   'Bebas Neue', sans-serif;
-  --body:      'Archivo', sans-serif;
-  --mono:      'Fira Code', monospace;
+  --red:      #e02020;
+  --red-dark: #8c1414;
+  --red-glow: #ff4444;
+  --red-dim:  rgba(224,32,32,.15);
+  --bg:       #080808;
+  --surface:  #0f0f0f;
+  --surface2: #141414;
+  --border:   #1e0606;
+  --border2:  #2a0a0a;
+  --text:     #e8e8e8;
+  --muted:    #555;
+  --mono:     'Share Tech Mono', monospace;
+  --head:     'Rajdhani', sans-serif;
+  --display:  'Orbitron', sans-serif;
 }
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-html { scroll-behavior:smooth; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--body);
-  font-size:13px;
-  min-height:100vh;
-  overflow-x:hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* noise texture */
-body::after {
-  content:'';
-  position:fixed; inset:0; z-index:9998; pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-  opacity:.4;
+/* ── Scanline overlay ────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 9999;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
+  pointer-events: none;
 }
 
-/* ── TOPBAR ───────────────────────────────────────────────────────────── */
-.topbar {
-  height:52px;
-  display:flex; align-items:stretch;
-  border-bottom:1px solid var(--border);
-  background:var(--bg2);
-  position:sticky; top:0; z-index:100;
+/* ── Grid BG ─────────────────────────────────────────────────────────── */
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(224,32,32,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(224,32,32,.025) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridDrift 30s linear infinite;
 }
-.topbar-brand {
-  display:flex; align-items:center; gap:14px;
-  padding:0 24px;
-  border-right:1px solid var(--border);
+@keyframes gridDrift { to { background-position: 50px 50px; } }
+
+/* ── Nav ──────────────────────────────────────────────────────────────── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8,8,8,.92);
+  border-bottom: 1px solid var(--border2);
+  backdrop-filter: blur(12px);
+  padding: 0 32px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
 }
-.brand-mark {
-  width:28px; height:28px;
-  background:var(--red);
-  clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);
-  flex-shrink:0;
+.nav-brand {
+  display: flex; align-items: center; gap: 12px;
 }
-.brand-text {
-  font-family:var(--display);
-  font-size:22px;
-  letter-spacing:4px;
-  color:#fff;
-  line-height:1;
+.brand-hex {
+  width: 32px; height: 32px;
+  background: var(--red-dim);
+  border: 1px solid var(--red-dark);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--red); font-size: 14px;
 }
-.brand-text em { color:var(--red); font-style:normal; }
-.topbar-stats {
-  display:flex; align-items:stretch; flex:1;
+.brand-name {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #fff;
 }
-.tstat {
-  display:flex; align-items:center; gap:10px;
-  padding:0 20px;
-  border-right:1px solid var(--border);
-  font-family:var(--mono); font-size:11px;
-  color:var(--muted);
-  letter-spacing:.5px;
+.brand-name span { color: var(--red); }
+
+.nav-stats {
+  display: flex; gap: 24px; align-items: center;
 }
-.tstat-val {
-  font-family:var(--display);
-  font-size:20px;
-  line-height:1;
-  color:var(--text);
+.stat-pill {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
 }
-.tstat-val.r { color:var(--red); }
-.tstat-val.a { color:#e08000; }
-.tstat-val.g { color:#2a9c3f; }
-.topbar-user {
-  display:flex; align-items:center; gap:12px;
-  padding:0 20px; margin-left:auto;
-  border-left:1px solid var(--border);
+.stat-pill b { color: var(--text); }
+.stat-pill.running b { color: #ffa500; }
+.stat-pill.flagged b { color: var(--red); }
+
+.nav-user {
+  display: flex; align-items: center; gap: 10px;
 }
 .user-avatar {
-  width:26px; height:26px;
-  border-radius:0;
-  border:1px solid var(--border2);
-  object-fit:cover;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--red-dark);
+  object-fit: cover;
 }
-.user-name { font-family:var(--mono); font-size:11px; color:var(--muted); }
-.btn-out {
-  font-family:var(--mono); font-size:10px; letter-spacing:2px;
-  padding:5px 12px;
-  background:transparent;
-  border:1px solid var(--border2);
-  color:var(--muted);
-  cursor:pointer; text-decoration:none;
-  transition:all .15s;
-  text-transform:uppercase;
+.user-name {
+  font-size: 12px;
+  color: var(--muted);
 }
-.btn-out:hover { border-color:var(--red); color:var(--red-hi); }
+.btn-logout {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all .2s;
+  text-decoration: none;
+}
+.btn-logout:hover {
+  border-color: var(--red-dark);
+  color: var(--red);
+}
 
-/* ── MAIN ────────────────────────────────────────────────────────────── */
+/* ── Main layout ─────────────────────────────────────────────────────── */
 .main {
-  max-width:1340px;
-  margin:0 auto;
-  padding:28px 24px 80px;
+  position: relative; z-index: 1;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
 }
 
-/* ── PAGE HEADER ─────────────────────────────────────────────────────── */
-.page-head {
-  display:flex; align-items:flex-end; justify-content:space-between;
-  margin-bottom:28px;
-  padding-bottom:20px;
-  border-bottom:2px solid var(--border);
-  position:relative;
-}
-.page-head::after {
-  content:'';
-  position:absolute; bottom:-2px; left:0;
-  width:120px; height:2px;
-  background:var(--red);
+/* ── Header bar ──────────────────────────────────────────────────────── */
+.page-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border2);
 }
 .page-title {
-  font-family:var(--display);
-  font-size:48px;
-  letter-spacing:6px;
-  line-height:1;
-  color:#fff;
+  font-family: var(--head);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1;
 }
-.page-sub {
-  font-family:var(--mono);
-  font-size:10px;
-  color:var(--muted);
-  letter-spacing:3px;
-  margin-top:5px;
-  text-transform:uppercase;
+.page-title .accent { color: var(--red); }
+.page-subtitle {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-top: 6px;
 }
 
-/* ── TOOLBAR ─────────────────────────────────────────────────────────── */
+/* ── Metric cards ────────────────────────────────────────────────────── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+.metric::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 12px; height: 12px;
+  background: var(--red-dark);
+  clip-path: polygon(0 0, 100% 100%, 100% 0);
+}
+.metric-val {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.metric-val.red   { color: var(--red); }
+.metric-val.amber { color: #ffa500; }
+.metric-val.green { color: #22c55e; }
+.metric-label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.metric-bar {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 2px;
+  background: var(--red);
+  opacity: .4;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────── */
 .toolbar {
-  display:flex; align-items:stretch; gap:0;
-  margin-bottom:20px;
-  border:1px solid var(--border);
-  background:var(--bg2);
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px;
 }
 .search-wrap {
-  flex:1;
-  position:relative;
-  display:flex; align-items:center;
+  flex: 1;
+  position: relative;
 }
-.search-ico {
-  position:absolute; left:14px;
-  color:var(--muted); pointer-events:none;
-  font-family:var(--mono); font-size:14px;
+.search-wrap::before {
+  content: '⌕';
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted); font-size: 16px;
+  pointer-events: none;
 }
 #searchInput {
-  width:100%;
-  background:transparent;
-  border:none;
-  border-right:1px solid var(--border);
-  color:var(--text);
-  font-family:var(--mono); font-size:12px;
-  padding:12px 16px 12px 38px;
-  outline:none;
-  letter-spacing:.5px;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 10px 16px 10px 36px;
+  outline: none;
+  transition: border-color .2s;
+  letter-spacing: 1px;
 }
-#searchInput::placeholder { color:var(--muted2); }
-.filter-btns {
-  display:flex;
-}
+#searchInput:focus { border-color: var(--red-dark); }
+#searchInput::placeholder { color: var(--muted); }
+
 .filter-btn {
-  padding:0 18px;
-  background:transparent;
-  border:none; border-right:1px solid var(--border);
-  color:var(--muted);
-  font-family:var(--mono); font-size:10px;
-  letter-spacing:2px; text-transform:uppercase;
-  cursor:pointer; transition:all .15s;
-  white-space:nowrap;
+  padding: 10px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all .2s;
 }
-.filter-btn:hover { color:var(--text); background:rgba(255,255,255,.02); }
-.filter-btn.active { color:var(--red-hi); background:var(--red-dim); }
-.btn-pin {
-  padding:0 20px;
-  background:var(--red);
-  border:none;
-  color:#fff;
-  font-family:var(--display); font-size:16px;
-  letter-spacing:3px;
-  cursor:pointer; transition:all .15s;
-  white-space:nowrap;
+.filter-btn.active,
+.filter-btn:hover {
+  border-color: var(--red-dark);
+  color: var(--text);
+  background: var(--red-dim);
 }
-.btn-pin:hover { background:var(--red-hi); }
+.filter-btn.active { color: var(--red); }
 
-/* ── SCAN GRID ───────────────────────────────────────────────────────── */
+/* ── Scan grid ───────────────────────────────────────────────────────── */
 #scanGrid {
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(360px, 1fr));
-  gap:1px;
-  background:var(--border);
-  border:1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
 }
 
-/* ── SCAN CARD ───────────────────────────────────────────────────────── */
+/* ── Scan card ───────────────────────────────────────────────────────── */
 .scan-card {
-  background:var(--bg2);
-  position:relative;
-  transition:background .2s;
-  cursor:default;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  transition: border-color .25s, box-shadow .25s, transform .2s;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
 }
-.scan-card:hover { background:var(--bg3); }
-.card-stripe {
-  height:3px;
-  background:var(--border2);
+.scan-card:hover {
+  border-color: var(--red-dark);
+  box-shadow: 0 0 24px rgba(224,32,32,.1), inset 0 0 20px rgba(224,32,32,.03);
+  transform: translateY(-2px);
 }
-.card-stripe.running   { background:linear-gradient(90deg,#e08000,#ffb347); }
-.card-stripe.completed { background:linear-gradient(90deg,#1a5c28,#2a9c3f); }
-.card-stripe.flagged   { background:linear-gradient(90deg,#8b0000,var(--red)); }
+.scan-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 18px; height: 18px;
+  background: var(--red-dark);
+  clip-path: polygon(0 0, 100% 100%, 100% 0);
+}
+/* Left accent bar */
+.scan-card::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--red);
+  opacity: 0;
+  transition: opacity .25s;
+}
+.scan-card:hover::after { opacity: 1; }
 
-.card-body { padding:16px 18px 14px; }
-.card-row1 {
-  display:flex; align-items:flex-start; justify-content:space-between;
-  margin-bottom:10px; gap:10px;
+.card-head {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px;
+}
+.card-key-wrap {}
+.card-key {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 .card-name {
-  font-family:var(--display);
-  font-size:20px;
-  letter-spacing:2px;
-  color:#fff;
-  line-height:1.1;
-  word-break:break-all;
+  font-family: var(--head);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+  word-break: break-all;
 }
-.card-key {
-  font-family:var(--mono); font-size:9px;
-  color:var(--muted); letter-spacing:1px;
-  margin-top:3px;
+.card-scankey-val {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-top: 2px;
+  font-family: var(--mono);
 }
-.status-chip {
-  font-family:var(--mono); font-size:9px; letter-spacing:2px;
-  text-transform:uppercase;
-  padding:3px 9px;
-  border:1px solid;
-  flex-shrink:0; white-space:nowrap;
+
+.status-badge {
+  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+  border: 1px solid;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
-.chip-running   { color:#e08000; border-color:rgba(224,128,0,.35); background:rgba(224,128,0,.07); }
-.chip-completed { color:#2a9c3f; border-color:rgba(42,156,63,.35); background:rgba(42,156,63,.07); }
-.chip-pending   { color:var(--muted); border-color:var(--border2); }
-.chip-flagged   { color:var(--red-hi); border-color:var(--red-line); background:var(--red-dim); }
+.badge-running   { color: #ffa500; border-color: rgba(255,165,0,.3); background: rgba(255,165,0,.08); }
+.badge-completed { color: #22c55e; border-color: rgba(34,197,94,.3); background: rgba(34,197,94,.08); }
+.badge-pending   { color: var(--muted); border-color: var(--border2); background: transparent; }
+.badge-flagged   { color: var(--red); border-color: rgba(224,32,32,.3); background: var(--red-dim); }
 
 .card-meta {
-  display:flex; gap:16px; flex-wrap:wrap;
-  font-family:var(--mono); font-size:9px;
-  color:var(--muted); letter-spacing:.5px;
-  margin-bottom:12px;
+  padding: 12px 20px;
+  display: flex; gap: 20px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1px;
 }
-.meta-k { color:var(--muted2); margin-right:4px; }
+.meta-item { display: flex; gap: 6px; align-items: center; }
+.meta-item .label { color: #333; }
+.meta-item .val   { color: var(--muted); }
 
-/* mini progress */
-.prog-bar {
-  height:2px;
-  background:var(--bg4);
-  margin-bottom:14px;
-  position:relative; overflow:hidden;
+/* Progress mini-bar */
+.progress-mini {
+  margin: 0 20px 14px;
 }
-.prog-fill {
-  height:100%; position:absolute; left:0; top:0;
-  background:var(--red);
-  transition:width .6s ease;
+.progress-track {
+  height: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
 }
-.prog-fill.done { background:#2a9c3f; }
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red-dark), var(--red));
+  transition: width 1s ease;
+  position: relative;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 8px;
+  background: rgba(255,255,255,.4);
+  animation: shimmer 1.5s ease infinite;
+}
+@keyframes shimmer { 0%,100%{opacity:0} 50%{opacity:1} }
+.progress-label {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+  display: flex; justify-content: space-between;
+}
 
-/* card actions */
+/* Card actions */
 .card-actions {
-  display:flex; gap:0;
-  border-top:1px solid var(--border);
+  padding: 12px 20px 16px;
+  display: flex; gap: 8px;
 }
-.act-btn {
-  flex:1;
-  padding:9px 0;
-  background:transparent;
-  border:none; border-right:1px solid var(--border);
-  color:var(--muted);
-  font-family:var(--mono); font-size:10px; letter-spacing:1.5px;
-  text-transform:uppercase;
-  cursor:pointer; transition:all .15s;
-  display:flex; align-items:center; justify-content:center; gap:6px;
+.action-btn {
+  flex: 1;
+  padding: 8px 0;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
-.act-btn:last-child { border-right:none; }
-.act-btn:hover { background:rgba(255,255,255,.03); color:var(--text); }
-.act-view:hover { color:#60a5fa; }
-.act-edit:hover { color:#fbbf24; }
-.act-del:hover  { color:var(--red-hi); }
+.action-btn:hover         { color: var(--text); border-color: #444; }
+.action-btn.btn-view:hover{ color: #60a5fa; border-color: rgba(96,165,250,.4); background: rgba(96,165,250,.06); }
+.action-btn.btn-edit:hover{ color: #fbbf24; border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.06); }
+.action-btn.btn-del:hover { color: var(--red); border-color: rgba(224,32,32,.4); background: var(--red-dim); }
 
-/* empty */
+/* Empty state */
 .empty-state {
-  grid-column:1/-1;
-  padding:80px 20px; text-align:center;
-  color:var(--muted2);
-  font-family:var(--mono); font-size:11px; letter-spacing:3px;
-  background:var(--bg2);
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 2px;
 }
-.empty-glyph { font-family:var(--display); font-size:64px; color:var(--border2); display:block; margin-bottom:12px; }
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: .3; }
 
-/* ── MODALS ──────────────────────────────────────────────────────────── */
-.overlay {
-  position:fixed; inset:0; z-index:200;
-  background:rgba(0,0,0,.88);
-  display:none; align-items:center; justify-content:center;
-  padding:20px;
-  backdrop-filter:blur(3px);
+/* ── Modal ───────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
 }
-.overlay.open { display:flex; }
+.modal-overlay.open { display: flex; }
 
 .modal {
-  background:var(--bg2);
-  border:1px solid var(--border2);
-  width:100%; max-width:780px;
-  max-height:90vh; overflow-y:auto;
-  position:relative;
-  box-shadow:0 0 0 1px var(--red-line), 0 40px 100px rgba(0,0,0,.9);
-  animation:mIn .18s ease;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  width: 100%;
+  max-width: 760px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 0 100%);
+  box-shadow:
+    0 0 0 1px rgba(224,32,32,.2),
+    0 40px 120px rgba(0,0,0,.8);
+  animation: modalIn .2s ease;
 }
-@keyframes mIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
-.modal-top-bar {
-  height:3px;
-  background:linear-gradient(90deg,var(--red),transparent);
+@keyframes modalIn {
+  from { opacity:0; transform: translateY(20px); }
+  to   { opacity:1; transform: translateY(0); }
 }
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 24px; height: 24px;
+  background: var(--red-dark);
+  clip-path: polygon(0 0, 100% 100%, 100% 0);
+}
+
 .modal-head {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:18px 22px 16px;
-  border-bottom:1px solid var(--border);
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
 }
 .modal-title {
-  font-family:var(--display); font-size:24px; letter-spacing:3px; color:#fff;
+  font-family: var(--head);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
 }
-.modal-sub {
-  font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:1px;
-  margin-top:3px;
+.modal-title .sub {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 1px;
+  display: block;
+  margin-top: 3px;
+  font-family: var(--mono);
 }
 .btn-close {
-  width:30px; height:30px;
-  background:transparent; border:1px solid var(--border2);
-  color:var(--muted); font-size:16px;
-  cursor:pointer; display:flex; align-items:center; justify-content:center;
-  transition:all .15s; line-height:1; flex-shrink:0;
+  width: 32px; height: 32px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+  line-height: 1;
 }
-.btn-close:hover { color:var(--red-hi); border-color:var(--red-line); }
+.btn-close:hover { color: var(--red); border-color: var(--red-dark); }
 
-.modal-body { padding:20px 22px; }
+.modal-body { padding: 24px 28px; }
 
-/* view modal tab system */
-.scan-tabs {
-  display:flex; overflow-x:auto; scrollbar-width:none;
-  border-bottom:1px solid var(--border);
-  margin-bottom:0;
-  flex-wrap:nowrap;
+/* Progress view */
+.progress-timeline {
+  display: flex; flex-direction: column; gap: 0;
 }
-.scan-tabs::-webkit-scrollbar { display:none; }
-.stab {
-  display:flex; align-items:center; gap:5px;
-  padding:9px 14px; white-space:nowrap;
-  font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase;
-  background:transparent; border:none;
-  color:var(--muted); cursor:pointer; transition:all .12s;
-  border-bottom:2px solid transparent; position:relative; top:1px;
+.progress-item {
+  display: flex; align-items: flex-start; gap: 16px;
+  position: relative;
+  padding-bottom: 16px;
 }
-.stab:hover { color:var(--text); }
-.stab.active { color:var(--red-hi); border-bottom-color:var(--red); }
-.stab-cnt {
-  font-size:9px; padding:1px 5px;
-  background:var(--bg3); border:1px solid var(--border);
+.progress-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 19px; top: 28px; bottom: 0;
+  width: 1px;
+  background: var(--border2);
 }
-.stab.active .stab-cnt { border-color:rgba(204,0,0,.4); color:var(--red-hi); }
-
-.tab-pane { display:none; }
-.tab-pane.active { display:block; }
-
-/* progress timeline */
-.progress-tl { display:flex; flex-direction:column; }
-.ptl-item {
-  display:flex; gap:14px; align-items:flex-start;
-  padding:10px 0; border-bottom:1px solid var(--border);
-  position:relative;
+.prog-dot {
+  width: 10px; height: 10px;
+  border: 2px solid var(--red);
+  background: var(--bg);
+  flex-shrink: 0;
+  margin-top: 6px;
+  position: relative;
+  z-index: 1;
 }
-.ptl-item:last-child { border-bottom:none; }
-.ptl-dot {
-  width:8px; height:8px;
-  border:1px solid var(--muted2); background:var(--bg);
-  flex-shrink:0; margin-top:4px;
-  transition:all .2s;
+.prog-dot.done { background: var(--red); }
+.prog-content {}
+.prog-pct {
+  font-family: var(--display);
+  font-size: 16px;
+  color: var(--red);
+  font-weight: 700;
+  display: inline;
 }
-.ptl-dot.done { background:var(--red); border-color:var(--red); }
-.ptl-pct { font-family:var(--display); font-size:18px; color:var(--red); min-width:48px; }
-.ptl-name { font-family:var(--mono); font-size:11px; color:var(--text); }
-.ptl-msg { font-size:11px; color:var(--muted); margin-top:2px; }
-.ptl-ts { font-family:var(--mono); font-size:9px; color:var(--muted2); margin-top:2px; }
-.prog-overall { margin-top:16px; }
-.prog-track {
-  height:6px; background:var(--bg4); border:1px solid var(--border);
-  overflow:hidden; position:relative;
+.prog-type {
+  font-size: 13px;
+  color: var(--text);
+  margin-left: 8px;
+  font-family: var(--head);
+  letter-spacing: 1px;
 }
-.prog-track-fill {
-  height:100%; background:linear-gradient(90deg,#8b0000,var(--red));
-  transition:width .5s ease;
-}
-.prog-lbl {
-  display:flex; justify-content:space-between;
-  font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:5px;
+.prog-time {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+  letter-spacing: 1px;
 }
 
-/* findings by category in view modal */
-.cat-section { margin-bottom:18px; }
-.cat-label {
-  font-family:var(--mono); font-size:9px; letter-spacing:3px; text-transform:uppercase;
-  color:var(--muted); padding-bottom:6px; margin-bottom:6px;
-  border-bottom:1px solid var(--border2);
-  display:flex; align-items:center; justify-content:space-between;
+/* Results view */
+.results-section { margin-bottom: 24px; }
+.results-section-title {
+  font-family: var(--head);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
 }
-.cat-label span { color:var(--muted2); }
-.finding-row {
-  padding:9px 12px; margin-bottom:3px;
-  border:1px solid var(--border);
-  border-left:3px solid var(--muted2);
-  background:var(--bg3);
-  font-size:12px;
+.results-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border2);
 }
-.finding-row.sev-alert { border-left-color:var(--red); }
-.finding-row.sev-warn  { border-left-color:#d97706; }
-.finding-row.sev-info  { border-left-color:#2563eb; }
-.finding-sev {
-  font-family:var(--mono); font-size:9px; letter-spacing:2px;
-  text-transform:uppercase; margin-bottom:3px;
+.result-entry {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  font-size: 12px;
 }
-.finding-sev.sev-alert { color:var(--red); }
-.finding-sev.sev-warn  { color:#d97706; }
-.finding-sev.sev-info  { color:#4a7cc7; }
-.finding-detail { color:var(--text); line-height:1.6; word-break:break-all; }
-.finding-ts { font-family:var(--mono); font-size:9px; color:var(--muted2); margin-top:3px; }
-.no-findings {
-  padding:24px; text-align:center;
-  font-family:var(--mono); font-size:11px; letter-spacing:2px;
-  color:var(--muted2); border:1px dashed var(--border2);
+.result-entry.sev-high   { border-left-color: var(--red); }
+.result-entry.sev-medium { border-left-color: #ffa500; }
+.result-entry.sev-info   { border-left-color: #3b82f6; }
+.result-entry.sev-clean  { border-left-color: #22c55e; }
+.result-cat {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
 }
+.result-detail { color: var(--text); line-height: 1.6; word-break: break-all; }
+.result-time { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
-/* forms */
-.form-field { margin-bottom:16px; }
-.form-lbl {
-  display:block; font-family:var(--mono); font-size:9px; letter-spacing:2px;
-  text-transform:uppercase; color:var(--muted); margin-bottom:7px;
+.no-results {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 2px;
+  border: 1px dashed var(--border2);
 }
-.form-inp {
-  width:100%; background:var(--bg3); border:1px solid var(--border2);
-  color:var(--text); font-family:var(--mono); font-size:13px;
-  padding:10px 12px; outline:none; transition:border-color .15s;
+.no-results::before { content: '✓ '; color: #22c55e; }
+
+/* Edit form */
+.edit-form { display: flex; flex-direction: column; gap: 20px; }
+.form-group {}
+.form-label {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
 }
-.form-inp:focus { border-color:var(--red-line); }
-.form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
+.form-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color .2s;
+  letter-spacing: 1px;
+}
+.form-input:focus { border-color: var(--red-dark); }
+
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .btn-primary {
-  padding:9px 24px;
-  background:var(--red); border:none;
-  color:#fff; font-family:var(--display); font-size:16px; letter-spacing:3px;
-  cursor:pointer; transition:all .15s;
+  padding: 10px 28px;
+  background: var(--red);
+  border: none;
+  color: #fff;
+  font-family: var(--head);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
 }
-.btn-primary:hover { background:var(--red-hi); }
+.btn-primary:hover {
+  background: var(--red-glow);
+  box-shadow: 0 0 20px rgba(224,32,32,.4);
+}
 .btn-secondary {
-  padding:9px 20px;
-  background:transparent; border:1px solid var(--border2);
-  color:var(--muted); font-family:var(--mono); font-size:11px; letter-spacing:1px;
-  cursor:pointer; transition:all .15s;
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all .2s;
 }
-.btn-secondary:hover { border-color:var(--border); color:var(--text); }
+.btn-secondary:hover { border-color: #444; color: var(--text); }
 
-/* delete confirm */
-.danger-box {
-  background:rgba(204,0,0,.06); border:1px solid var(--red-line);
-  padding:16px 18px; margin-bottom:18px;
+/* Confirm delete */
+.confirm-box {
+  background: rgba(224,32,32,.06);
+  border: 1px solid rgba(224,32,32,.2);
+  padding: 20px 24px;
+  margin-bottom: 20px;
 }
-.danger-msg { font-size:13px; color:var(--text); line-height:1.7; }
-.danger-warn { font-family:var(--mono); font-size:10px; color:var(--red); letter-spacing:1px; margin-top:5px; }
+.confirm-msg {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.7;
+  margin-bottom: 6px;
+}
+.confirm-warn {
+  font-size: 11px;
+  color: var(--red);
+  letter-spacing: 1px;
+}
 
-/* loading */
-.loading-state {
-  padding:40px; text-align:center;
-  font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:2px;
+/* Loading indicator */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 2px;
 }
-.loading-state::before {
-  content:'';
-  display:block; width:22px; height:22px;
-  border:1px solid var(--border2); border-top-color:var(--red);
-  border-radius:50%; margin:0 auto 14px;
-  animation:spin .7s linear infinite;
+.loading::before {
+  content: '';
+  display: block;
+  width: 24px; height: 24px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--red);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: spin .8s linear infinite;
 }
-@keyframes spin { to{transform:rotate(360deg)} }
-
-/* PIN modal */
-.pin-display { text-align:center; padding:16px 0 22px; }
-.pin-num {
-  font-family:var(--display); font-size:72px; letter-spacing:18px; line-height:1;
-  color:var(--red-hi);
-  text-shadow:0 0 40px rgba(204,0,0,.5);
-  transition:opacity .4s;
-}
-.pin-num.expired { opacity:.2; }
-.pin-hint { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:3px; margin-top:12px; }
-.pin-cd { display:inline-block; color:#e08000; font-weight:600; transition:color .3s; }
-.pin-cd.urgent { color:var(--red-hi); }
-.pin-sk { font-family:var(--mono); font-size:9px; color:var(--border2); letter-spacing:1px; margin-top:6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Toast */
-.toasts {
-  position:fixed; bottom:24px; right:24px; z-index:300;
-  display:flex; flex-direction:column; gap:6px;
+.toast-wrap {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  z-index: 300;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .toast {
-  background:var(--bg3); border:1px solid var(--border2);
-  border-left:3px solid var(--red);
-  padding:10px 16px;
-  font-family:var(--mono); font-size:11px; letter-spacing:.5px;
-  min-width:240px;
-  animation:tIn .25s ease;
-  box-shadow:0 8px 30px rgba(0,0,0,.7);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--red);
+  padding: 12px 18px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  min-width: 260px;
+  animation: toastIn .3s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
 }
-.toast.success { border-left-color:#2a9c3f; }
-.toast.error   { border-left-color:var(--red); }
-@keyframes tIn { from{opacity:0;transform:translateX(14px)} to{opacity:1;transform:none} }
+.toast.success { border-left-color: #22c55e; }
+.toast.error   { border-left-color: var(--red); }
+@keyframes toastIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: none; } }
 
-/* scrollbar */
-::-webkit-scrollbar { width:4px; }
-::-webkit-scrollbar-track { background:var(--bg); }
-::-webkit-scrollbar-thumb { background:var(--border2); }
-::-webkit-scrollbar-thumb:hover { background:var(--red); }
+/* ── PIN modal ───────────────────────────────────────────────────────── */
+.pin-display {
+  text-align: center;
+  padding: 8px 0 20px;
+}
+.pin-code {
+  font-family: var(--display);
+  font-size: 56px;
+  font-weight: 900;
+  color: var(--red);
+  letter-spacing: 14px;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(224,32,32,.4);
+  transition: opacity .4s;
+}
+.pin-code.expired { opacity: .25; }
+.pin-meta {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-top: 10px;
+}
+.pin-scankey {
+  font-size: 10px;
+  color: #333;
+  letter-spacing: 1px;
+  margin-top: 6px;
+  font-family: var(--mono);
+}
+.pin-countdown {
+  display: inline-block;
+  color: #ffa500;
+  font-weight: 600;
+  transition: color .3s;
+}
+.pin-countdown.urgent { color: var(--red); }
+.pin-instructions {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
 
-@media(max-width:768px){
-  .tstat { display:none; }
-  #scanGrid { grid-template-columns:1fr; }
-  .toolbar { flex-wrap:wrap; }
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); }
+::-webkit-scrollbar-thumb:hover { background: var(--red-dark); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .metrics { grid-template-columns: repeat(2,1fr); }
+  #scanGrid { grid-template-columns: 1fr; }
+  .nav-stats { display: none; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
 }
 </style>
 </head>
 <body>
+<div class="bg-grid"></div>
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="topbar-brand">
-    <div class="brand-mark"></div>
-    <div class="brand-text">HUB<em>CHECKER</em></div>
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="brand-hex">⬡</div>
+    <div class="brand-name">Hub<span>Checker</span></div>
   </div>
-  <div class="topbar-stats">
-    <div class="tstat">
-      <div>
-        <div class="tstat-val" id="navTotal">—</div>
-        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase">Total</div>
-      </div>
-    </div>
-    <div class="tstat">
-      <div>
-        <div class="tstat-val a" id="navRunning">—</div>
-        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase">Running</div>
-      </div>
-    </div>
-    <div class="tstat">
-      <div>
-        <div class="tstat-val r" id="navFlagged">—</div>
-        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase">Flagged</div>
-      </div>
-    </div>
+  <div class="nav-stats">
+    <div class="stat-pill">Total <b id="navTotal">—</b></div>
+    <div class="stat-pill running">Running <b id="navRunning">—</b></div>
+    <div class="stat-pill flagged">Flagged <b id="navFlagged">—</b></div>
   </div>
-  <div class="topbar-user">
+  <div class="nav-user">
     {% if avatar %}
     <img class="user-avatar"
          src="https://cdn.discordapp.com/avatars/{{ user_id }}/{{ avatar }}.png"
-         onerror="this.style.display='none'" alt=""/>
+         onerror="this.style.display='none'"
+         alt="avatar"/>
     {% endif %}
     <span class="user-name">{{ username }}</span>
-    <a href="/logout" class="btn-out">Logout</a>
+    <a href="/logout" class="btn-logout">Logout</a>
   </div>
-</div>
+</nav>
 
 <!-- MAIN -->
 <div class="main">
-
-  <div class="page-head">
+  <!-- Header -->
+  <div class="page-header">
     <div>
-      <div class="page-title">SCAN DASHBOARD</div>
-      <div class="page-sub">// Forensic Intelligence Platform</div>
+      <div class="page-title">Scan Dashboard</div>
     </div>
   </div>
 
-  <!-- TOOLBAR -->
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-val" id="mTotal">0</div>
+      <div class="metric-label">Total Scans</div>
+      <div class="metric-bar" style="width:100%"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-val amber" id="mRunning">0</div>
+      <div class="metric-label">In Progress</div>
+      <div class="metric-bar" style="width:60%"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-val green" id="mCompleted">0</div>
+      <div class="metric-label">Completed</div>
+      <div class="metric-bar" style="width:80%"></div>
+    </div>
+    <div class="metric">
+      <div class="metric-val red" id="mFlagged">0</div>
+      <div class="metric-label">With Findings</div>
+      <div class="metric-bar" style="width:30%"></div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
   <div class="toolbar">
     <div class="search-wrap">
-      <span class="search-ico">⌕</span>
-      <input id="searchInput" type="text" placeholder="Search scan key or desktop name..."/>
+      <input type="text" id="searchInput" placeholder="Search scan key or desktop name..."/>
     </div>
-    <div class="filter-btns">
-      <button class="filter-btn active" data-filter="all">ALL</button>
-      <button class="filter-btn" data-filter="running">RUNNING</button>
-      <button class="filter-btn" data-filter="completed">COMPLETE</button>
-      <button class="filter-btn" data-filter="pending">PENDING</button>
-    </div>
-    <button class="btn-pin" onclick="openPinModal()">+ GEN PIN</button>
+    <button class="filter-btn active" data-filter="all">ALL</button>
+    <button class="filter-btn" data-filter="running">RUNNING</button>
+    <button class="filter-btn" data-filter="completed">COMPLETED</button>
+    <button class="filter-btn" data-filter="pending">PENDING</button>
+    <button class="filter-btn" onclick="openPinModal()" style="margin-left:auto;border-color:var(--red-dark);color:var(--red);background:var(--red-dim)">⬡ Generate PIN</button>
   </div>
 
-  <!-- GRID -->
+  <!-- Scan grid -->
   <div id="scanGrid">
     <div class="empty-state">
-      <span class="empty-glyph">◈</span>
+      <div class="empty-icon">◈</div>
       Loading scan data...
     </div>
   </div>
-
 </div>
 
-<!-- ══ VIEW MODAL ══ -->
-<div class="overlay" id="viewModal">
-  <div class="modal" style="max-width:860px">
-    <div class="modal-top-bar"></div>
+<!-- VIEW MODAL -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal">
     <div class="modal-head">
-      <div>
-        <div class="modal-title" id="viewTitle">SCAN RESULTS</div>
-        <div class="modal-sub" id="viewSubtitle"></div>
+      <div class="modal-title">
+        <span id="viewTitle">Scan Results</span>
+        <span class="sub" id="viewSubtitle"></span>
       </div>
       <button class="btn-close" onclick="closeModal('viewModal')">✕</button>
     </div>
-    <!-- Tab bar -->
-    <div class="scan-tabs" id="viewTabs"></div>
-    <!-- Tab content -->
     <div class="modal-body" id="viewBody">
-      <div class="loading-state"></div>
+      <div class="loading"></div>
     </div>
   </div>
 </div>
 
-<!-- ══ EDIT MODAL ══ -->
-<div class="overlay" id="editModal">
-  <div class="modal" style="max-width:460px">
-    <div class="modal-top-bar"></div>
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal" style="max-width:480px">
     <div class="modal-head">
-      <div>
-        <div class="modal-title">EDIT SCAN</div>
-        <div class="modal-sub" id="editSubtitle"></div>
+      <div class="modal-title">
+        Edit Scan Key
+        <span class="sub" id="editSubtitle"></span>
       </div>
       <button class="btn-close" onclick="closeModal('editModal')">✕</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="editScanId"/>
-      <div class="form-field">
-        <label class="form-lbl">Desktop / Machine Name</label>
-        <input type="text" class="form-inp" id="editNameInput" placeholder="Enter new name..."/>
-      </div>
-      <div class="form-actions">
-        <button class="btn-secondary" onclick="closeModal('editModal')">Cancel</button>
-        <button class="btn-primary" onclick="submitEdit()">SAVE</button>
+      <div class="edit-form">
+        <input type="hidden" id="editScanId"/>
+        <div class="form-group">
+          <label class="form-label">Desktop / Machine Name</label>
+          <input type="text" class="form-input" id="editNameInput" placeholder="Enter new name..."/>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+          <button class="btn-primary" onclick="submitEdit()">Save Changes</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══ DELETE MODAL ══ -->
-<div class="overlay" id="deleteModal">
-  <div class="modal" style="max-width:460px">
-    <div class="modal-top-bar" style="background:linear-gradient(90deg,#8b0000,transparent)"></div>
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:480px">
     <div class="modal-head">
-      <div>
-        <div class="modal-title">CONFIRM DELETE</div>
-        <div class="modal-sub" id="deleteSubtitle"></div>
+      <div class="modal-title">
+        Confirm Deletion
+        <span class="sub" id="deleteSubtitle"></span>
       </div>
       <button class="btn-close" onclick="closeModal('deleteModal')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="danger-box">
-        <div class="danger-msg">You are about to permanently delete this scan key and all associated results.</div>
-        <div class="danger-warn">⚠ This action cannot be undone.</div>
+      <div class="confirm-box">
+        <div class="confirm-msg">You are about to permanently delete this scan key and all associated results.</div>
+        <div class="confirm-warn">⚠ This action cannot be undone.</div>
       </div>
       <input type="hidden" id="deleteScanId"/>
       <div class="form-actions">
         <button class="btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
-        <button class="btn-primary" style="background:#8b0000" onclick="submitDelete()">DELETE</button>
+        <button class="btn-primary" style="background:#8c1414" onclick="submitDelete()">Delete Permanently</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══ PIN MODAL ══ -->
-<div class="overlay" id="pinModal">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-top-bar"></div>
+<!-- PIN MODAL -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal" style="max-width:440px">
     <div class="modal-head">
-      <div>
-        <div class="modal-title">GENERATE PIN</div>
-        <div class="modal-sub">Authorise a scanner to begin</div>
+      <div class="modal-title">
+        Generate Scan PIN
+        <span class="sub">Authorise a scanner to begin</span>
       </div>
       <button class="btn-close" onclick="closePinModal()">✕</button>
     </div>
     <div class="modal-body">
+
+      <!-- Step 1: label form -->
       <div id="pinStep1">
-        <div class="form-field">
-          <label class="form-lbl">Label <span style="color:var(--muted2);font-weight:400">(optional)</span></label>
-          <input type="text" class="form-inp" id="pinLabelInput" placeholder="e.g. John's Desktop" maxlength="80"/>
-        </div>
-        <div class="form-actions">
-          <button class="btn-secondary" onclick="closePinModal()">Cancel</button>
-          <button class="btn-primary" onclick="submitGeneratePin()">GENERATE</button>
+        <div class="edit-form">
+          <div class="form-group">
+            <label class="form-label">Label <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+            <input type="text" class="form-input" id="pinLabelInput" placeholder="e.g. John's Desktop" maxlength="80"/>
+          </div>
+          <div class="form-actions">
+            <button class="btn-secondary" onclick="closePinModal()">Cancel</button>
+            <button class="btn-primary" onclick="submitGeneratePin()">Generate PIN</button>
+          </div>
         </div>
       </div>
+
+      <!-- Step 2: show PIN -->
       <div id="pinStep2" style="display:none">
         <div class="pin-display">
-          <div class="pin-hint">ENTER THIS CODE ON THE SCANNER</div>
-          <div class="pin-num" id="pinCode">——————</div>
-          <div class="pin-hint" style="margin-top:10px">
-            Expires in <span class="pin-cd" id="pinCountdown">5:00</span>
+          <div class="pin-meta">ENTER THIS PIN ON THE SCANNER</div>
+          <div class="pin-code" id="pinCode">——————</div>
+          <div class="pin-instructions" style="margin-top:14px">
+            Expires in <span class="pin-countdown" id="pinCountdown">5:00</span>
           </div>
-          <div class="pin-sk" id="pinScanKeyDisplay"></div>
+          <div class="pin-scankey" id="pinScanKeyDisplay"></div>
         </div>
-        <div class="form-actions">
+        <div class="form-actions" style="margin-top:8px">
           <button class="btn-secondary" onclick="closePinModal()">Close</button>
-          <button class="btn-primary" onclick="resetPinModal()">NEW PIN</button>
+          <button class="btn-primary" onclick="resetPinModal()">New PIN</button>
         </div>
       </div>
+
     </div>
   </div>
 </div>
 
-<div class="toasts" id="toastWrap"></div>
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-// ── State ─────────────────────────────────────────────────────────────────────
-let scans = [], activeFilter = 'all', searchTerm = '';
+// ── State ───────────────────────────────────────────────────────────────────
+let scans = [];
+let activeFilter = 'all';
+let searchTerm   = '';
 
-// The scan-type categories produced by WriteScanJson/WriteResultsDeltaJson in the C++ exe.
-// These match the "scan" field written into each JSON file, which maps to finding.category.
-const SCAN_CATEGORIES = [
-  // Phase 1 forensic tools
-  { id:'BAM',                    label:'BAM',              group:'FORENSIC' },
-  { id:'BamIntegrity',           label:'BAM Integrity',    group:'FORENSIC' },
-  { id:'USNJournal',             label:'USN Journal',      group:'FORENSIC' },
-  { id:'Amcache_Shimcache',      label:'Amcache / Shimcache', group:'FORENSIC' },
-  { id:'AmcacheIntegrity',       label:'Amcache Integrity',group:'FORENSIC' },
-  { id:'ShimcacheIntegrity',     label:'Shimcache Integrity', group:'FORENSIC' },
-  { id:'Prefetch_SRUM_Registry_Bstrings', label:'Prefetch / SRUM / Registry / Bstrings', group:'FORENSIC' },
-  { id:'PrefetchIntegrity',      label:'Prefetch Integrity', group:'FORENSIC' },
-  { id:'SrumIntegrity',          label:'SRUM Integrity',   group:'FORENSIC' },
-  { id:'JumpLists_LNK_RecycleBin_ShellBags_RecentFileCache_Timeline_SUM', label:'Jump Lists / LNK / Shell', group:'FORENSIC' },
-  { id:'MFT_EventLogs',          label:'MFT / Event Logs', group:'FORENSIC' },
-  { id:'Signature',              label:'Signatures',       group:'FORENSIC' },
-  // Phase 2 live scans
-  { id:'GeneralInfo',            label:'General Info',     group:'LIVE' },
-  { id:'RobloxMemory',           label:'Roblox Memory',    group:'LIVE' },
-  { id:'InjectedModules',        label:'Injected DLLs',    group:'LIVE' },
-  { id:'DiscordMemory',          label:'Discord Memory',   group:'LIVE' },
-  { id:'BrowserMemory',          label:'Browser Memory',   group:'LIVE' },
-  { id:'DiscordAccounts',        label:'Discord Accounts', group:'LIVE' },
-  { id:'RobloxAccounts',         label:'Roblox Accounts',  group:'LIVE' },
-  { id:'RobloxProfileUrls',      label:'Roblox Profiles',  group:'LIVE' },
-  { id:'BrowserCookies',         label:'Browser Cookies',  group:'LIVE' },
-  { id:'RobloxLogs',             label:'Roblox Logs',      group:'LIVE' },
-  { id:'RobloxFFlags',           label:'Roblox FFlags',    group:'LIVE' },
-  // Integrity / registry
-  { id:'RunKeys',                label:'Run Keys',         group:'INTEGRITY' },
-  { id:'RecentItems',            label:'Recent Items',     group:'INTEGRITY' },
-  { id:'UserAssist',             label:'UserAssist',       group:'INTEGRITY' },
-  { id:'ServicesCheck',          label:'Services',         group:'INTEGRITY' },
-  { id:'UsbHistory',             label:'USB History',      group:'INTEGRITY' },
-  { id:'SystemRestorePoints',    label:'Restore Points',   group:'INTEGRITY' },
-  { id:'RecentFolderIntegrity',  label:'Recent Folder',    group:'INTEGRITY' },
-  { id:'DefenderIntegrity',      label:'Defender',         group:'INTEGRITY' },
-  { id:'UnsignedExecutables',    label:'Unsigned EXEs',    group:'INTEGRITY' },
-  // Catch-all for anything else
-  { id:'__other__',              label:'Other',            group:'OTHER' },
-];
-
-// ── Init ──────────────────────────────────────────────────────────────────────
+// ── Init ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   loadScans();
-  setInterval(loadScans, 15000);
+  setInterval(loadScans, 15000);   // Auto-refresh every 15s
 
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -804,14 +988,17 @@ document.addEventListener('DOMContentLoaded', () => {
     renderGrid();
   });
 
-  document.querySelectorAll('.overlay').forEach(o => {
-    o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+  // Close modal on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) closeModal(overlay.id);
+    });
   });
 });
 
-// ── API ───────────────────────────────────────────────────────────────────────
+// ── API helpers ─────────────────────────────────────────────────────────────
 async function apiFetch(url, opts = {}) {
-  const r = await fetch(url, { headers:{ 'Content-Type':'application/json' }, ...opts });
+  const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
   return r.json();
 }
 
@@ -819,239 +1006,269 @@ async function loadScans() {
   try {
     const data = await apiFetch('/api/scans');
     scans = data;
-    updateStats();
+    updateMetrics();
     renderGrid();
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    console.error('Failed to load scans', e);
+  }
 }
 
-function updateStats() {
-  const t = scans.length;
-  const r = scans.filter(s => s.status==='running').length;
-  const f = scans.filter(s => s.status==='flagged').length;
-  document.getElementById('navTotal').textContent   = t;
-  document.getElementById('navRunning').textContent = r;
-  document.getElementById('navFlagged').textContent = f;
+// ── Metrics ─────────────────────────────────────────────────────────────────
+function updateMetrics() {
+  const total     = scans.length;
+  const running   = scans.filter(s => s.status === 'running').length;
+  const completed = scans.filter(s => s.status === 'completed').length;
+  const flagged   = scans.filter(s => s.status === 'flagged').length;
+
+  document.getElementById('mTotal').textContent     = total;
+  document.getElementById('mRunning').textContent   = running;
+  document.getElementById('mCompleted').textContent = completed;
+  document.getElementById('mFlagged').textContent   = flagged;
+  document.getElementById('navTotal').textContent   = total;
+  document.getElementById('navRunning').textContent = running;
+  document.getElementById('navFlagged').textContent = flagged;
 }
 
-// ── Grid ──────────────────────────────────────────────────────────────────────
+// ── Render Grid ──────────────────────────────────────────────────────────────
 function renderGrid() {
   const grid = document.getElementById('scanGrid');
-  let list = scans.filter(s => {
+  let filtered = scans.filter(s => {
     if (activeFilter !== 'all' && s.status !== activeFilter) return false;
     if (searchTerm) {
-      if (!(s.scan_key+' '+s.desktop_name).toLowerCase().includes(searchTerm)) return false;
+      const hay = (s.scan_key + ' ' + s.desktop_name).toLowerCase();
+      if (!hay.includes(searchTerm)) return false;
     }
     return true;
   });
-  if (!list.length) {
-    grid.innerHTML = `<div class="empty-state"><span class="empty-glyph">◈</span>No scans match filters</div>`;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">◈</div>No scans match your filters</div>`;
     return;
   }
-  grid.innerHTML = list.map(renderCard).join('');
+
+  grid.innerHTML = filtered.map(s => renderCard(s)).join('');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + 'Z');
+  return d.toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function badgeClass(status) {
+  return { running:'badge-running', completed:'badge-completed', pending:'badge-pending', flagged:'badge-flagged' }[status] || 'badge-pending';
 }
 
 function renderCard(s) {
-  const statusCls = { running:'running', completed:'completed', flagged:'flagged' }[s.status] || 'pending';
-  const chipCls   = { running:'chip-running', completed:'chip-completed', flagged:'chip-flagged', pending:'chip-pending' }[s.status] || 'chip-pending';
-  const pct = s.status==='completed' ? 100 : s.status==='running' ? 50 : 0;
-  const fillCls = s.status==='completed' ? 'done' : '';
-  return `<div class="scan-card">
-    <div class="card-stripe ${statusCls}"></div>
-    <div class="card-body">
-      <div class="card-row1">
-        <div>
-          <div class="card-name">${esc(s.desktop_name)}</div>
-          <div class="card-key">${esc(s.scan_key)}</div>
-        </div>
-        <div class="status-chip ${chipCls}">${s.status}</div>
+  const pct = s.status === 'completed' ? 100 : s.status === 'running' ? '…' : 0;
+  const progressHtml = s.status === 'running' ? `
+    <div class="progress-mini">
+      <div class="progress-track">
+        <div class="progress-fill" style="width:50%"></div>
       </div>
-      <div class="card-meta">
-        <span><span class="meta-k">Created</span>${fmtDate(s.created_at)}</span>
-        <span><span class="meta-k">Updated</span>${fmtDate(s.updated_at)}</span>
-        ${s.hostname ? `<span><span class="meta-k">Host</span>${esc(s.hostname)}</span>` : ''}
+      <div class="progress-label"><span>In Progress</span><span>Running</span></div>
+    </div>` : s.status === 'completed' ? `
+    <div class="progress-mini">
+      <div class="progress-track">
+        <div class="progress-fill" style="width:100%;animation:none"></div>
       </div>
-      <div class="prog-bar"><div class="prog-fill ${fillCls}" style="width:${pct}%"></div></div>
+      <div class="progress-label"><span>Complete</span><span>100%</span></div>
+    </div>` : '';
+
+  return `<div class="scan-card" data-id="${s.id}" data-status="${s.status}">
+    <div class="card-head">
+      <div class="card-key-wrap">
+        <div class="card-key">Desktop / Machine</div>
+        <div class="card-name">${escHtml(s.desktop_name)}</div>
+        <div class="card-scankey-val">${escHtml(s.scan_key)}</div>
+      </div>
+      <div class="status-badge ${badgeClass(s.status)}">${s.status}</div>
+    </div>
+    ${progressHtml}
+    <div class="card-meta">
+      <div class="meta-item"><span class="label">Created</span><span class="val">${fmtDate(s.created_at)}</span></div>
+      <div class="meta-item"><span class="label">Updated</span><span class="val">${fmtDate(s.updated_at)}</span></div>
     </div>
     <div class="card-actions">
-      <button class="act-btn act-view" onclick="openView(${s.id})">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        VIEW
+      <button class="action-btn btn-view" onclick="window.location='/scan/'+${s.id}+'/view'">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        View
       </button>
-      <button class="act-btn act-edit" onclick="openEdit(${s.id},'${esc(s.desktop_name)}','${esc(s.scan_key)}')">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        EDIT
+      <button class="action-btn btn-edit" onclick="openEdit(${s.id}, '${escHtml(s.desktop_name)}', '${escHtml(s.scan_key)}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
       </button>
-      <button class="act-btn act-del" onclick="openDelete(${s.id},'${esc(s.desktop_name)}')">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-        DEL
+      <button class="action-btn btn-del" onclick="openDelete(${s.id}, '${escHtml(s.desktop_name)}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Delete
       </button>
     </div>
   </div>`;
 }
 
-// ── View Modal ────────────────────────────────────────────────────────────────
+// ── View Modal ───────────────────────────────────────────────────────────────
 async function openView(scanId) {
-  document.getElementById('viewTitle').textContent    = 'SCAN RESULTS';
+  document.getElementById('viewTitle').textContent    = 'Scan Details';
   document.getElementById('viewSubtitle').textContent = '';
-  document.getElementById('viewTabs').innerHTML       = '';
-  document.getElementById('viewBody').innerHTML       = '<div class="loading-state"></div>';
+  document.getElementById('viewBody').innerHTML       = '<div class="loading"></div>';
   openModal('viewModal');
 
   let data;
-  try { data = await apiFetch(`/api/scans/${scanId}`); }
-  catch(e) {
-    document.getElementById('viewBody').innerHTML = '<div class="no-findings">Failed to load scan data</div>';
+  try {
+    data = await apiFetch(`/api/scans/${scanId}`);
+  } catch(e) {
+    document.getElementById('viewBody').innerHTML = '<div class="no-results">Failed to load scan data</div>';
     return;
   }
-
   const { scan, progress, results } = data;
-  document.getElementById('viewTitle').textContent    = esc(scan.desktop_name).toUpperCase();
+
+  document.getElementById('viewTitle').textContent    = escHtml(scan.desktop_name);
   document.getElementById('viewSubtitle').textContent = scan.scan_key;
 
-  // ── Build tabs: Progress | then one per scan category that has findings ──
-  const tabs   = [];
-  const panes  = {};
+  let html = '';
 
-  // 1. Progress tab
-  tabs.push({ id:'tab-progress', label:'PROGRESS', count: progress.length });
-  let progHtml = '';
-  if (!progress.length) {
-    progHtml = `<div class="no-findings">No progress data yet</div>`;
+  // ── Progress section ──
+  html += `<div class="results-section">
+    <div class="results-section-title">Scan Progress</div>`;
+
+  if (progress.length === 0 && scan.status === 'running') {
+    html += `<div class="no-results" style="border-color:rgba(255,165,0,.2);color:#ffa500">⏳ Scan is initializing...</div>`;
+  } else if (progress.length === 0) {
+    html += `<div class="no-results">No progress data recorded yet</div>`;
   } else {
-    const lastPct   = scan.status==='completed' ? 100 : (progress[progress.length-1]?.pct || 0);
-    progHtml += `<div class="progress-tl">`;
+    html += `<div class="progress-timeline">`;
     progress.forEach((p, i) => {
-      const done = i < progress.length - 1 || scan.status==='completed';
-      progHtml += `<div class="ptl-item">
-        <div class="ptl-dot ${done?'done':''}"></div>
-        <div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span class="ptl-pct">${p.pct}%</span>
-            <span class="ptl-name">${esc(p.phase_name)}</span>
-          </div>
-          ${p.message ? `<div class="ptl-msg">${esc(p.message)}</div>` : ''}
-          <div class="ptl-ts">${fmtDate(p.ts)}</div>
+      const isDone = i < progress.length - 1 || scan.status === 'completed';
+      html += `<div class="progress-item">
+        <div class="prog-dot ${isDone ? 'done' : ''}"></div>
+        <div class="prog-content">
+          <span class="prog-pct">${p.pct}%</span>
+          <span class="prog-type">${escHtml(p.phase_name)}</span>
+          ${p.message ? `<div class="prog-msg">${escHtml(p.message)}</div>` : ''}
+          <div class="prog-time">${fmtDate(p.ts)}</div>
         </div>
       </div>`;
     });
-    progHtml += `</div>
-    <div class="prog-overall">
-      <div class="prog-track"><div class="prog-track-fill" style="width:${lastPct}%"></div></div>
-      <div class="prog-lbl"><span>Overall Progress</span><span style="color:var(--red)">${lastPct}%</span></div>
+    html += `</div>`;
+
+    const lastPct = progress[progress.length-1]?.pct || 0;
+    const finalPct = scan.status === 'completed' ? 100 : lastPct;
+    html += `<div style="margin-top:16px">
+      <div class="progress-track" style="height:8px">
+        <div class="progress-fill" style="width:${finalPct}%;${scan.status==='completed'?'animation:none':''}"></div>
+      </div>
+      <div class="progress-label" style="margin-top:6px">
+        <span style="color:var(--muted)">Overall</span>
+        <span style="color:var(--red)">${finalPct}%</span>
+      </div>
     </div>`;
   }
-  panes['tab-progress'] = progHtml;
+  html += `</div>`;
 
-  // 2. Per-scan-category tabs — group findings by category
-  const catMap = {};
-  results.forEach(r => {
-    const raw = (r.category || '').toLowerCase().replace(/\s+/g,'').replace(/-/g,'');
-    // Find matching SCAN_CATEGORY by case-insensitive id match
-    const def = SCAN_CATEGORIES.find(c =>
-      c.id.toLowerCase().replace(/[_\-\s]/g,'') === raw ||
-      c.label.toLowerCase().replace(/[_\-\s]/g,'') === raw
-    ) || SCAN_CATEGORIES.find(c => c.id === '__other__');
-    const key = def.id;
-    if (!catMap[key]) catMap[key] = { def, items:[] };
-    catMap[key].items.push(r);
-  });
+  // ── Findings section ──
+  html += `<div class="results-section">
+    <div class="results-section-title">Findings (${results.length})</div>`;
 
-  // Order tabs by SCAN_CATEGORIES order
-  SCAN_CATEGORIES.forEach(cat => {
-    const bucket = catMap[cat.id];
-    if (!bucket || !bucket.items.length) return;
-    const tabId = 'tab-' + cat.id;
-    tabs.push({ id: tabId, label: cat.label.toUpperCase(), count: bucket.items.length });
-    let html = `<div class="cat-section">`;
-    html += `<div class="cat-label">${esc(cat.label)} <span>${bucket.items.length} finding${bucket.items.length!==1?'s':''}</span></div>`;
-    bucket.items.forEach(r => {
-      const sc = {alert:'sev-alert', warn:'sev-warn', warning:'sev-warn', info:'sev-info'}[r.severity] || 'sev-info';
-      html += `<div class="finding-row ${sc}">
-        <div class="finding-sev ${sc}">${esc(r.severity||'info')}</div>
-        <div class="finding-detail">${esc(r.detail)}</div>
-        <div class="finding-ts">${fmtDate(r.ts)}</div>
-      </div>`;
+  if (results.length === 0) {
+    html += `<div class="no-results">No findings — system appears clean</div>`;
+  } else {
+    const cats = {};
+    results.forEach(r => {
+      if (!cats[r.category]) cats[r.category] = [];
+      cats[r.category].push(r);
     });
-    html += `</div>`;
-    panes[tabId] = html;
-  });
-
-  if (!results.length) {
-    const tabId = 'tab-findings';
-    tabs.push({ id:tabId, label:'FINDINGS', count:0 });
-    panes[tabId] = `<div class="no-findings">// No findings — system appears clean</div>`;
+    Object.entries(cats).forEach(([cat, items]) => {
+      html += `<div style="margin-bottom:16px">
+        <div style="font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">${escHtml(cat)}</div>`;
+      items.forEach(r => {
+        const sc = {alert:'sev-high', warn:'sev-medium', info:'sev-info'}[r.severity] || 'sev-info';
+        html += `<div class="result-entry ${sc}">
+          <div class="result-cat">${escHtml(r.severity)}</div>
+          <div class="result-detail">${escHtml(r.detail)}</div>
+          <div class="result-time">${fmtDate(r.ts)}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    });
   }
+  html += `</div>`;
 
-  // Render tabs
-  const tabBar = document.getElementById('viewTabs');
-  tabBar.innerHTML = tabs.map((t, i) =>
-    `<button class="stab ${i===0?'active':''}" data-tab="${t.id}" onclick="switchTab('${t.id}')">
-      ${t.label} <span class="stab-cnt">${t.count}</span>
-    </button>`
-  ).join('');
-
-  // Render panes
-  const body = document.getElementById('viewBody');
-  body.innerHTML = tabs.map((t, i) =>
-    `<div class="tab-pane ${i===0?'active':''}" id="${t.id}">${panes[t.id] || ''}</div>`
-  ).join('');
+  document.getElementById('viewBody').innerHTML = html;
 }
 
-function switchTab(id) {
-  document.querySelectorAll('#viewTabs .stab').forEach(b => b.classList.toggle('active', b.dataset.tab===id));
-  document.querySelectorAll('#viewBody .tab-pane').forEach(p => p.classList.toggle('active', p.id===id));
-}
-
-// ── Edit Modal ────────────────────────────────────────────────────────────────
-function openEdit(id, name, key) {
-  document.getElementById('editScanId').value        = id;
-  document.getElementById('editNameInput').value     = name;
-  document.getElementById('editSubtitle').textContent = key;
+// ── Edit Modal ───────────────────────────────────────────────────────────────
+function openEdit(scanId, currentName, scanKey) {
+  document.getElementById('editScanId').value       = scanId;
+  document.getElementById('editNameInput').value    = currentName;
+  document.getElementById('editSubtitle').textContent = scanKey;
   openModal('editModal');
   setTimeout(() => document.getElementById('editNameInput').focus(), 100);
 }
 
 async function submitEdit() {
-  const id   = document.getElementById('editScanId').value;
-  const name = document.getElementById('editNameInput').value.trim();
-  if (!name) { toast('Name cannot be empty','error'); return; }
-  const d = await apiFetch(`/api/scan/${id}/rename`, { method:'POST', body:JSON.stringify({name}) });
-  if (d.ok) { toast('Name updated','success'); closeModal('editModal'); loadScans(); }
-  else toast('Failed to update','error');
+  const scanId  = document.getElementById('editScanId').value;
+  const newName = document.getElementById('editNameInput').value.trim();
+  if (!newName) { toast('Name cannot be empty', 'error'); return; }
+
+  const data = await apiFetch(`/api/scan/${scanId}/rename`, {
+    method: 'POST',
+    body: JSON.stringify({ name: newName })
+  });
+  if (data.ok) {
+    toast('Name updated successfully', 'success');
+    closeModal('editModal');
+    loadScans();
+  } else {
+    toast('Failed to update name', 'error');
+  }
 }
 
-// ── Delete Modal ──────────────────────────────────────────────────────────────
-function openDelete(id, name) {
-  document.getElementById('deleteScanId').value       = id;
+// ── Delete Modal ─────────────────────────────────────────────────────────────
+function openDelete(scanId, name) {
+  document.getElementById('deleteScanId').value      = scanId;
   document.getElementById('deleteSubtitle').textContent = name;
   openModal('deleteModal');
 }
 
 async function submitDelete() {
-  const id = document.getElementById('deleteScanId').value;
-  const d  = await apiFetch(`/api/scan/${id}/delete`, { method:'POST' });
-  if (d.ok) { toast('Scan deleted','success'); closeModal('deleteModal'); loadScans(); }
-  else toast('Failed to delete','error');
+  const scanId = document.getElementById('deleteScanId').value;
+  const data   = await apiFetch(`/api/scan/${scanId}/delete`, { method: 'POST' });
+  if (data.ok) {
+    toast('Scan key deleted', 'success');
+    closeModal('deleteModal');
+    loadScans();
+  } else {
+    toast('Failed to delete', 'error');
+  }
 }
 
-// ── Modal helpers ─────────────────────────────────────────────────────────────
+// ── Modal helpers ────────────────────────────────────────────────────────────
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function toast(msg, type='info') {
-  const el = document.createElement('div');
+// ── Toast ────────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const wrap = document.getElementById('toastWrap');
+  const el   = document.createElement('div');
   el.className = `toast ${type}`;
   el.textContent = msg;
-  document.getElementById('toastWrap').appendChild(el);
-  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(() => el.remove(), 400); }, 3000);
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .4s'; setTimeout(() => el.remove(), 400); }, 3000);
 }
 
-// ── PIN ───────────────────────────────────────────────────────────────────────
+// ── PIN Generation ───────────────────────────────────────────────────────────
 let _pinTimer = null;
 
-function openPinModal() { resetPinModal(); openModal('pinModal'); setTimeout(() => document.getElementById('pinLabelInput').focus(), 120); }
-function closePinModal() { if (_pinTimer) { clearInterval(_pinTimer); _pinTimer = null; } closeModal('pinModal'); }
+function openPinModal() {
+  resetPinModal();
+  openModal('pinModal');
+  setTimeout(() => document.getElementById('pinLabelInput').focus(), 120);
+}
+
+function closePinModal() {
+  if (_pinTimer) { clearInterval(_pinTimer); _pinTimer = null; }
+  closeModal('pinModal');
+}
 
 function resetPinModal() {
   if (_pinTimer) { clearInterval(_pinTimer); _pinTimer = null; }
@@ -1066,39 +1283,63 @@ function resetPinModal() {
 }
 
 async function submitGeneratePin() {
-  const label  = document.getElementById('pinLabelInput').value.trim();
-  const genBtn = document.querySelector('#pinStep1 .btn-primary');
-  genBtn.disabled = true; genBtn.textContent = 'Generating...';
+  const label   = document.getElementById('pinLabelInput').value.trim();
+  const genBtn  = document.querySelector('#pinStep1 .btn-primary');
+  genBtn.disabled = true;
+  genBtn.textContent = 'Generating...';
+
   let data;
-  try { data = await apiFetch('/api/pin/generate', { method:'POST', body:JSON.stringify({label}) }); }
-  catch(e) { toast('Failed to reach server','error'); genBtn.disabled=false; genBtn.textContent='GENERATE'; return; }
-  if (!data.ok) { toast('Failed to generate PIN','error'); genBtn.disabled=false; genBtn.textContent='GENERATE'; return; }
+  try {
+    data = await apiFetch('/api/pin/generate', {
+      method: 'POST',
+      body: JSON.stringify({ label })
+    });
+  } catch(e) {
+    toast('Failed to reach server', 'error');
+    genBtn.disabled = false;
+    genBtn.textContent = 'Generate PIN';
+    return;
+  }
+
+  if (!data.ok) {
+    toast('Failed to generate PIN', 'error');
+    genBtn.disabled = false;
+    genBtn.textContent = 'Generate PIN';
+    return;
+  }
+
+  // Switch to display step
   document.getElementById('pinStep1').style.display = 'none';
   document.getElementById('pinStep2').style.display = '';
   document.getElementById('pinCode').textContent = data.pin;
   document.getElementById('pinScanKeyDisplay').textContent = 'KEY: ' + data.scan_key;
-  genBtn.disabled = false; genBtn.textContent = 'GENERATE';
-  let secs = 300;
-  const cd = document.getElementById('pinCountdown');
-  const pc = document.getElementById('pinCode');
+  genBtn.disabled = false;
+  genBtn.textContent = 'Generate PIN';
+
+  // Countdown: 5 minutes
+  let secs = 5 * 60;
+  const countEl    = document.getElementById('pinCountdown');
+  const codeEl     = document.getElementById('pinCode');
+
   _pinTimer = setInterval(() => {
     secs--;
-    if (secs <= 0) { clearInterval(_pinTimer); _pinTimer=null; cd.textContent='EXPIRED'; cd.classList.add('urgent'); pc.classList.add('expired'); return; }
-    const m = Math.floor(secs/60), s = secs%60;
-    cd.textContent = m+':'+String(s).padStart(2,'0');
-    if (secs <= 60) cd.classList.add('urgent');
+    if (secs <= 0) {
+      clearInterval(_pinTimer);
+      _pinTimer = null;
+      countEl.textContent = 'EXPIRED';
+      countEl.classList.add('urgent');
+      codeEl.classList.add('expired');
+      return;
+    }
+    const m = Math.floor(secs / 60), s = secs % 60;
+    countEl.textContent = m + ':' + String(s).padStart(2, '0');
+    if (secs <= 60) countEl.classList.add('urgent');
   }, 1000);
 }
 
-// ── Utils ─────────────────────────────────────────────────────────────────────
-function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-function fmtDate(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso + 'Z');
-  return d.toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 </script>
 </body>
