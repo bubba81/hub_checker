@@ -362,6 +362,10 @@ body::before {
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       PHASES <span class="tnav-cnt">{{ phases|length }}</span>
     </button>
+    <button class="tnav" data-view="log">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      RAW LOG
+    </button>
   </div>
 
   <!-- ══════ OVERVIEW ══════ -->
@@ -489,6 +493,50 @@ body::before {
   </div>
 
 </main>
+
+<!-- LOG VIEW -->
+<div class="view" id="view-log">
+  <div class="panel" style="margin-top:22px">
+    <div class="panel-head">
+      <div class="panel-title">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        RAW SCAN LOG
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="logSearch" type="text" placeholder="Filter log..." style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 10px;outline:none;width:200px"/>
+        <div class="panel-badge" id="logLineCount">— lines</div>
+      </div>
+    </div>
+    <div id="logBody" style="font-family:var(--mono);font-size:11px;line-height:1.7;padding:14px 18px;max-height:680px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;color:var(--text-mid)">Loading log...</div>
+  </div>
+</div>
+
+<script>
+// ── Log tab ───────────────────────────────────────────────────────────────────
+const RAW_LOG = {{ log_text|tojson }};
+let logLines = RAW_LOG ? RAW_LOG.split('\n') : [];
+
+function renderLog(filter) {
+  const body = document.getElementById('logBody');
+  const lines = filter ? logLines.filter(l => l.toLowerCase().includes(filter.toLowerCase())) : logLines;
+  document.getElementById('logLineCount').textContent = lines.length + ' lines';
+  if (!lines.length) { body.textContent = filter ? 'No lines match filter.' : 'No log data.'; return; }
+  // Colorise key prefixes
+  body.innerHTML = lines.map(l => {
+    const e = esc(l);
+    if (l.includes('[HIT]') || l.includes('[SUSPICIOUS]') || l.includes('[Fake Signature]') || l.includes('[!]'))
+      return `<span style="color:var(--red)">${e}</span>`;
+    if (l.includes('[T]') || l.includes('[+]'))
+      return `<span style="color:var(--green)">${e}</span>`;
+    if (l.includes('[~]') || l.includes('[*]') || l.includes('[cmd]'))
+      return `<span style="color:#666">${e}</span>`;
+    return `<span>${e}</span>`;
+  }).join('\n');
+}
+
+document.getElementById('logSearch').addEventListener('input', e => renderLog(e.target.value));
+
+</script>
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
@@ -619,6 +667,12 @@ const scanId     = {{ scan.id }};
 const phases     = {{ phases|tojson }};
 let isDone       = {{ 'true' if scan.status in ('complete','completed') else 'false' }};
 let allFindings  = {{ findings|tojson }};
+// Parse fields_json strings into .fields objects for rich rendering
+allFindings.forEach(f => {
+  if (f.fields_json && !f.fields) {
+    try { f.fields = JSON.parse(f.fields_json); } catch(e) { f.fields = null; }
+  }
+});
 let activeScanId = null;
 let paneSev      = 'all';
 let paneQuery    = '';
@@ -645,8 +699,13 @@ function findingsFor(def) {
 // ─── View switching ───────────────────────────────────────────────────────────
 function switchView(name) {
   document.querySelectorAll('.tnav').forEach(b => b.classList.toggle('active', b.dataset.view === name));
-  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  document.querySelectorAll('.view').forEach(v => {
+    const show = v.id === 'view-' + name;
+    v.classList.toggle('active', show);
+    v.style.display = show ? 'block' : 'none';
+  });
   if (name === 'scans' && !activeScanId) activateScan(SCAN_DEFS[0].scans[0].id);
+  if (name === 'log') renderLog(document.getElementById('logSearch').value);
 }
 document.querySelectorAll('.tnav').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
 
@@ -950,6 +1009,15 @@ async function poll() {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 buildSidebar();
+// Auto-activate: first scan with hits, or just first scan
+(function autoActivate() {
+  for (const g of SCAN_DEFS) {
+    for (const s of g.scans) {
+      if (findingsFor(s).length > 0) { activateScan(s.id); return; }
+    }
+  }
+  if (SCAN_DEFS[0] && SCAN_DEFS[0].scans[0]) activateScan(SCAN_DEFS[0].scans[0].id);
+})();
 poll();
 </script>
 </body>
