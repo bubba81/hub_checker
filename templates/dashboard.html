@@ -404,67 +404,78 @@ nav {
   display: block;
 }
 
-/* ── Scan grid ────────────────────────────────────────────────────────── */
-#scanGrid, #keysGrid {
+/* ── Scan grid — single stacked column ───────────────────────────────── */
+#scanGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#keysGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
 }
 
-/* ── Scan card ────────────────────────────────────────────────────────── */
+/* ── Scan card — compact row ─────────────────────────────────────────── */
 .scan-card {
   background: var(--glass-1);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   overflow: hidden;
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
-  transition: border-color .25s, box-shadow .25s, transform .2s;
+  transition: border-color .2s, box-shadow .2s, background .2s;
   position: relative;
-  box-shadow: 0 1px 0 rgba(255,255,255,.045) inset, 0 8px 32px rgba(0,0,0,.25);
+  box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 2px 6px rgba(0,0,0,.18);
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  min-height: 46px;
 }
 .scan-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
-  pointer-events: none;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--red-bright);
+  opacity: 0;
+  transition: opacity .2s;
 }
 .scan-card:hover {
-  border-color: rgba(224,32,32,.22);
-  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 16px 48px rgba(0,0,0,.4), 0 0 32px rgba(224,32,32,.07);
-  transform: translateY(-2px);
+  border-color: rgba(224,32,32,.2);
+  background: rgba(255,255,255,.05);
+  box-shadow: 0 2px 16px rgba(0,0,0,.28), 0 0 16px rgba(224,32,32,.05);
 }
+.scan-card:hover::before { opacity: 1; }
 
 .card-head {
-  padding: 18px 20px 14px;
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  border-bottom: 1px solid var(--glass-border);
+  grid-column: 1 / 4;
+  grid-row: 1;
+  padding: 9px 12px 9px 16px;
+  display: flex; align-items: center; gap: 10px;
 }
-.card-label {
-  font-size: 10px;
-  color: var(--text-3);
-  letter-spacing: .8px;
-  text-transform: uppercase;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
+.card-label { display: none; }
 .card-name {
-  font-family: var(--display);
-  font-size: 17px;
-  font-weight: 700;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
   color: #fff;
-  letter-spacing: -.2px;
-  word-break: break-word;
-  line-height: 1.2;
+  letter-spacing: -.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .card-key-val {
   font-family: var(--mono);
   font-size: 10px;
   color: var(--text-3);
-  margin-top: 4px;
-  letter-spacing: .5px;
+  letter-spacing: .3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 /* Status badges */
@@ -499,75 +510,70 @@ nav {
   box-shadow: 0 0 10px rgba(224,32,32,.1);
 }
 
-/* Progress bar */
+/* Progress bar — compact inline strip */
 .progress-wrap {
-  padding: 12px 20px 0;
+  grid-column: 1 / 4;
+  grid-row: 2;
+  padding: 0 16px 7px;
 }
 .progress-track {
-  height: 3px;
-  background: rgba(255,255,255,.06);
+  height: 2px;
+  background: rgba(255,255,255,.05);
   border-radius: 99px;
   overflow: hidden;
 }
 .progress-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, rgba(224,32,32,.6), var(--red-bright));
+  background: linear-gradient(90deg, rgba(224,32,32,.5), var(--red-bright));
   position: relative;
 }
 .progress-fill.animated::after {
   content: '';
   position: absolute; right: 0; top: 0; bottom: 0;
-  width: 20px;
+  width: 16px;
   background: rgba(255,255,255,.5);
   border-radius: 99px;
   animation: shimmer 1.4s ease infinite;
 }
 @keyframes shimmer { 0%,100%{opacity:0} 50%{opacity:1} }
-.progress-pct {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-3);
-  margin-top: 5px;
-  text-align: right;
-}
+.progress-pct { display: none; }
 
-.card-meta {
-  padding: 10px 20px;
-  display: flex; gap: 18px;
-  font-size: 11px;
-  color: var(--text-3);
-  font-weight: 400;
-}
+.card-meta { display: none; }
 .meta-item { display: flex; flex-direction: column; gap: 1px; }
 .meta-lbl  { font-size: 9.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-3); }
 .meta-val  { color: var(--text-2); font-family: var(--mono); }
 
-/* Card actions */
+/* Card actions — compact icon-only buttons on right */
 .card-actions {
-  padding: 10px 14px 14px;
-  display: flex; gap: 7px;
-  border-top: 1px solid var(--glass-border);
+  grid-column: 4;
+  grid-row: 1 / 3;
+  padding: 0 10px 0 4px;
+  display: flex; gap: 3px;
+  align-items: center;
+  border-top: none;
 }
 .action-btn {
-  flex: 1;
-  padding: 8px 0;
+  flex: none;
+  width: 28px; height: 28px;
+  padding: 0;
   background: transparent;
-  border: 1px solid var(--glass-border);
+  border: 1px solid transparent;
   color: var(--text-3);
   font-family: var(--sans);
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: .3px;
   border-radius: var(--radius-xs);
   cursor: pointer;
-  transition: all .2s;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
+  transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
 }
-.action-btn:hover         { background: var(--glass-2); color: var(--text); border-color: rgba(255,255,255,.12); }
-.action-btn.btn-view:hover{ color: #64b5f6; border-color: rgba(100,181,246,.25); background: rgba(100,181,246,.06); }
-.action-btn.btn-edit:hover{ color: #ffcc44; border-color: rgba(255,204,68,.25); background: rgba(255,204,68,.06); }
-.action-btn.btn-del:hover { color: var(--red-bright); border-color: rgba(224,32,32,.3); background: var(--red-glass); }
+/* Hide text labels on scan-card buttons only */
+.scan-card .action-btn span { display: none; }
+.action-btn:hover         { background: var(--glass-2); color: var(--text); border-color: rgba(255,255,255,.1); }
+.action-btn.btn-view:hover{ color: #64b5f6; border-color: rgba(100,181,246,.2); background: rgba(100,181,246,.08); }
+.action-btn.btn-edit:hover{ color: #ffcc44; border-color: rgba(255,204,68,.2); background: rgba(255,204,68,.08); }
+.action-btn.btn-del:hover { color: var(--red-bright); border-color: rgba(224,32,32,.25); background: var(--red-glass); }
 
 /* ── Key card ─────────────────────────────────────────────────────────── */
 .key-card {
@@ -648,6 +654,22 @@ nav {
 
 .key-foot {
   display: flex; align-items: center; justify-content: space-between;
+}
+.key-pin-block {
+  background: linear-gradient(135deg, rgba(224,32,32,.1), rgba(224,32,32,.04));
+  border: 1px solid rgba(224,32,32,.2);
+  border-radius: var(--radius-xs);
+  padding: 10px 14px;
+}
+.key-pin-display {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--red-bright);
+  letter-spacing: 8px;
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(224,32,32,.35);
+  margin-top: 3px;
 }
 .key-created {
   font-size: 10px;
@@ -941,7 +963,7 @@ nav {
 /* Responsive */
 @media (max-width: 768px) {
   .metrics { grid-template-columns: repeat(2,1fr); }
-  #scanGrid, #keysGrid { grid-template-columns: 1fr; }
+  #keysGrid { grid-template-columns: 1fr; }
   nav { padding: 0 16px; }
   .main { padding: 20px 16px 60px; }
   .nav-center { display: none; }
@@ -1136,7 +1158,7 @@ nav {
         <div class="pin-display">
           <div class="pin-meta">Enter this PIN on the scanner</div>
           <div class="pin-code" id="pinCode">——————</div>
-          <div class="pin-instructions">Expires in <span class="pin-countdown" id="pinCountdown">5:00</span></div>
+          <div class="pin-instructions">Expires in <span class="pin-countdown" id="pinCountdown">30:00</span></div>
           <div class="pin-scankey" id="pinScanKeyDisplay"></div>
         </div>
         <div class="form-actions" style="margin-top:8px">
@@ -1264,30 +1286,20 @@ function renderScanCard(s) {
 
   return `<div class="scan-card">
     <div class="card-head">
-      <div>
-        <div class="card-label">Machine</div>
-        <div class="card-name">${escHtml(s.desktop_name)}</div>
-        <div class="card-key-val">${escHtml(s.scan_key)}</div>
-      </div>
       <div class="status-badge ${bc}">${s.status}</div>
+      <div class="card-name">${escHtml(s.desktop_name)}</div>
+      <div class="card-key-val">${escHtml(s.scan_key)}</div>
     </div>
     ${progHtml}
-    <div class="card-meta">
-      <div class="meta-item"><div class="meta-lbl">Created</div><div class="meta-val">${fmtDate(s.created_at)}</div></div>
-      <div class="meta-item"><div class="meta-lbl">Updated</div><div class="meta-val">${fmtDate(s.updated_at)}</div></div>
-    </div>
     <div class="card-actions">
-      <button class="action-btn btn-view" onclick="window.location='/scan/'+${s.id}+'/view'">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        View
+      <button class="action-btn btn-view" title="View" onclick="window.location='/scan/'+${s.id}+'/view'">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
-      <button class="action-btn btn-edit" onclick="openEdit(${s.id},'${escAttr(s.desktop_name)}','${escAttr(s.scan_key)}')">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Edit
+      <button class="action-btn btn-edit" title="Edit" onclick="openEdit(${s.id},'${escAttr(s.desktop_name)}','${escAttr(s.scan_key)}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
-      <button class="action-btn btn-del" onclick="openDelete(${s.id},'${escAttr(s.desktop_name)}')">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Delete
+      <button class="action-btn btn-del" title="Delete" onclick="openDelete(${s.id},'${escAttr(s.desktop_name)}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
       </button>
     </div>
   </div>`;
@@ -1309,13 +1321,26 @@ function renderKeys() {
 }
 
 function renderKeyCard(k) {
+  // Build time-remaining string from expires_at
+  let expiryHtml = '';
+  if (k.expires_at) {
+    const expMs = new Date(k.expires_at.replace(' ', 'T') + 'Z').getTime() - Date.now();
+    if (expMs > 0) {
+      const expMins = Math.floor(expMs / 60000);
+      const expSecs = Math.floor((expMs % 60000) / 1000);
+      expiryHtml = `<span style="color:#ff9500;font-size:10px;font-family:var(--mono)">expires in ${expMins}m ${expSecs}s</span>`;
+    }
+  }
   return `<div class="key-card">
     <div class="key-top">
       <div style="flex:1">
-        <div class="card-label">Label</div>
         <div class="key-label">${k.label ? escHtml(k.label) : '<span class="key-empty-label">No label</span>'}</div>
       </div>
       <div class="badge-unused">Unused</div>
+    </div>
+    <div class="key-pin-block">
+      <div class="key-code-label">PIN</div>
+      <div class="key-pin-display">${escHtml(k.pin || k.pin_masked || '——')}</div>
     </div>
     <div>
       <div class="key-code-label">Scan Key</div>
@@ -1323,6 +1348,7 @@ function renderKeyCard(k) {
     </div>
     <div class="key-foot">
       <div class="key-created">Generated ${fmtDate(k.created_at)}</div>
+      ${expiryHtml}
     </div>
     <div class="key-actions">
       <button class="action-btn btn-del" style="flex:none;padding:7px 16px" onclick="openDeleteKey(${k.id}, '${escAttr(k.label || k.scan_key)}')">
@@ -1480,7 +1506,7 @@ function resetPinModal() {
   document.getElementById('pinLabelInput').value = '';
   document.getElementById('pinCode').textContent = '——————';
   document.getElementById('pinCode').classList.remove('expired');
-  document.getElementById('pinCountdown').textContent = '5:00';
+  document.getElementById('pinCountdown').textContent = '30:00';
   document.getElementById('pinCountdown').classList.remove('urgent');
   document.getElementById('pinScanKeyDisplay').textContent = '';
 }
@@ -1506,7 +1532,7 @@ async function submitGeneratePin() {
   document.getElementById('pinCode').textContent = data.pin;
   document.getElementById('pinScanKeyDisplay').textContent = 'KEY: ' + data.scan_key;
   genBtn.disabled = false; genBtn.textContent = 'Generate PIN';
-  let secs = 300;
+  let secs = 1800;
   const countEl = document.getElementById('pinCountdown');
   const codeEl  = document.getElementById('pinCode');
   _pinTimer = setInterval(() => {
