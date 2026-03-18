@@ -399,10 +399,6 @@ def trinity_scan_submit():
             cur.execute("UPDATE scans SET trinity_json=%s, log_text=%s, updated_at=%s WHERE id=%s",
                         (_json.dumps(data), raw_log, _now(), scan_id))
 
-            # Replace any prior flat findings with fully structured ones from the hits array.
-            # The individual /api/scanner/finding posts during the scan stored flat text.
-            # The full JSON from the C++ has every field (keyword, tool, path, eventType, etc.)
-            # so we clear and re-insert the rich version here.
             hits = data.get("hits", [])
             if hits:
                 cur.execute("DELETE FROM scan_findings WHERE scan_id=%s", (scan_id,))
@@ -410,7 +406,6 @@ def trinity_scan_submit():
                     severity    = h.get("severity", "alert") or "alert"
                     category    = h.get("category", "") or ""
                     keyword     = h.get("keyword", "") or ""
-                    # Build a human-readable detail line (fallback for text display)
                     path_or_fn  = h.get("path") or h.get("filename", "")
                     detail_parts = []
                     if keyword:       detail_parts.append(f"[{keyword}]")
@@ -427,7 +422,6 @@ def trinity_scan_submit():
                     if h.get("runCount"):   detail_parts.append(f"| runs: {h['runCount']}")
                     if h.get("patterns"):   detail_parts.append(f"| patterns: {'; '.join(h['patterns'])}")
                     detail = " ".join(detail_parts)[:2000]
-                    # Store the full structured hit as JSON for rich frontend rendering
                     fields_json = _json.dumps(h)
                     cur.execute("""INSERT INTO scan_findings
                                    (scan_id, category, severity, detail, keyword, fields_json, ts)
@@ -522,7 +516,7 @@ def scanner_complete():
         conn.commit()
     return jsonify({"ok": True})
 
-# ── PIN routes ───────────────────────────────────────────────────────────────
+# ── PIN routes ────────────────────────────────────────────────────────────────
 @app.route("/api/pin/generate", methods=["POST"])
 @require_auth
 def api_pin_generate():
@@ -542,7 +536,6 @@ def api_pin_generate():
                         (pin, scan_key, label, now, expires))
         conn.commit()
     return jsonify({"ok": True, "pin": pin, "scan_key": scan_key, "expires_at": expires})
-
 
 @app.route("/api/pin/validate", methods=["GET"])
 def api_pin_validate():
@@ -565,7 +558,6 @@ def api_pin_validate():
         conn.commit()
     return jsonify({"ok": True, "scan_key": row["scan_key"], "label": row["label"]})
 
-
 @app.route("/api/pin/list", methods=["GET"])
 @require_auth
 def api_pin_list():
@@ -582,6 +574,57 @@ def api_pin_list():
         d["expired"] = bool(d.get("expires_at") and d["expires_at"] < now and not d["used"])
         result.append(d)
     return jsonify(result)
+
+# ── Keys tab API ──────────────────────────────────────────────────────────────
+
+@app.route("/api/keys/unused", methods=["GET"])
+@require_auth
+def api_keys_unused():
+    """GET /api/keys/unused
+    Returns all scan_pins that are unused AND not yet expired.
+    These are the "live" keys shown in the Keys tab — they can still be
+    redeemed by a scanner that enters the correct PIN.
+    """
+    now = _now()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, pin, scan_key, label, created_at, expires_at
+                FROM scan_pins
+                WHERE used = FALSE
+                  AND (expires_at = '' OR expires_at >= %s)
+                ORDER BY created_at DESC
+            """, (now,))
+            rows = cur.fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        # Partially mask the PIN so a screenshot of the Keys tab doesn't
+        # expose a redeemable code.  Show first 2 digits, rest as bullets.
+        raw_pin = d.pop("pin", "")
+        d["pin_masked"] = (raw_pin[:2] + "●" * (len(raw_pin) - 2)) if raw_pin else "——"
+        result.append(d)
+    return jsonify(result)
+
+
+@app.route("/api/keys/<int:key_id>/revoke", methods=["POST"])
+@require_auth
+def api_key_revoke(key_id):
+    """POST /api/keys/<id>/revoke
+    Hard-deletes an unused, unexpired key so it can never be redeemed.
+    Returns 409 if the key has already been used (audit trail preserved).
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT used FROM scan_pins WHERE id=%s", (key_id,))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({"ok": False, "error": "Key not found"}), 404
+            if row["used"]:
+                return jsonify({"ok": False, "error": "Cannot revoke a key that has already been used"}), 409
+            cur.execute("DELETE FROM scan_pins WHERE id=%s AND used = FALSE", (key_id,))
+        conn.commit()
+    return jsonify({"ok": True})
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
