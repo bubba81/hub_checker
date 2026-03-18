@@ -1435,15 +1435,29 @@ function openDelete(scanId, name) {
 }
 
 async function submitDelete() {
-  const scanId = document.getElementById('deleteScanId').value;
-  const data   = await apiFetch(`/api/scan/${scanId}/delete`, { method: 'POST' });
-  if (data.ok) { toast('Scan deleted', 'success'); closeModal('deleteModal'); loadAll(); }
-  else toast('Failed to delete', 'error');
+  const raw = document.getElementById('deleteScanId').value;
+  let data;
+  if (raw.startsWith('key_')) {
+    const keyId = raw.slice(4);
+    data = await apiFetch(`/api/keys/${keyId}/revoke`, { method: 'POST' });
+    if (data.ok) { toast('Key revoked', 'success'); closeModal('deleteModal'); loadAll(); }
+    else toast(data.error || 'Failed to revoke key', 'error');
+  } else {
+    data = await apiFetch(`/api/scan/${raw}/delete`, { method: 'POST' });
+    if (data.ok) { toast('Scan deleted', 'success'); closeModal('deleteModal'); loadAll(); }
+    else toast('Failed to delete', 'error');
+  }
+  document.querySelector('.confirm-msg').textContent  = 'This scan key and all associated results will be permanently removed.';
+  document.querySelector('.confirm-warn').textContent = '⚠ This action cannot be undone.';
 }
 
 function openDeleteKey(keyId, label) {
+  // Repurpose the delete modal for key revocation
   document.getElementById('deleteScanId').value         = 'key_' + keyId;
   document.getElementById('deleteSubtitle').textContent = label;
+  // Swap the confirm message text for key context
+  document.querySelector('.confirm-msg').textContent    = 'This key will be permanently revoked and can no longer be used by a scanner.';
+  document.querySelector('.confirm-warn').textContent   = '⚠ Used keys cannot be revoked — the audit trail is preserved.';
   openModal('deleteModal');
 }
 
