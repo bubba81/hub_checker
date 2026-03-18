@@ -527,7 +527,7 @@ def api_pin_generate():
     pin      = "".join(random.choices(_string.digits, k=6))
     scan_key = secrets.token_hex(8)
     now      = _now()
-    expires  = (_dt.utcnow() + _td(minutes=5)).strftime("%Y-%m-%d %H:%M:%S")
+    expires  = (_dt.utcnow() + _td(minutes=30)).strftime("%Y-%m-%d %H:%M:%S")
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM scan_pins WHERE expires_at <> '' AND expires_at < %s AND used = FALSE", (now,))
@@ -599,10 +599,8 @@ def api_keys_unused():
     result = []
     for r in rows:
         d = dict(r)
-        # Partially mask the PIN so a screenshot of the Keys tab doesn't
-        # expose a redeemable code.  Show first 2 digits, rest as bullets.
-        raw_pin = d.pop("pin", "")
-        d["pin_masked"] = (raw_pin[:2] + "●" * (len(raw_pin) - 2)) if raw_pin else "——"
+        # Return the full PIN — the Keys tab is behind auth and shows it
+        # prominently so operators can read it out to the person at the machine.
         result.append(d)
     return jsonify(result)
 
