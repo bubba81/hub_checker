@@ -231,6 +231,23 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:99px;}
 ::-webkit-scrollbar-thumb:hover{background:rgba(224,32,32,.3);}
+
+/* ── System Info View */
+.sysinfo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
+.si-card{background:var(--glass-1);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 6px 24px rgba(0,0,0,.2);position:relative;}
+.si-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);pointer-events:none;}
+.si-card-head{padding:12px 16px;border-bottom:1px solid var(--glass-border);background:linear-gradient(90deg,rgba(224,32,32,.04),transparent);display:flex;align-items:center;gap:8px;}
+.si-card-title{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:1.2px;color:var(--red-bright);text-transform:uppercase;}
+.si-card-body{padding:0;}
+.si-row{display:grid;grid-template-columns:140px 1fr;border-bottom:1px solid var(--glass-border);min-height:34px;}
+.si-row:last-child{border-bottom:none;}
+.si-key{font-family:var(--mono);font-size:10px;color:var(--text-3);padding:8px 14px;display:flex;align-items:center;border-right:1px solid var(--glass-border);letter-spacing:.3px;}
+.si-val{font-family:var(--mono);font-size:11px;color:var(--text);padding:8px 14px;display:flex;align-items:center;word-break:break-word;line-height:1.4;}
+.si-val.good{color:var(--green);}.si-val.bad{color:var(--red-bright);}.si-val.warn{color:var(--orange);}.si-val.dim{color:var(--text-3);}
+.svc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-right:7px;}
+.svc-dot.run{background:var(--green);box-shadow:0 0 6px var(--green);}
+.svc-dot.stop{background:var(--red-bright);box-shadow:0 0 6px var(--red);}
+.svc-dot.unk{background:var(--text-3);}
 </style>
 </head>
 <body>
@@ -285,20 +302,24 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
   <div class="top-nav">
     <button class="tnav active" data-view="overview">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      OVERVIEW
+      Overview
+    </button>
+    <button class="tnav" data-view="sysinfo">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      System Info
     </button>
     <button class="tnav" data-view="scans">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-      FINDINGS
+      Findings
       <span class="tnav-cnt" id="tcTotal">{{ findings|length }}</span>
     </button>
     <button class="tnav" data-view="phases">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      PHASES <span class="tnav-cnt">{{ phases|length }}</span>
+      Phases <span class="tnav-cnt">{{ phases|length }}</span>
     </button>
     <button class="tnav" data-view="log">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      RAW LOG
+      Raw Log
     </button>
   </div>
 
@@ -361,6 +382,13 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
           {% endif %}
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ══════ SYSTEM INFO ══════ -->
+  <div class="view" id="view-sysinfo">
+    <div class="sysinfo-grid" id="sysinfoGrid">
+      <div style="grid-column:1/-1;padding:60px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-3);">Loading system info…</div>
     </div>
   </div>
 
@@ -495,17 +523,14 @@ const SCAN_DEFS = [
     { id:"leveldb",       label:"Browser LevelDB",   desc:"Chromium browser LevelDB Local Storage parsed for Discord account IDs and usernames via structured SSTable + WAL log parsing.",                                 cats:["leveldb","browser leveldb"] },
   ]},
   { group:"INTEGRITY CHECKS", scans:[
-    { id:"int_prefetch",  label:"Prefetch Integrity",       desc:"Prefetch folder checked for existence, empty state, or suspicious recent modification.",                                                                cats:["prefetch integrity"] },
-    { id:"int_amcache",   label:"Amcache Integrity",        desc:"Amcache.hve file size and last-modified timestamp checked for clearing or wiping.",                                                                     cats:["amcache integrity"] },
-    { id:"int_shimcache", label:"Shimcache Integrity",      desc:"SYSTEM hive last-write time checked for recent modification indicating AppCompatCache tampering.",                                                      cats:["shimcache integrity"] },
-    { id:"int_srum",      label:"SRUM Integrity",           desc:"SRUDB.dat file size and last-modified time checked for wiping.",                                                                                        cats:["srum integrity"] },
-    { id:"int_defender",  label:"Defender Integrity",       desc:"Windows Defender Operational event log checked for near-empty size (cleared), event 5001 (RT protection off), or event 5007 (exclusion added).",       cats:["defender integrity","defender"] },
-    { id:"int_bam",       label:"BAM Integrity",            desc:"BAM service checked for disabled state (Start=4) or suspiciously few UserSettings entries.",                                                            cats:["bam integrity"] },
-    { id:"usb",           label:"USB History",              desc:"USBSTOR registry key enumerated for all historically connected USB storage devices.",                                                                    cats:["usb","usbstor","usb history"] },
-    { id:"restore",       label:"System Restore / VSS",     desc:"Presence or absence of system restore points and Volume Shadow Copies checked.",                                                                        cats:["restore","system restore","vss"] },
-    { id:"int_recent",    label:"Recent Folder Integrity",  desc:"Recent folder entry count and last-modification time checked for manual wiping.",                                                                       cats:["recent folder integrity"] },
-    { id:"services",      label:"Services Scan",            desc:"All installed Windows services scanned for cheat keywords in name, display name, and binary path.",                                                     cats:["service","services"] },
-    { id:"unsigned",      label:"Unsigned Executables",     desc:"User-writable directories walked for unsigned .exe/.dll files. Patterns: packer detection, anti-debug imports.",                                        cats:["unsigned","unsigned executable"] },
+    { id:"integrity_all", label:"Integrity",
+      desc:"Combined integrity check — Prefetch, Amcache, Shimcache, SRUM, Defender, BAM, Recent Folder, System Restore / VSS.",
+      cats:["prefetch integrity","amcache integrity","shimcache integrity","srum integrity",
+            "defender integrity","defender","bam integrity","recent folder integrity",
+            "restore","system restore","vss"] },
+    { id:"usb",           label:"USB History",              desc:"USBSTOR registry key enumerated for all historically connected USB storage devices.",    cats:["usb","usbstor","usb history"] },
+    { id:"services",      label:"Services Scan",            desc:"All installed Windows services scanned for cheat keywords in name, display name, and binary path.", cats:["service","services"] },
+    { id:"unsigned",      label:"Unsigned Executables",     desc:"User-writable directories walked for unsigned .exe/.dll files. Patterns: packer detection, anti-debug imports.", cats:["unsigned","unsigned executable"] },
   ]},
 ];
 
@@ -691,6 +716,145 @@ function renderOvFindings(findings) {
   }).join('');
   const more = findings.length > 20 ? `<div style="padding:9px 14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-3);">+${findings.length-20} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red-bright);">View all</a></div>` : '';
   return rows + more;
+}
+
+// ─── System Info View ────────────────────────────────────────────────────────
+const SCAN_DATA = {{ scan | tojson }};
+
+function renderSysinfo() {
+  const grid = document.getElementById('sysinfoGrid');
+  if (!grid) return;
+
+  // Pull data from the scan row and structured findings
+  const hostname   = SCAN_DATA.hostname   || '—';
+  const username   = SCAN_DATA.username   || '—';
+  const osVersion  = SCAN_DATA.os_version || '—';
+  const desktop    = SCAN_DATA.desktop_name || '—';
+  const createdAt  = SCAN_DATA.created_at  || '—';
+
+  // Extract system info findings from allFindings
+  // The C++ scanner reports these under categories like "system","device","spec","service"
+  const sysCats = ['system','device','spec','hardware','windows','install','os','computer'];
+  const svcCats = ['service','services'];
+
+  const sysFindings = allFindings.filter(f => {
+    const fc = (f.category||'').toLowerCase();
+    return sysCats.some(c => fc.includes(c));
+  });
+  const svcFindings = allFindings.filter(f => {
+    const fc = (f.category||'').toLowerCase();
+    return svcCats.some(c => fc === c || fc.includes(c));
+  });
+
+  // Helper to find a field from findings detail
+  function extract(keyword) {
+    const f = sysFindings.find(x =>
+      (x.detail||'').toLowerCase().includes(keyword.toLowerCase()) ||
+      (x.keyword||'').toLowerCase().includes(keyword.toLowerCase())
+    );
+    if (!f) return null;
+    // Try structured fields first
+    if (f.fields) {
+      return f.fields.valueData || f.fields.value || f.fields.detail || f.detail;
+    }
+    return f.detail;
+  }
+
+  // Build device info card
+  const deviceRows = [
+    ['Computer Name', desktop],
+    ['Hostname',      hostname],
+    ['Username',      username],
+    ['OS Version',    osVersion],
+    ['Scan Started',  createdAt],
+    ['Windows Install', extract('install date') || extract('installdate') || extract('windows install') || '—'],
+    ['CPU',           extract('cpu') || extract('processor') || '—'],
+    ['RAM',           extract('ram') || extract('memory') || extract('physicalMemory') || '—'],
+    ['GPU',           extract('gpu') || extract('graphics') || '—'],
+    ['Disk',          extract('disk') || extract('drive') || '—'],
+  ].filter(([k,v]) => v && v !== '—' || ['Computer Name','Hostname','Username','OS Version','Scan Started'].includes(k));
+
+  let deviceHtml = `<div class="si-card">
+    <div class="si-card-head">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <div class="si-card-title">Device Info</div>
+    </div>
+    <div class="si-card-body">`;
+  for (const [k, v] of deviceRows) {
+    deviceHtml += `<div class="si-row"><div class="si-key">${esc(k)}</div><div class="si-val">${esc(String(v))}</div></div>`;
+  }
+  deviceHtml += `</div></div>`;
+
+  // Build services card from findings
+  let servicesHtml = '';
+  if (svcFindings.length) {
+    servicesHtml = `<div class="si-card" style="grid-column:1/-1">
+      <div class="si-card-head">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        <div class="si-card-title">System Services</div>
+      </div>
+      <div class="si-card-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">`;
+    for (const f of svcFindings) {
+      const fd      = f.fields || {};
+      const name    = fd.valueName || fd.programName || f.keyword || f.detail || '—';
+      const state   = (fd.valueData || fd.value || f.detail || '').toLowerCase();
+      const running = state.includes('running') || state.includes('enabled') || state.includes('start=2') || state.includes('start=1');
+      const stopped = state.includes('stopped') || state.includes('disabled') || state.includes('start=4') || state.includes('start=3');
+      const dotCls  = running ? 'run' : stopped ? 'stop' : 'unk';
+      const valCls  = running ? 'good' : stopped ? 'bad' : '';
+      const label   = running ? 'Running' : stopped ? 'Disabled/Stopped' : (state || 'Unknown');
+      servicesHtml += `<div class="si-row">
+        <div class="si-key">${esc(String(name).slice(0,32))}</div>
+        <div class="si-val ${valCls}"><div class="svc-dot ${dotCls}"></div>${esc(label)}</div>
+      </div>`;
+    }
+    servicesHtml += `</div></div>`;
+  }
+
+  // Extra system findings card (anything remaining in sys categories)
+  let extraHtml = '';
+  const extraFindings = sysFindings.filter(f => {
+    const fc = (f.category||'').toLowerCase();
+    return !['service','services'].includes(fc);
+  });
+  if (extraFindings.length) {
+    extraHtml = `<div class="si-card" style="grid-column:1/-1">
+      <div class="si-card-head">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg>
+        <div class="si-card-title">System Findings</div>
+      </div>
+      <div class="si-card-body">`;
+    for (const f of extraFindings) {
+      const fd   = f.fields || {};
+      const k    = fd.valueName || fd.keyPath || f.keyword || f.category || '—';
+      const v    = fd.valueData || fd.value || f.detail || '—';
+      const sc   = f.severity === 'alert' ? 'bad' : f.severity === 'warn' ? 'warn' : '';
+      extraHtml += `<div class="si-row"><div class="si-key">${esc(String(k).slice(0,32))}</div><div class="si-val ${sc}">${esc(String(v).slice(0,120))}</div></div>`;
+    }
+    extraHtml += `</div></div>`;
+  }
+
+  // Empty state if no structured data
+  if (deviceRows.every(([k,v]) => !v || v === '—') && !svcFindings.length && !extraFindings.length) {
+    grid.innerHTML = `
+      ${deviceHtml}
+      <div class="si-card" style="grid-column:1/-1">
+        <div class="si-card-body" style="padding:40px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-3)">
+          No structured system data in this scan.<br>
+          <span style="color:var(--text-4);font-size:10px;margin-top:6px;display:block">System info is populated from scanner findings with categories: system, device, spec, service</span>
+        </div>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = deviceHtml + servicesHtml + extraHtml;
+}
+
+// Wire sysinfo tab
+const _origSwitchView = switchView;
+function switchView(name) {
+  _origSwitchView(name);
+  if (name === 'sysinfo') renderSysinfo();
 }
 
 async function poll() {
