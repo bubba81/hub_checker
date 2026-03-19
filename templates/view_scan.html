@@ -155,6 +155,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .si-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
 .si-dot.hit{background:var(--red-bright);box-shadow:0 0 6px rgba(255,59,48,.5);}
 .si-dot.warn{background:var(--orange);box-shadow:0 0 6px rgba(255,149,0,.4);}
+.si-dot.clean{background:var(--green);box-shadow:0 0 6px rgba(48,209,88,.4);}
 .si-dot.none{background:rgba(255,255,255,.1);}
 .si-name{font-family:var(--mono);font-size:10px;color:var(--text-3);flex:1;line-height:1.4;}
 .si.active .si-name{color:var(--red-bright);}
@@ -605,7 +606,7 @@ function buildSidebar() {
       const hits   = findingsFor(s);
       const alerts = hits.filter(f => f.severity === 'alert').length;
       const warns  = hits.filter(f => f.severity === 'warn').length;
-      const dot    = alerts > 0 ? 'hit' : warns > 0 ? 'warn' : 'none';
+      const dot    = alerts > 0 ? 'hit' : warns > 0 ? 'warn' : hits.length > 0 ? 'clean' : 'none';
       const active = s.id === activeScanId ? ' active' : '';
       html += `<div class="si${active}" data-sid="${s.id}"><div class="si-dot ${dot}"></div><div class="si-name">${esc(s.label)}</div><div class="si-cnt">${hits.length}</div></div>`;
     }
@@ -783,23 +784,11 @@ const _rblxCache = {};
 async function fetchRobloxProfile(userId) {
   if (_rblxCache[userId]) return _rblxCache[userId];
   try {
-    // Roblox API is public — fetch username/displayName
-    const r = await fetch(`https://users.roblox.com/v1/users/${userId}`);
+    // Call our backend proxy to avoid CORS restrictions
+    const r = await fetch(`/api/roblox/user/${userId}`);
     if (!r.ok) throw new Error('not found');
-    const u = await r.json();
-    // Thumbnail
-    const tr = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png`);
-    let thumb = '';
-    if (tr.ok) {
-      const td = await tr.json();
-      thumb = td.data?.[0]?.imageUrl || '';
-    }
-    const profile = {
-      id:          u.id,
-      name:        u.name,
-      displayName: u.displayName,
-      thumb,
-    };
+    const profile = await r.json();
+    if (!profile.ok) throw new Error(profile.error || 'not found');
     _rblxCache[userId] = profile;
     return profile;
   } catch(e) {
