@@ -494,12 +494,12 @@ document.getElementById('logSearch').addEventListener('input', e => renderLog(e.
 <script>
 const SCAN_DEFS = [
   { group:"PHASE 1 — FORENSIC", scans:[
-    { id:"bam",       label:"BAM Registry",      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets.",                                        cats:["bam","bam integrity"] },
+    { id:"bam",       label:"BAM Registry",      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets.",                                        cats:["bam"] },
     { id:"usn",       label:"USN Journal",        desc:"Live NTFS USN change journal ($UsnJrnl:$J) + VSS carve for rolled-out records. Full ReasonMask and FRN path resolution.",                                    cats:["usn"] },
-    { id:"shimcache", label:"Shimcache",           desc:"AppCompatCache parsed by AppCompatCacheParser.exe from VSS hive. Records every executable path touched by the OS loader. ShimCache Position indicates recency.", cats:["shimcache","appcompat","appcompatcache","shimcache integrity"], csvTools:["appcompatcacheparser","appcompat"] },
-    { id:"amcache",   label:"Amcache",             desc:"Amcache.hve parsed by AmcacheParser.exe. File hash, publisher, first/last execution. Multiple CSV sub-types: shortcuts, unassociated file entries, device PnPs, drive binaries.", cats:["amcache","amcache integrity"], csvTools:["amcacheparser","amcache"] },
+    { id:"shimcache", label:"Shimcache",           desc:"AppCompatCache parsed by AppCompatCacheParser.exe from VSS hive. Records every executable path touched by the OS loader. ShimCache Position indicates recency.", cats:["shimcache","appcompat","appcompatcache"], csvTools:["appcompatcacheparser","appcompat"] },
+    { id:"amcache",   label:"Amcache",             desc:"Amcache.hve parsed by AmcacheParser.exe. File hash, publisher, first/last execution. Multiple CSV sub-types: shortcuts, unassociated file entries, device PnPs, drive binaries.", cats:["amcache"], csvTools:["amcacheparser","amcache"] },
     { id:"prefetch",  label:"Prefetch (PECmd)",    desc:"Windows Prefetch files (.pf) parsed by PECmd.exe. Records up to 8 run timestamps, loaded DLL list, and run count. Execution evidence persists after binary deletion.", cats:["prefetch","pecmd"], csvTools:["pecmd","prefetch"] },
-    { id:"srum",      label:"SRUM",                desc:"System Resource Usage Monitor (SRUDB.dat) parsed by SrumECmd.exe. Per-app CPU, memory, and network usage. Evidence of execution even without Prefetch.",    cats:["srum","srum integrity"], csvTools:["srumemd","srum"] },
+    { id:"srum",      label:"SRUM",                desc:"System Resource Usage Monitor (SRUDB.dat) parsed by SrumECmd.exe. Per-app CPU, memory, and network usage. Evidence of execution even without Prefetch.",    cats:["srum"], csvTools:["srumemd","srum"] },
     { id:"mft",       label:"MFT / $MFT",          desc:"NTFS Master File Table parsed by MFTECmd.exe. Contains every file ever created — including deleted files whose MFT slot hasn't been reused. SI/FN timestamps and FRN.", cats:["mft"], csvTools:["mftemd","mft"] },
     { id:"evtx",      label:"Event Logs",           desc:"Windows Event Logs parsed by EvtxECmd.exe. Events 4688 (process create), 7045/4697 (service install), 4698-4702 (task scheduler), 1102/104 (log clear).", cats:["evtx","eventlog","event"], csvTools:["evtxecmd","evtx"] },
     { id:"recmd",     label:"Registry (RECmd)",     desc:"Registry batch queries via RECmd.exe across NTUSER.DAT, SOFTWARE, SAM, and SYSTEM hives. AppCompatFlags, UserAssist, WordWheelQuery, OpenSavePidlMRU, FeatureUsage, Uninstall entries.", cats:["regedit","recmd","registry"], csvTools:["recmd","regedit"] },
@@ -526,7 +526,7 @@ const SCAN_DEFS = [
     { id:"integrity_all", label:"Integrity",
       desc:"Combined integrity check — Prefetch, Amcache, Shimcache, SRUM, Defender, BAM, Recent Folder, System Restore / VSS.",
       cats:["prefetch integrity","amcache integrity","shimcache integrity","srum integrity",
-            "defender integrity","defender","bam integrity","recent folder integrity",
+            "defender integrity","bam integrity","recent folder integrity",
             "restore","system restore","vss"] },
     { id:"usb",           label:"USB History",              desc:"USBSTOR registry key enumerated for all historically connected USB storage devices.",    cats:["usb","usbstor","usb history"] },
     { id:"services",      label:"Services Scan",            desc:"All installed Windows services scanned for cheat keywords in name, display name, and binary path.", cats:["service","services"] },
@@ -557,7 +557,8 @@ function findingsFor(def) {
   return allFindings.filter(f => {
     const fc = (f.category||'').toLowerCase();
     if (fc === 'csv') return csvMatchesDef(f.detail||'', def);
-    return cats.some(c => fc === c || fc.includes(c));
+    // Exact match only — prevents "bam" swallowing "bam integrity" etc.
+    return cats.some(c => fc === c);
   });
 }
 
