@@ -426,11 +426,18 @@ def api_scans():
     return jsonify(result)
 
 @app.route("/api/scan/<int:scan_id>/delete", methods=["POST"])
-@require_auth
+@require_scanner_user
 def delete_scan(scan_id):
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM scans WHERE id=%s", (scan_id,))
+            if is_admin:
+                cur.execute("DELETE FROM scans WHERE id=%s", (scan_id,))
+            else:
+                # Users can only delete their own scans
+                cur.execute("DELETE FROM scans WHERE id=%s AND discord_user_id=%s",
+                            (scan_id, uid))
         conn.commit()
     return jsonify({"ok": True})
 
@@ -879,13 +886,14 @@ def api_pins_mine():
     now = _now()
     with get_conn() as conn:
         with conn.cursor() as cur:
-            # Match pins whose label starts with this user's discord ID
+            # Return ALL pins for this user — active, used, and expired
+            # so they can view and clear their history
             cur.execute("""
                 SELECT id, pin, scan_key, label, created_at, expires_at, used, used_at
                 FROM scan_pins
                 WHERE label = %s OR label LIKE %s
                 ORDER BY created_at DESC
-                LIMIT 100
+                LIMIT 200
             """, (uid, uid + "|%"))
             rows = cur.fetchall()
     result = []
@@ -920,17 +928,29 @@ def api_keys_unused():
     return jsonify([dict(r) for r in rows])
 
 @app.route("/api/keys/<int:key_id>/revoke", methods=["POST"])
-@require_auth
+@require_scanner_user
 def api_key_revoke(key_id):
+    """Revoke an unused key OR delete a used key from history.
+    Users can only touch their own pins (label starts with their uid).
+    Scans linked to the pin are NOT deleted.
+    """
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT used FROM scan_pins WHERE id=%s", (key_id,))
+            cur.execute("SELECT id, used, label FROM scan_pins WHERE id=%s", (key_id,))
             row = cur.fetchone()
             if not row:
                 return jsonify({"ok": False, "error": "Key not found"}), 404
-            if row["used"]:
-                return jsonify({"ok": False, "error": "Cannot revoke a used key"}), 409
-            cur.execute("DELETE FROM scan_pins WHERE id=%s AND used=FALSE", (key_id,))
+            # Ownership check — label starts with the user's discord_user_id
+            if not is_admin:
+                raw_label = (row["label"] or "")
+                owner_uid = raw_label.split("|")[0].strip()
+                if owner_uid != uid:
+                    return jsonify({"ok": False, "error": "Not your key"}), 403
+            # Delete the pin record regardless of used status
+            # Scans are not deleted — they stay linked by scan_key
+            cur.execute("DELETE FROM scan_pins WHERE id=%s", (key_id,))
         conn.commit()
     return jsonify({"ok": True})
 
