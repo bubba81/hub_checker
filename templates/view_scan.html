@@ -48,6 +48,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .topbar-right{display:flex;align-items:center;gap:12px;}
 .btn-back{display:inline-flex;align-items:center;gap:6px;background:var(--glass-1);border:1px solid var(--glass-border);color:var(--text-2);padding:7px 16px;font-family:var(--sans);font-size:12px;font-weight:500;border-radius:var(--radius-xs);cursor:pointer;text-decoration:none;transition:all .2s;backdrop-filter:var(--blur-sm);}
 .btn-back:hover{border-color:var(--glass-border-red);color:var(--red-bright);background:var(--red-glass);}
+.btn-refresh{display:inline-flex;align-items:center;gap:6px;background:var(--glass-1);border:1px solid var(--glass-border);color:var(--text-2);padding:7px 16px;font-family:var(--sans);font-size:12px;font-weight:500;border-radius:var(--radius-xs);cursor:pointer;transition:all .2s;backdrop-filter:var(--blur-sm);}
+.btn-refresh:hover{border-color:rgba(48,209,88,.35);color:var(--green);background:rgba(48,209,88,.07);}
+.btn-refresh.spinning svg{animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 .viewer{font-family:var(--mono);font-size:12px;color:var(--text-3);}
 .live-pill{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--orange);background:rgba(255,149,0,.07);border:1px solid rgba(255,149,0,.2);padding:4px 10px;border-radius:20px;}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--orange);box-shadow:0 0 6px var(--orange);animation:pulse 1.2s ease-in-out infinite;}
@@ -262,6 +266,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
     <div class="live-pill" id="livePill"><div class="live-dot"></div>LIVE</div>
     {% endif %}
     <span class="viewer">{{ username }}</span>
+    <button class="btn-refresh" id="btnRefresh" onclick="refreshScan()" title="Re-fetch scan data">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Refresh
+    </button>
     <a href="/" class="btn-back">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>Back
     </a>
@@ -494,12 +502,12 @@ document.getElementById('logSearch').addEventListener('input', e => renderLog(e.
 <script>
 const SCAN_DEFS = [
   { group:"PHASE 1 — FORENSIC", scans:[
-    { id:"bam",       label:"BAM Registry",      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets.",                                        cats:["bam"] },
+    { id:"bam",       label:"BAM Registry",      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets.",                                        cats:["bam","bam integrity"] },
     { id:"usn",       label:"USN Journal",        desc:"Live NTFS USN change journal ($UsnJrnl:$J) + VSS carve for rolled-out records. Full ReasonMask and FRN path resolution.",                                    cats:["usn"] },
-    { id:"shimcache", label:"Shimcache",           desc:"AppCompatCache parsed by AppCompatCacheParser.exe from VSS hive. Records every executable path touched by the OS loader. ShimCache Position indicates recency.", cats:["shimcache","appcompat","appcompatcache"], csvTools:["appcompatcacheparser","appcompat"] },
-    { id:"amcache",   label:"Amcache",             desc:"Amcache.hve parsed by AmcacheParser.exe. File hash, publisher, first/last execution. Multiple CSV sub-types: shortcuts, unassociated file entries, device PnPs, drive binaries.", cats:["amcache"], csvTools:["amcacheparser","amcache"] },
+    { id:"shimcache", label:"Shimcache",           desc:"AppCompatCache parsed by AppCompatCacheParser.exe from VSS hive. Records every executable path touched by the OS loader. ShimCache Position indicates recency.", cats:["shimcache","appcompat","appcompatcache","shimcache integrity"], csvTools:["appcompatcacheparser","appcompat"] },
+    { id:"amcache",   label:"Amcache",             desc:"Amcache.hve parsed by AmcacheParser.exe. File hash, publisher, first/last execution. Multiple CSV sub-types: shortcuts, unassociated file entries, device PnPs, drive binaries.", cats:["amcache","amcache integrity"], csvTools:["amcacheparser","amcache"] },
     { id:"prefetch",  label:"Prefetch (PECmd)",    desc:"Windows Prefetch files (.pf) parsed by PECmd.exe. Records up to 8 run timestamps, loaded DLL list, and run count. Execution evidence persists after binary deletion.", cats:["prefetch","pecmd"], csvTools:["pecmd","prefetch"] },
-    { id:"srum",      label:"SRUM",                desc:"System Resource Usage Monitor (SRUDB.dat) parsed by SrumECmd.exe. Per-app CPU, memory, and network usage. Evidence of execution even without Prefetch.",    cats:["srum"], csvTools:["srumemd","srum"] },
+    { id:"srum",      label:"SRUM",                desc:"System Resource Usage Monitor (SRUDB.dat) parsed by SrumECmd.exe. Per-app CPU, memory, and network usage. Evidence of execution even without Prefetch.",    cats:["srum","srum integrity"], csvTools:["srumemd","srum"] },
     { id:"mft",       label:"MFT / $MFT",          desc:"NTFS Master File Table parsed by MFTECmd.exe. Contains every file ever created — including deleted files whose MFT slot hasn't been reused. SI/FN timestamps and FRN.", cats:["mft"], csvTools:["mftemd","mft"] },
     { id:"evtx",      label:"Event Logs",           desc:"Windows Event Logs parsed by EvtxECmd.exe. Events 4688 (process create), 7045/4697 (service install), 4698-4702 (task scheduler), 1102/104 (log clear).", cats:["evtx","eventlog","event"], csvTools:["evtxecmd","evtx"] },
     { id:"recmd",     label:"Registry (RECmd)",     desc:"Registry batch queries via RECmd.exe across NTUSER.DAT, SOFTWARE, SAM, and SYSTEM hives. AppCompatFlags, UserAssist, WordWheelQuery, OpenSavePidlMRU, FeatureUsage, Uninstall entries.", cats:["regedit","recmd","registry"], csvTools:["recmd","regedit"] },
@@ -526,7 +534,7 @@ const SCAN_DEFS = [
     { id:"integrity_all", label:"Integrity",
       desc:"Combined integrity check — Prefetch, Amcache, Shimcache, SRUM, Defender, BAM, Recent Folder, System Restore / VSS.",
       cats:["prefetch integrity","amcache integrity","shimcache integrity","srum integrity",
-            "defender integrity","bam integrity","recent folder integrity",
+            "defender integrity","defender","bam integrity","recent folder integrity",
             "restore","system restore","vss"] },
     { id:"usb",           label:"USB History",              desc:"USBSTOR registry key enumerated for all historically connected USB storage devices.",    cats:["usb","usbstor","usb history"] },
     { id:"services",      label:"Services Scan",            desc:"All installed Windows services scanned for cheat keywords in name, display name, and binary path.", cats:["service","services"] },
@@ -557,8 +565,7 @@ function findingsFor(def) {
   return allFindings.filter(f => {
     const fc = (f.category||'').toLowerCase();
     if (fc === 'csv') return csvMatchesDef(f.detail||'', def);
-    // Exact match only — prevents "bam" swallowing "bam integrity" etc.
-    return cats.some(c => fc === c);
+    return cats.some(c => fc === c || fc.includes(c));
   });
 }
 
@@ -850,6 +857,79 @@ function renderSysinfo() {
   }
 
   grid.innerHTML = deviceHtml + servicesHtml + extraHtml;
+}
+
+async function refreshScan() {
+  const btn = document.getElementById('btnRefresh');
+  btn.classList.add('spinning');
+  btn.disabled = true;
+
+  try {
+    const [pRes, fRes] = await Promise.all([
+      fetch(`/api/scan/${scanId}/progress`),
+      fetch(`/api/scan/${scanId}/findings`)
+    ]);
+    if (!pRes.ok || !fRes.ok) throw new Error('fetch failed');
+
+    const d        = await pRes.json();
+    const findings = await fRes.json();
+    allFindings    = findings;
+    allFindings.forEach(f => {
+      if (f.fields_json && !f.fields) {
+        try { f.fields = JSON.parse(f.fields_json); } catch(e) { f.fields = null; }
+      }
+    });
+
+    const total = d.total_phases || phases.length;
+    const pi    = d.phase_index  || 0;
+    const done  = d.status === 'complete' || d.status === 'completed';
+    const pct   = done ? 100 : Math.round(pi / Math.max(total - 1, 1) * 100);
+
+    document.getElementById('barFill').style.width  = pct + '%';
+    document.getElementById('progPct').textContent  = pct + '%';
+    document.getElementById('tcTotal').textContent  = findings.length;
+    document.getElementById('findingCount').textContent = findings.length;
+
+    if (done) {
+      document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
+      document.getElementById('statusBadge').className   = 'status-badge complete';
+      document.getElementById('statusBadge').textContent = '✓ COMPLETE';
+      const lp = document.getElementById('livePill');
+      if (lp) lp.style.display = 'none';
+    } else {
+      document.getElementById('progLabel').textContent =
+        `PHASE ${pi+1}/${total} — ${phases[Math.min(pi, phases.length-1)]}`;
+    }
+
+    const phHtml = renderPhaseLog(d.events || [], pi, done);
+    document.getElementById('phaseLogOv').innerHTML   = phHtml;
+    document.getElementById('phaseLogFull').innerHTML = phHtml;
+    document.getElementById('phaseCount').textContent = `${(d.events||[]).length}/${phases.length}`;
+    document.getElementById('ovFindings').innerHTML   = renderOvFindings(findings);
+
+    buildSidebar();
+    rerender();
+    renderSysinfo();
+
+    // Flash green to confirm
+    btn.style.color       = 'var(--green)';
+    btn.style.borderColor = 'rgba(48,209,88,.35)';
+    setTimeout(() => {
+      btn.style.color       = '';
+      btn.style.borderColor = '';
+    }, 1500);
+
+  } catch(e) {
+    btn.style.color       = 'var(--red-bright)';
+    btn.style.borderColor = 'rgba(224,32,32,.35)';
+    setTimeout(() => {
+      btn.style.color       = '';
+      btn.style.borderColor = '';
+    }, 1500);
+  } finally {
+    btn.classList.remove('spinning');
+    btn.disabled = false;
+  }
 }
 
 async function poll() {
