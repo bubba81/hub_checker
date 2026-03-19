@@ -990,6 +990,10 @@ nav {
         Scans
         <span class="tab-count" id="tabCountScans">0</span>
       </button>
+      <button class="tab-btn" data-tab="pins" onclick="switchTab('pins')">
+        Pins
+        <span class="tab-count" id="tabCountPins">0</span>
+      </button>
       {% if is_admin is defined and is_admin %}
       <button class="tab-btn" data-tab="keys" onclick="switchTab('keys')">
         Keys
@@ -1061,6 +1065,23 @@ nav {
     </div>
     <div id="scanGrid">
       <div class="empty-state"><span class="empty-icon">◈</span>Loading scan data…</div>
+    </div>
+  </div>
+
+  <!-- ── PINS TAB ──────────────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab-pins">
+    <div class="toolbar" style="margin-bottom:22px">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="pinSearchInput" placeholder="Search your PINs by label…"/>
+      </div>
+      <button class="btn-generate-pin" onclick="openPinModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        New PIN
+      </button>
+    </div>
+    <div id="pinsGrid">
+      <div class="empty-state"><span class="empty-icon">◈</span>Loading your PINs…</div>
     </div>
   </div>
 
@@ -1186,9 +1207,11 @@ nav {
 const IS_ADMIN = {{ 'true' if is_admin is defined and is_admin else 'false' }};
 let scans = [];
 let unusedKeys = [];
+let myPins = [];
 let activeFilter  = 'all';
 let searchTerm    = '';
 let keySearchTerm = '';
+let pinSearchTerm = '';
 let currentTab    = 'scans';
 
 // ── Init ───────────────────────────────────────────────────────────────────
@@ -1210,9 +1233,14 @@ document.addEventListener('DOMContentLoaded', () => {
     renderScans();
   });
 
-  document.getElementById('keySearchInput').addEventListener('input', e => {
+  document.getElementById('keySearchInput') && document.getElementById('keySearchInput').addEventListener('input', e => {
     keySearchTerm = e.target.value.toLowerCase();
     renderKeys();
+  });
+
+  document.getElementById('pinSearchInput').addEventListener('input', e => {
+    pinSearchTerm = e.target.value.toLowerCase();
+    renderPins();
   });
 
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -1232,13 +1260,18 @@ function switchTab(tab) {
 // ── Data ───────────────────────────────────────────────────────────────────
 async function loadAll() {
   try {
-    const requests = [apiFetch('/api/scans')];
+    const requests = [
+      apiFetch('/api/scans'),
+      apiFetch('/api/pins/mine').catch(() => []),
+    ];
     if (IS_ADMIN) requests.push(apiFetch('/api/keys/unused').catch(() => []));
-    const [scanData, keyData] = await Promise.all(requests);
-    scans = scanData;
-    unusedKeys = IS_ADMIN && Array.isArray(keyData) ? keyData : [];
+    const results = await Promise.all(requests);
+    scans    = results[0];
+    myPins   = Array.isArray(results[1]) ? results[1] : [];
+    unusedKeys = IS_ADMIN && Array.isArray(results[2]) ? results[2] : [];
     updateMetrics();
     renderScans();
+    renderPins();
     if (IS_ADMIN) renderKeys();
     updateTabCounts();
   } catch(e) {
@@ -1248,6 +1281,8 @@ async function loadAll() {
 
 function updateTabCounts() {
   document.getElementById('tabCountScans').textContent = scans.length;
+  const pinsEl = document.getElementById('tabCountPins');
+  if (pinsEl) pinsEl.textContent = myPins.filter(p => !p.used && !p.expired).length;
   if (IS_ADMIN) {
     const el = document.getElementById('tabCountKeys');
     if (el) el.textContent = unusedKeys.length;
@@ -1368,6 +1403,76 @@ function renderKeyCard(k) {
         Revoke
       </button>
     </div>
+  </div>`;
+}
+
+// ── Render Pins (current user's own PINs) ─────────────────────────────────
+function renderPins() {
+  const grid = document.getElementById('pinsGrid');
+  if (!grid) return;
+  const list = myPins.filter(p => {
+    if (!pinSearchTerm) return true;
+    const hay = ((p.display_label || '') + ' ' + (p.scan_key || '')).toLowerCase();
+    return hay.includes(pinSearchTerm);
+  });
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state"><span class="empty-icon">◈</span>No PINs yet — generate one to get started</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(renderPinCard).join('');
+}
+
+function renderPinCard(p) {
+  const now    = Date.now();
+  const expMs  = p.expires_at ? new Date(p.expires_at.replace(' ', 'T') + 'Z').getTime() - now : 0;
+  const active = !p.used && !p.expired && expMs > 0;
+  const used   = p.used;
+
+  let statusBadge, expiryHtml = '';
+  if (used) {
+    statusBadge = `<div class="badge-unused" style="border-color:rgba(240,240,240,.15);color:var(--text-3)">Used</div>`;
+    expiryHtml  = `<span style="font-family:var(--mono);font-size:10px;color:var(--text-3)">Used ${fmtDate(p.used_at)}</span>`;
+  } else if (active) {
+    const expMins = Math.floor(expMs / 60000);
+    const expSecs = Math.floor((expMs % 60000) / 1000);
+    statusBadge = `<div class="badge-unused">Active</div>`;
+    expiryHtml  = `<span style="color:#ff9500;font-size:10px;font-family:var(--mono)">expires in ${expMins}m ${expSecs}s</span>`;
+  } else {
+    statusBadge = `<div class="badge-unused" style="border-color:rgba(255,149,0,.3);color:#ff9500">Expired</div>`;
+    expiryHtml  = `<span style="font-family:var(--mono);font-size:10px;color:var(--text-3)">Expired</span>`;
+  }
+
+  const pinDisplay = active
+    ? `<div class="key-pin-display">${escHtml(p.pin || '——')}</div>`
+    : `<div class="key-pin-display" style="opacity:.25;text-decoration:line-through">${escHtml(p.pin || '——')}</div>`;
+
+  const revokeBtn = active
+    ? `<button class="action-btn btn-del" style="flex:none;padding:7px 16px" onclick="openDeleteKey(${p.id}, '${escAttr(p.display_label || p.scan_key)}')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Revoke
+      </button>`
+    : '';
+
+  return `<div class="key-card">
+    <div class="key-top">
+      <div style="flex:1">
+        <div class="key-label">${p.display_label ? escHtml(p.display_label) : '<span class="key-empty-label">No label</span>'}</div>
+      </div>
+      ${statusBadge}
+    </div>
+    <div class="key-pin-block">
+      <div class="key-code-label">PIN</div>
+      ${pinDisplay}
+    </div>
+    <div>
+      <div class="key-code-label">Scan Key</div>
+      <div class="key-code">${escHtml(p.scan_key)}</div>
+    </div>
+    <div class="key-foot">
+      <div class="key-created">Generated ${fmtDate(p.created_at)}</div>
+      ${expiryHtml}
+    </div>
+    ${revokeBtn ? `<div class="key-actions">${revokeBtn}</div>` : ''}
   </div>`;
 }
 
