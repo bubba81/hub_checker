@@ -633,12 +633,22 @@ def scanner_start():
                     # Admin generated the PIN — still stamp their ID on the scan
                     discord_user_id = possible_uid
 
+            # Try to insert — if the row was pre-created by api_pin_validate,
+            # ON CONFLICT fires and we update it with the real desktop/host info.
             cur.execute("""
                 INSERT INTO scans
                   (scan_key,desktop_name,created_at,updated_at,status,
                    phase_index,hostname,username,os_version,discord_user_id)
                 VALUES (%s,%s,%s,%s,'running',0,%s,%s,%s,%s)
-                ON CONFLICT (scan_key) DO NOTHING
+                ON CONFLICT (scan_key) DO UPDATE SET
+                  desktop_name    = EXCLUDED.desktop_name,
+                  updated_at      = EXCLUDED.updated_at,
+                  status          = 'running',
+                  hostname        = EXCLUDED.hostname,
+                  username        = EXCLUDED.username,
+                  os_version      = EXCLUDED.os_version,
+                  -- Preserve discord_user_id set by pin/validate; only overwrite if we resolved one here
+                  discord_user_id = COALESCE(scans.discord_user_id, EXCLUDED.discord_user_id)
                 RETURNING id
             """, (scan_key, desktop, now, now,
                   data.get("hostname", ""), data.get("username", ""),
@@ -748,6 +758,12 @@ def api_pin_generate():
 
 @app.route("/api/pin/validate", methods=["GET"])
 def api_pin_validate():
+    """
+    Called by the C++ scanner to exchange a PIN for a scan_key.
+    We resolve the discord_user_id from the PIN label here and
+    pre-create the scan row so that when scanner_start() is called
+    with the same scan_key the discord_user_id is already stamped.
+    """
     pin = request.args.get("pin", "").strip()
     if not pin:
         return jsonify({"ok": False, "error": "PIN required"}), 400
@@ -762,9 +778,40 @@ def api_pin_validate():
                 return jsonify({"ok": False, "error": "PIN already used"}), 403
             if row["expires_at"] and row["expires_at"] < now:
                 return jsonify({"ok": False, "error": "PIN expired"}), 403
+
+            # Resolve discord_user_id from the label field
+            # Label format: "discord_uid" or "discord_uid|human label"
+            raw_label    = (row["label"] or "").strip()
+            possible_uid = raw_label.split("|")[0].strip()
+            discord_user_id = None
+            if possible_uid:
+                cur.execute(
+                    "SELECT discord_user_id FROM scanner_users WHERE discord_user_id=%s",
+                    (possible_uid,)
+                )
+                su = cur.fetchone()
+                if su:
+                    discord_user_id = su["discord_user_id"]
+                elif possible_uid in ALLOWED_IDS:
+                    discord_user_id = possible_uid
+
+            scan_key = row["scan_key"]
+
+            # Pre-create the scan row with discord_user_id stamped so that
+            # when the C++ scanner calls /api/scanner/start with this scan_key
+            # the owner is already set (ON CONFLICT DO NOTHING preserves it).
+            cur.execute("""
+                INSERT INTO scans
+                  (scan_key, desktop_name, created_at, updated_at,
+                   status, phase_index, discord_user_id)
+                VALUES (%s, 'Pending...', %s, %s, 'pending', 0, %s)
+                ON CONFLICT (scan_key) DO NOTHING
+            """, (scan_key, now, now, discord_user_id))
+
             cur.execute("UPDATE scan_pins SET used=TRUE, used_at=%s WHERE pin=%s", (now, pin))
         conn.commit()
-    return jsonify({"ok": True, "scan_key": row["scan_key"], "label": row["label"]})
+
+    return jsonify({"ok": True, "scan_key": scan_key, "label": row["label"]})
 
 @app.route("/api/pin/list", methods=["GET"])
 @require_auth
