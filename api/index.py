@@ -160,6 +160,18 @@ try:
                 )
             """)
             cur.execute("ALTER TABLE scanner_users ADD COLUMN IF NOT EXISTS notes TEXT NOT NULL DEFAULT ''")
+
+            # Clean up stale pending scan rows — these are pre-created by
+            # pin/validate but the scanner never called scanner_start.
+            # Anything pending for > 35 minutes is dead.
+            cur.execute("""
+                DELETE FROM scans
+                WHERE status = 'pending'
+                  AND created_at < to_char(
+                        NOW() AT TIME ZONE 'UTC' - INTERVAL '35 minutes',
+                        'YYYY-MM-DD HH24:MI:SS'
+                      )
+            """)
         conn.commit()
 except Exception as e:
     print(f"Migration warning: {e}")
@@ -316,7 +328,7 @@ def dashboard():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT * FROM scans WHERE discord_user_id=%s ORDER BY created_at DESC",
+                "SELECT * FROM scans WHERE discord_user_id=%s AND status <> 'pending' ORDER BY created_at DESC",
                 (uid,)
             )
             scans = cur.fetchall()
@@ -379,6 +391,7 @@ def api_scans():
                 FROM scans s
                 LEFT JOIN scan_findings sf ON sf.scan_id = s.id
                 WHERE s.discord_user_id = %s
+                  AND s.status <> 'pending'
                 GROUP BY s.id ORDER BY s.created_at DESC
             """, (uid,))
             rows = cur.fetchall()
@@ -1018,6 +1031,7 @@ def api_admin_user_scans(uid):
                 FROM scans s
                 LEFT JOIN scan_findings sf ON sf.scan_id = s.id
                 WHERE s.discord_user_id = %s
+                  AND s.status <> 'pending'
                 GROUP BY s.id ORDER BY s.created_at DESC
             """, (uid,))
             rows = cur.fetchall()
