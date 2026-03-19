@@ -609,14 +609,19 @@ def scanner_start():
     desktop  = data.get("desktop_name", "Unknown Desktop")
     now      = _now()
 
-    # Resolve discord_user_id from the pin → scan_key link
+    # Resolve discord_user_id from the pin → scan_key link.
+    # Label format is either "discord_uid" or "discord_uid|human label".
+    # Also accepts ALLOWED_IDS users (admins) as valid owners.
     discord_user_id = None
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT label FROM scan_pins WHERE scan_key=%s", (scan_key,))
             pin_row = cur.fetchone()
             if pin_row and pin_row.get("label"):
-                possible_uid = pin_row["label"].strip()
+                raw_label   = pin_row["label"].strip()
+                # Strip the "|human label" suffix if present
+                possible_uid = raw_label.split("|")[0].strip()
+                # Check scanner_users first
                 cur.execute(
                     "SELECT discord_user_id FROM scanner_users WHERE discord_user_id=%s",
                     (possible_uid,)
@@ -624,6 +629,9 @@ def scanner_start():
                 su = cur.fetchone()
                 if su:
                     discord_user_id = su["discord_user_id"]
+                elif possible_uid in ALLOWED_IDS:
+                    # Admin generated the PIN — still stamp their ID on the scan
+                    discord_user_id = possible_uid
 
             cur.execute("""
                 INSERT INTO scans
@@ -704,12 +712,24 @@ def scanner_complete():
 
 # ── PIN routes ────────────────────────────────────────────────────────────────
 @app.route("/api/pin/generate", methods=["POST"])
-@require_auth
+@require_scanner_user
 def api_pin_generate():
     import random, string as _string
     from datetime import datetime as _dt, timedelta as _td
     data     = request.get_json(force=True) or {}
-    label    = data.get("label", "").strip()[:80]
+    uid      = session.get("user_id", "")
+    is_admin = uid in ALLOWED_IDS
+    # Human-readable label the user typed in the modal (optional)
+    label_text = data.get("label", "").strip()[:80]
+    # The label stored in scan_pins is the discord_user_id so that
+    # scanner_start() can look it up and stamp the scan row correctly.
+    # Admins may pass an explicit discord_user_id target; scanner users
+    # always use their own ID.
+    target_uid = data.get("target_uid", "").strip() if is_admin else uid
+    if not target_uid:
+        target_uid = uid
+    # Store as "discord_uid|human label" so we carry both pieces
+    label = f"{target_uid}|{label_text}" if label_text else target_uid
     pin      = "".join(random.choices(_string.digits, k=6))
     scan_key = secrets.token_hex(8)
     now      = _now()
