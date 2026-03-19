@@ -224,16 +224,17 @@ def callback():
 
     user = user_r.json()
     uid  = user["id"]
-    session["user_id"]     = uid
-    session["username"]    = user["username"]
-    session["avatar"]      = user.get("avatar")
-    session["global_name"] = user.get("global_name", user["username"])
 
-    # Admin → dashboard
+    # ── Check access BEFORE writing anything to the session ──────────────
+    # Admin always allowed
     if uid in ALLOWED_IDS:
+        session["user_id"]     = uid
+        session["username"]    = user["username"]
+        session["avatar"]      = user.get("avatar")
+        session["global_name"] = user.get("global_name", user["username"])
         return redirect(url_for("dashboard"))
 
-    # Scanner user with valid access → dashboard
+    # Scanner user with valid, non-expired access
     try:
         with get_conn() as conn:
             with conn.cursor() as cur:
@@ -243,10 +244,16 @@ def callback():
                 )
                 row = cur.fetchone()
         if row and row["access_until"] >= _now()[:10]:
+            session["user_id"]     = uid
+            session["username"]    = user["username"]
+            session["avatar"]      = user.get("avatar")
+            session["global_name"] = user.get("global_name", user["username"])
             return redirect(url_for("dashboard"))
     except Exception:
         pass
 
+    # No valid session written — user is not authorised
+    session.clear()
     return render_template("unauthorized.html"), 403
 
 @app.route("/logout")
