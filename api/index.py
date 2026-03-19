@@ -1198,6 +1198,21 @@ def debug_scans():
             rows = cur.fetchall()
     return jsonify([dict(r) for r in rows])
 
+@app.route("/api/debug/findings/<int:scan_id>")
+@require_auth
+def debug_findings(scan_id):
+    """Show distinct finding categories for a scan. Admin only."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT category, COUNT(*) as cnt,
+                       MIN(detail) as sample_detail
+                FROM scan_findings WHERE scan_id=%s
+                GROUP BY category ORDER BY category
+            """, (scan_id,))
+            rows = cur.fetchall()
+    return jsonify([dict(r) for r in rows])
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def _now():
     return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
