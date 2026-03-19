@@ -301,15 +301,12 @@ def dashboard():
     is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            if is_admin:
-                # Admins see ALL scans by default
-                cur.execute("SELECT * FROM scans ORDER BY created_at DESC")
-            else:
-                # Scanner users see only their own scans
-                cur.execute(
-                    "SELECT * FROM scans WHERE discord_user_id=%s ORDER BY created_at DESC",
-                    (uid,)
-                )
+            # Everyone sees only their own scans.
+            # Admins access other users' scans via the admin panel only.
+            cur.execute(
+                "SELECT * FROM scans WHERE discord_user_id=%s ORDER BY created_at DESC",
+                (uid,)
+            )
             scans = cur.fetchall()
     return render_template("dashboard.html", scans=scans,
                            username=session.get("global_name"),
@@ -321,16 +318,13 @@ def dashboard():
 @app.route("/scan/<int:scan_id>/view")
 @require_scanner_user
 def view_scan(scan_id):
-    uid      = session.get("user_id")
-    is_admin = uid in ALLOWED_IDS
+    uid = session.get("user_id")
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans WHERE id=%s", (scan_id,))
+            cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             scan = cur.fetchone()
             if not scan:
                 abort(404)
-            if not is_admin and scan.get("discord_user_id") != uid:
-                abort(403)
             cur.execute("SELECT * FROM scan_events WHERE scan_id=%s ORDER BY phase_index", (scan_id,))
             events = cur.fetchall()
             cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
@@ -361,40 +355,20 @@ def admin_panel():
 @require_scanner_user
 def api_scans():
     """
-    Returns scans as JSON.
-    Admins: pass ?user_id=<discord_id> to filter to one user, omit for all.
-    Scanner users: always returns only their own scans.
+    Returns only the logged-in user's own scans — always, for everyone.
+    Admins are NOT special here. Cross-user scan access is admin-panel only
+    via /api/admin/scans/<uid>.
     """
-    uid        = session.get("user_id")
-    is_admin   = uid in ALLOWED_IDS
-    filter_uid = request.args.get("user_id", "").strip() or None
-
+    uid = session.get("user_id")
     with get_conn() as conn:
         with conn.cursor() as cur:
-            if is_admin:
-                if filter_uid:
-                    cur.execute("""
-                        SELECT s.*, COUNT(sf.id) AS findings_count
-                        FROM scans s
-                        LEFT JOIN scan_findings sf ON sf.scan_id = s.id
-                        WHERE s.discord_user_id = %s
-                        GROUP BY s.id ORDER BY s.created_at DESC
-                    """, (filter_uid,))
-                else:
-                    cur.execute("""
-                        SELECT s.*, COUNT(sf.id) AS findings_count
-                        FROM scans s
-                        LEFT JOIN scan_findings sf ON sf.scan_id = s.id
-                        GROUP BY s.id ORDER BY s.created_at DESC
-                    """)
-            else:
-                cur.execute("""
-                    SELECT s.*, COUNT(sf.id) AS findings_count
-                    FROM scans s
-                    LEFT JOIN scan_findings sf ON sf.scan_id = s.id
-                    WHERE s.discord_user_id = %s
-                    GROUP BY s.id ORDER BY s.created_at DESC
-                """, (uid,))
+            cur.execute("""
+                SELECT s.*, COUNT(sf.id) AS findings_count
+                FROM scans s
+                LEFT JOIN scan_findings sf ON sf.scan_id = s.id
+                WHERE s.discord_user_id = %s
+                GROUP BY s.id ORDER BY s.created_at DESC
+            """, (uid,))
             rows = cur.fetchall()
 
     result = []
@@ -431,15 +405,12 @@ def rename_scan(scan_id):
 @app.route("/api/scan/<int:scan_id>/findings")
 @require_scanner_user
 def scan_findings(scan_id):
-    uid      = session.get("user_id")
-    is_admin = uid in ALLOWED_IDS
+    uid = session.get("user_id")
     with get_conn() as conn:
         with conn.cursor() as cur:
-            if not is_admin:
-                cur.execute("SELECT discord_user_id FROM scans WHERE id=%s", (scan_id,))
-                row = cur.fetchone()
-                if not row or row["discord_user_id"] != uid:
-                    abort(403)
+            cur.execute("SELECT id FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
+            if not cur.fetchone():
+                abort(403)
             cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
             rows = cur.fetchall()
     return jsonify([dict(r) for r in rows])
@@ -447,9 +418,10 @@ def scan_findings(scan_id):
 @app.route("/api/scan/<int:scan_id>/log")
 @require_scanner_user
 def scan_log(scan_id):
+    uid = session.get("user_id")
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT log_text FROM scans WHERE id=%s", (scan_id,))
+            cur.execute("SELECT log_text FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             row = cur.fetchone()
     if not row:
         return jsonify({"log": ""}), 404
@@ -458,9 +430,10 @@ def scan_log(scan_id):
 @app.route("/api/scan/<int:scan_id>/progress")
 @require_scanner_user
 def scan_progress(scan_id):
+    uid = session.get("user_id")
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans WHERE id=%s", (scan_id,))
+            cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             scan = cur.fetchone()
             if not scan:
                 abort(404)
@@ -479,16 +452,13 @@ def scan_progress(scan_id):
 @app.route("/api/scans/<int:scan_id>")
 @require_scanner_user
 def api_scan_detail(scan_id):
-    uid      = session.get("user_id")
-    is_admin = uid in ALLOWED_IDS
+    uid = session.get("user_id")
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans WHERE id=%s", (scan_id,))
+            cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             scan = cur.fetchone()
             if not scan:
                 abort(404)
-            if not is_admin and scan.get("discord_user_id") != uid:
-                abort(403)
             cur.execute("SELECT * FROM scan_events WHERE scan_id=%s ORDER BY phase_index", (scan_id,))
             events = cur.fetchall()
             cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
