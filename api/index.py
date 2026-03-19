@@ -151,6 +151,17 @@ except Exception as e:
     print(f"Migration warning: {e}")
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
+_DENY_HTML = (
+    "<html><body style='background:#0a0a0a;color:#f0f0f0;font-family:sans-serif;"
+    "display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"
+    "flex-direction:column;gap:16px'>"
+    "<div style='font-size:48px'>&#x1F6AB;</div>"
+    "<div style='font-size:20px;font-weight:700'>Access Denied</div>"
+    "<div style='color:#555;font-size:13px'>You are not authorised to use HubChecker.</div>"
+    "<a href='/' style='color:#ff3b30;font-size:13px;margin-top:8px'>← Go back</a>"
+    "</body></html>"
+)
+
 def require_auth(f):
     """Requires the user to be in ALLOWED_IDS (admin only)."""
     @wraps(f)
@@ -158,7 +169,7 @@ def require_auth(f):
         if "user_id" not in session:
             return redirect(url_for("login"))
         if session.get("user_id") not in ALLOWED_IDS:
-            return render_template("unauthorized.html"), 403
+            return _DENY_HTML, 403
         return f(*args, **kwargs)
     return decorated
 
@@ -185,9 +196,9 @@ def require_scanner_user(f):
                     row = cur.fetchone()
             if row and row["access_until"] >= _now()[:10]:
                 return f(*args, **kwargs)
-        except Exception:
-            pass
-        return render_template("unauthorized.html"), 403
+        except Exception as e:
+            print(f"[require_scanner_user] DB error: {e}")
+        return _DENY_HTML, 403
     return decorated
 
 # ── Discord OAuth ─────────────────────────────────────────────────────────────
@@ -249,12 +260,12 @@ def callback():
             session["avatar"]      = user.get("avatar")
             session["global_name"] = user.get("global_name", user["username"])
             return redirect(url_for("dashboard"))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[callback] DB error during access check: {e}")
 
-    # No valid session written — user is not authorised
+    # No valid session written — clear anything and block
     session.clear()
-    return render_template("unauthorized.html"), 403
+    return _DENY_HTML, 403
 
 @app.route("/logout")
 def logout():
