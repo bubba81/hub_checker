@@ -1145,7 +1145,7 @@ nav {
     </div>
     <div class="modal-body">
       <div class="confirm-box">
-        <div class="confirm-msg">This PIN will be permanently revoked and can no longer be used by a scanner.</div>
+        <div class="confirm-msg">This PIN will be permanently removed from your history. Any scans already linked to it will not be affected.</div>
         <div class="confirm-warn">⚠ This action cannot be undone.</div>
       </div>
       <input type="hidden" id="revokeKeyId"/>
@@ -1197,6 +1197,7 @@ nav {
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
+const IS_ADMIN = {{ 'true' if is_admin is defined and is_admin else 'false' }};
 let scans  = [];
 let myPins = [];
 let activeFilter  = 'all';
@@ -1320,9 +1321,9 @@ function renderScanCard(s) {
       <button class="action-btn btn-view" title="View" onclick="window.location='/scan/'+${s.id}+'/view'">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
-      <button class="action-btn btn-edit" title="Edit" onclick="openEdit(${s.id},'${escAttr(s.desktop_name)}','${escAttr(s.scan_key)}')">
+      ${IS_ADMIN ? `<button class="action-btn btn-edit" title="Edit" onclick="openEdit(${s.id},'${escAttr(s.desktop_name)}','${escAttr(s.scan_key)}')">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      </button>
+      </button>` : ''}
       <button class="action-btn btn-del" title="Delete" onclick="openDelete(${s.id},'${escAttr(s.desktop_name)}')">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
       </button>
@@ -1371,12 +1372,11 @@ function renderPinCard(p) {
     ? `<div class="key-pin-display">${escHtml(p.pin || '——')}</div>`
     : `<div class="key-pin-display" style="opacity:.25;text-decoration:line-through">${escHtml(p.pin || '——')}</div>`;
 
-  const revokeBtn = active
-    ? `<button class="action-btn btn-del" style="flex:none;padding:7px 16px" onclick="openDeleteKey(${p.id}, '${escAttr(p.display_label || p.scan_key)}')">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        Revoke
-      </button>`
-    : '';
+  const btnLabel = active ? 'Revoke' : 'Delete';
+  const revokeBtn = `<button class="action-btn btn-del" style="flex:none;padding:7px 16px" onclick="openDeleteKey(${p.id}, '${escAttr(p.display_label || p.scan_key)}')">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      ${btnLabel}
+    </button>`;
 
   return `<div class="key-card">
     <div class="key-top">
