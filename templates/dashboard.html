@@ -990,10 +990,12 @@ nav {
         Scans
         <span class="tab-count" id="tabCountScans">0</span>
       </button>
+      {% if is_admin is defined and is_admin %}
       <button class="tab-btn" data-tab="keys" onclick="switchTab('keys')">
         Keys
         <span class="tab-count" id="tabCountKeys">0</span>
       </button>
+      {% endif %}
     </div>
   </div>
 
@@ -1052,16 +1054,19 @@ nav {
       <button class="filter-pill" data-filter="running">Running</button>
       <button class="filter-pill" data-filter="completed">Completed</button>
       <button class="filter-pill" data-filter="pending">Pending</button>
+      {% if is_admin is defined and is_admin %}
       <button class="btn-generate-pin" onclick="openPinModal()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         Generate PIN
       </button>
+      {% endif %}
     </div>
     <div id="scanGrid">
       <div class="empty-state"><span class="empty-icon">◈</span>Loading scan data…</div>
     </div>
   </div>
 
+  {% if is_admin is defined and is_admin %}
   <!-- ── KEYS TAB ──────────────────────────────────────────────────────── -->
   <div class="tab-panel" id="tab-keys">
     <div class="toolbar" style="margin-bottom:22px">
@@ -1078,6 +1083,7 @@ nav {
       <div class="empty-state"><span class="empty-icon">◈</span>Loading keys…</div>
     </div>
   </div>
+  {% endif %}
 
 </div><!-- /main -->
 
@@ -1139,6 +1145,7 @@ nav {
   </div>
 </div>
 
+{% if is_admin is defined and is_admin %}
 <!-- PIN MODAL -->
 <div class="modal-overlay" id="pinModal">
   <div class="modal" style="max-width:420px">
@@ -1174,11 +1181,13 @@ nav {
     </div>
   </div>
 </div>
+{% endif %}
 
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
+const IS_ADMIN = {{ 'true' if is_admin is defined and is_admin else 'false' }};
 let scans = [];
 let unusedKeys = [];
 let activeFilter  = 'all';
@@ -1227,15 +1236,14 @@ function switchTab(tab) {
 // ── Data ───────────────────────────────────────────────────────────────────
 async function loadAll() {
   try {
-    const [scanData, keyData] = await Promise.all([
-      apiFetch('/api/scans'),
-      apiFetch('/api/keys/unused').catch(() => [])
-    ]);
+    const requests = [apiFetch('/api/scans')];
+    if (IS_ADMIN) requests.push(apiFetch('/api/keys/unused').catch(() => []));
+    const [scanData, keyData] = await Promise.all(requests);
     scans = scanData;
-    unusedKeys = Array.isArray(keyData) ? keyData : [];
+    unusedKeys = IS_ADMIN && Array.isArray(keyData) ? keyData : [];
     updateMetrics();
     renderScans();
-    renderKeys();
+    if (IS_ADMIN) renderKeys();
     updateTabCounts();
   } catch(e) {
     console.error('Load failed', e);
@@ -1244,7 +1252,10 @@ async function loadAll() {
 
 function updateTabCounts() {
   document.getElementById('tabCountScans').textContent = scans.length;
-  document.getElementById('tabCountKeys').textContent  = unusedKeys.length;
+  if (IS_ADMIN) {
+    const el = document.getElementById('tabCountKeys');
+    if (el) el.textContent = unusedKeys.length;
+  }
 }
 
 function updateMetrics() {
