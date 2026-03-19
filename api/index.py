@@ -1043,6 +1043,21 @@ def api_admin_user_scans(uid):
         result.append(d)
     return jsonify(result)
 
+# ── Debug ─────────────────────────────────────────────────────────────────────
+@app.route("/api/debug/scans")
+@require_auth
+def debug_scans():
+    """Temporary debug — shows all scan rows raw including pending. Admin only."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, scan_key, desktop_name, status, discord_user_id,
+                       created_at, updated_at, phase_index
+                FROM scans ORDER BY created_at DESC LIMIT 30
+            """)
+            rows = cur.fetchall()
+    return jsonify([dict(r) for r in rows])
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def _now():
     return datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
