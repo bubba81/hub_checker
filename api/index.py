@@ -183,6 +183,14 @@ def logout():
 
 # ── Dashboard pages ───────────────────────────────────────────────────────────
 @app.route("/")
+def home():
+    """Public home page — shows Download + Login buttons."""
+    # If already logged in and allowed, skip home and go to dashboard
+    if "user_id" in session and session.get("user_id") in ALLOWED_IDS:
+        return redirect(url_for("dashboard"))
+    return render_template("index.html")
+
+@app.route("/dashboard")
 @require_auth
 def dashboard():
     with get_conn() as conn:
