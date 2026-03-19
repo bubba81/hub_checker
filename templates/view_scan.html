@@ -254,6 +254,12 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 
 /* ── System Info View */
 .sysinfo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
+/* Device info rows */
+.di-row{display:flex;align-items:baseline;gap:0;padding:10px 18px;border-bottom:1px solid var(--glass-border);}
+.di-row:last-child{border-bottom:none;}
+.di-key{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:.5px;text-transform:uppercase;width:160px;flex-shrink:0;}
+.di-val{font-family:var(--mono);font-size:12px;color:var(--text);flex:1;word-break:break-all;}
+
 /* Services table */
 .svc-table{width:100%;border-collapse:collapse;}
 .svc-table thead tr{border-bottom:1px solid var(--glass-border);}
@@ -861,130 +867,136 @@ function renderSysinfo() {
   const grid = document.getElementById('sysinfoGrid');
   if (!grid) return;
 
-  const hostname  = SCAN_DATA.hostname    || '—';
-  const username  = SCAN_DATA.username    || '—';
-  const osVersion = SCAN_DATA.os_version  || '—';
-  const desktop   = SCAN_DATA.desktop_name|| '—';
-  const createdAt = SCAN_DATA.created_at  || '—';
+  const hostname  = SCAN_DATA.hostname     || '—';
+  const username  = SCAN_DATA.username     || '—';
+  const osVersion = SCAN_DATA.os_version   || '—';
+  const desktop   = SCAN_DATA.desktop_name || '—';
+  const createdAt = SCAN_DATA.created_at   || '—';
 
-  // Collect service findings
-  const svcFindings = allFindings.filter(f => {
-    const fc = (f.category||'').toLowerCase();
-    return fc === 'service' || fc === 'services' || fc.startsWith('service');
-  });
-
-  // Parse a service finding detail string into structured fields
-  // Format: "service: eventlog | start: auto | last modified: 2026-02-27 22:56:19 | imagepath: ..."
-  // Or from fields object
-  function parseSvc(f) {
-    const fd  = f.fields || {};
-    const raw = f.detail || '';
-
-    // Try fields object first
-    let name      = fd.serviceName || fd.valueName || fd.programName || '';
-    let state     = fd.state || fd.status || '';
-    let startType = fd.startType || fd.start || '';
-    let lastMod   = fd.lastModified || fd.keyLastWrite || fd.lastWrite || '';
-    let flag      = '';
-
-    if (!name) {
-      // Parse from raw detail: "service: eventlog | start: auto | ..."
-      const nm = raw.match(/service:\s*([^\s|]+)/i);
-      if (nm) name = nm[1];
-      const st = raw.match(/state:\s*([^|]+)/i) || raw.match(/status:\s*([^|]+)/i);
-      if (st) state = st[1].trim();
-      const sp = raw.match(/start:\s*([^|]+)/i);
-      if (sp) startType = sp[1].trim();
-      const lm = raw.match(/last modified:\s*([^|]+)/i) || raw.match(/last changed:\s*([^|]+)/i);
-      if (lm) lastMod = lm[1].trim();
-    }
-
-    // Derive state from start type / keywords if not explicit
-    if (!state) {
-      const rl = raw.toLowerCase();
-      if (rl.includes('running')) state = 'Running';
-      else if (rl.includes('stopped')) state = 'Stopped';
-      else if (rl.includes('disabled') || rl.includes('start=4')) state = 'Stopped';
-      else if (rl.includes('start=2') || rl.includes('auto')) state = 'Running';
-    }
-
-    // Normalise start type
-    if (!startType) {
-      const rl = raw.toLowerCase();
-      if (rl.includes('start: auto') || rl.includes('start=2')) startType = 'Auto';
-      else if (rl.includes('start: manual') || rl.includes('start=3')) startType = 'Manual';
-      else if (rl.includes('start: disabled') || rl.includes('start=4')) startType = 'Disabled';
-    }
-    startType = startType.charAt(0).toUpperCase() + startType.slice(1).toLowerCase();
-    const st  = state.toLowerCase();
-    if ((startType === 'Auto' || startType === 'Manual') && st.includes('stop')) flag = '<!>';
-    if (startType === 'Disabled' && st.includes('stop')) flag = '';
-
-    return { name: name || raw.slice(0,30), state: state || '—', startType: startType || '—', lastMod: lastMod || '—', flag, raw };
-  }
-
-  // Try to extract Windows install date from registry findings
+  // ── Windows install date ─────────────────────────────────────────────────
+  // The scanner reports it as a finding with keyword/detail containing "installdate"
   function extractInstallDate() {
-    // Look for findings with keyword or detail containing install date
     const f = allFindings.find(x => {
       const d = (x.detail||'').toLowerCase();
       const k = (x.keyword||'').toLowerCase();
-      return d.includes('install date') || d.includes('installdate') ||
-             k.includes('install date') || k.includes('installdate') ||
-             d.includes('windows install') || k.includes('windows install');
+      return d.includes('installdate') || d.includes('install date') ||
+             k.includes('installdate') || k.includes('install date');
     });
     if (!f) return null;
-    if (f.fields) return f.fields.valueData || f.fields.value || null;
-    // Try to extract a date-like value from the raw detail
-    const m = (f.detail||'').match(/(\d{4}-\d{2}-\d{2}[^\s|]*)/);
+    if (f.fields) {
+      const v = f.fields.valueData || f.fields.value;
+      if (v) return String(v);
+    }
+    // Try extracting a date from the detail string
+    const m = (f.detail||'').match(/(\d{4}-\d{2}-\d{2})/);
     return m ? m[1] : f.detail;
   }
-
   const installDate = extractInstallDate();
 
-  // ── Device Info card ──────────────────────────────────────────────────────
+  // ── Device Info card ─────────────────────────────────────────────────────
   const deviceRows = [
     ['Computer Name', desktop],
     ['Hostname',      hostname],
     ['Username',      username],
     ['OS Version',    osVersion],
-    ['Windows Install', installDate || '—'],
+    ['Windows Install', installDate],
     ['Scan Started',  createdAt],
-  ].filter(([k,v]) => v && v !== '—');
+  ].filter(([,v]) => v && v !== '—' && v !== null);
 
   const deviceHtml = `<div class="si-card" style="grid-column:1/-1">
     <div class="si-card-head">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       <div class="si-card-title">Device Info</div>
     </div>
-    <div class="si-card-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
-      ${deviceRows.map(([k,v]) => `<div class="si-row"><div class="si-key">${esc(k)}</div><div class="si-val">${esc(String(v))}</div></div>`).join('')}
+    <div class="si-card-body">
+      ${deviceRows.map(([k,v]) => `<div class="di-row">
+        <div class="di-key">${esc(k)}</div>
+        <div class="di-val">${esc(String(v))}</div>
+      </div>`).join('')}
     </div>
   </div>`;
 
-  // ── Services table ────────────────────────────────────────────────────────
+  // ── Services ──────────────────────────────────────────────────────────────
+  // The structured services report uses category "services check" or similar
+  // NOT "service"/"services" which are cheat-flagged services
+  const svcFindings = allFindings.filter(f => {
+    const fc = (f.category||'').toLowerCase();
+    const det = (f.detail||'').toLowerCase();
+    // Match the services check phase output — detail starts with "service: <name>"
+    // and category is "services check", "windows services", or the detail has the pipe format
+    return (fc === 'services check' || fc === 'windows services' || fc === 'service check') ||
+           (det.startsWith('service:') && det.includes('| start:')) ||
+           (det.startsWith('service:') && det.includes('last modified'));
+  });
+
+  // Parse a service finding into {name, state, startType, lastMod, flag}
+  function parseSvc(f) {
+    const fd  = f.fields || {};
+    const raw = f.detail || '';
+    const rl  = raw.toLowerCase();
+
+    let name      = fd.serviceName || fd.name || '';
+    let state     = fd.state       || fd.status || '';
+    let startType = fd.startType   || fd.start  || '';
+    let lastMod   = fd.lastModified|| fd.keyLastWrite || fd.lastWrite || '';
+
+    if (!name) {
+      // "service: eventlog | start: manual | last modified: 2026-03-15 03:31:29 | ..."
+      const nm = raw.match(/^service:\s*(\S+)/i);
+      if (nm) name = nm[1];
+    }
+    if (!state) {
+      if (rl.includes('running')) state = 'Running';
+      else if (rl.includes('stopped') || rl.includes('disabled')) state = 'Stopped';
+    }
+    if (!startType) {
+      const sp = raw.match(/\|\s*start:\s*([^|]+)/i);
+      if (sp) startType = sp[1].trim();
+    }
+    if (!lastMod) {
+      const lm = raw.match(/last modified:\s*([^|]+)/i) || raw.match(/last changed:\s*([^|]+)/i);
+      if (lm) lastMod = lm[1].trim();
+    }
+
+    // Capitalise
+    startType = startType ? startType.charAt(0).toUpperCase() + startType.slice(1).toLowerCase() : '—';
+    state     = state || '—';
+
+    // Flag: stopped when auto/manual = suspicious
+    const isStopped = state.toLowerCase().includes('stop') || state === '—';
+    const isAuto    = startType === 'Auto';
+    const isManual  = startType === 'Manual';
+    const flag = (isStopped && (isAuto || isManual)) ? '<!>' : '';
+
+    return { name: name || raw.slice(0, 30), state, startType, lastMod: lastMod || '—', flag };
+  }
+
   let servicesHtml = '';
   if (svcFindings.length) {
     const svcs = svcFindings.map(parseSvc);
     const rows = svcs.map(s => {
-      const stLow  = (s.state||'').toLowerCase();
+      const stLow   = s.state.toLowerCase();
       const running = stLow.includes('run');
-      const stopped = stLow.includes('stop') || stLow.includes('disab');
+      const stopped = stLow === '—' || stLow.includes('stop') || stLow.includes('disab');
       const dotCls  = running ? 'run' : stopped ? 'stop' : 'unk';
-      const stCls   = running ? 'good' : stopped ? 'bad' : '';
-      const spLow   = (s.startType||'').toLowerCase();
-      const spCls   = spLow === 'auto' ? 'svc-start-auto' : spLow === 'disabled' ? 'svc-start-disabled' : 'svc-start-manual';
+      const stCls   = running ? 'good' : stopped && s.state !== '—' ? 'bad' : '';
+      const spLow   = s.startType.toLowerCase();
+      const spCls   = spLow === 'auto' ? 'svc-start-auto'
+                    : spLow === 'disabled' ? 'svc-start-disabled'
+                    : 'svc-start-manual';
       const flagHtml = s.flag ? `<span class="svc-flag">${esc(s.flag)}</span>` : '';
+      const stateLabel = s.state === '—' ? `<span style="color:var(--text-3)">—</span>` :
+        `<div class="svc-state"><div class="svc-dot ${dotCls}"></div><span class="${stCls}">${esc(s.state)}</span></div>`;
       return `<tr>
         <td class="svc-name">${esc(s.name)}</td>
-        <td><div class="svc-state"><div class="svc-dot ${dotCls}"></div><span class="${stCls}">${esc(s.state)}</span></div></td>
+        <td>${stateLabel}</td>
         <td class="${spCls}">${esc(s.startType)}</td>
         <td>${flagHtml}</td>
         <td class="svc-date">${esc(s.lastMod)}</td>
       </tr>`;
     }).join('');
 
-    servicesHtml = `<div class="si-card" style="grid-column:1/-1;overflow-x:auto">
+    servicesHtml = `<div class="si-card" style="grid-column:1/-1">
       <div class="si-card-head">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
         <div class="si-card-title">System Services</div>
@@ -993,11 +1005,7 @@ function renderSysinfo() {
       <div style="overflow-x:auto">
         <table class="svc-table">
           <thead><tr>
-            <th>Service</th>
-            <th>State</th>
-            <th>Start</th>
-            <th>Flag</th>
-            <th>Last Changed</th>
+            <th>Service</th><th>State</th><th>Start</th><th>Flag</th><th>Last Changed</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -1006,6 +1014,12 @@ function renderSysinfo() {
   }
 
   grid.innerHTML = deviceHtml + servicesHtml;
+  if (!svcFindings.length && deviceRows.length <= 1) {
+    grid.innerHTML += `<div class="si-card" style="grid-column:1/-1">
+      <div class="si-card-body" style="padding:40px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text-3)">
+        No system service data found in this scan.
+      </div></div>`;
+  }
 }
 
 async function refreshScan() {
