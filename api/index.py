@@ -118,6 +118,20 @@ try:
             cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS trinity_json TEXT")
             cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS log_text TEXT")
             cur.execute("ALTER TABLE scans ADD COLUMN IF NOT EXISTS discord_user_id TEXT")
+
+            # Back-fill discord_user_id on old scans that have NULL by joining
+            # through scan_pins on scan_key and extracting the uid from the label.
+            # Label format is "uid" or "uid|human label".
+            # We only update rows that still have NULL so this is idempotent.
+            cur.execute("""
+                UPDATE scans s
+                SET discord_user_id = SPLIT_PART(sp.label, '|', 1)
+                FROM scan_pins sp
+                WHERE s.scan_key = sp.scan_key
+                  AND s.discord_user_id IS NULL
+                  AND sp.label IS NOT NULL
+                  AND sp.label <> ''
+            """)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS scan_pins (
                     id         SERIAL PRIMARY KEY,
@@ -301,12 +315,17 @@ def dashboard():
     is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            # Everyone sees only their own scans.
-            # Admins access other users' scans via the admin panel only.
-            cur.execute(
-                "SELECT * FROM scans WHERE discord_user_id=%s ORDER BY created_at DESC",
-                (uid,)
-            )
+            if is_admin:
+                # Admins see their own scans + legacy scans with no owner stamp
+                cur.execute(
+                    "SELECT * FROM scans WHERE discord_user_id=%s OR discord_user_id IS NULL ORDER BY created_at DESC",
+                    (uid,)
+                )
+            else:
+                cur.execute(
+                    "SELECT * FROM scans WHERE discord_user_id=%s ORDER BY created_at DESC",
+                    (uid,)
+                )
             scans = cur.fetchall()
     return render_template("dashboard.html", scans=scans,
                            username=session.get("global_name"),
@@ -318,10 +337,16 @@ def dashboard():
 @app.route("/scan/<int:scan_id>/view")
 @require_scanner_user
 def view_scan(scan_id):
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
+            if is_admin:
+                cur.execute(
+                    "SELECT * FROM scans WHERE id=%s AND (discord_user_id=%s OR discord_user_id IS NULL)",
+                    (scan_id, uid))
+            else:
+                cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             scan = cur.fetchone()
             if not scan:
                 abort(404)
@@ -359,16 +384,27 @@ def api_scans():
     Admins are NOT special here. Cross-user scan access is admin-panel only
     via /api/admin/scans/<uid>.
     """
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT s.*, COUNT(sf.id) AS findings_count
-                FROM scans s
-                LEFT JOIN scan_findings sf ON sf.scan_id = s.id
-                WHERE s.discord_user_id = %s
-                GROUP BY s.id ORDER BY s.created_at DESC
-            """, (uid,))
+            if is_admin:
+                # Admins see their own scans + any legacy scans with no owner
+                cur.execute("""
+                    SELECT s.*, COUNT(sf.id) AS findings_count
+                    FROM scans s
+                    LEFT JOIN scan_findings sf ON sf.scan_id = s.id
+                    WHERE s.discord_user_id = %s OR s.discord_user_id IS NULL
+                    GROUP BY s.id ORDER BY s.created_at DESC
+                """, (uid,))
+            else:
+                cur.execute("""
+                    SELECT s.*, COUNT(sf.id) AS findings_count
+                    FROM scans s
+                    LEFT JOIN scan_findings sf ON sf.scan_id = s.id
+                    WHERE s.discord_user_id = %s
+                    GROUP BY s.id ORDER BY s.created_at DESC
+                """, (uid,))
             rows = cur.fetchall()
 
     result = []
@@ -430,10 +466,16 @@ def scan_log(scan_id):
 @app.route("/api/scan/<int:scan_id>/progress")
 @require_scanner_user
 def scan_progress(scan_id):
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
+            if is_admin:
+                cur.execute(
+                    "SELECT * FROM scans WHERE id=%s AND (discord_user_id=%s OR discord_user_id IS NULL)",
+                    (scan_id, uid))
+            else:
+                cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             scan = cur.fetchone()
             if not scan:
                 abort(404)
@@ -603,30 +645,37 @@ def scanner_start():
                     # Admin generated the PIN — still stamp their ID on the scan
                     discord_user_id = possible_uid
 
-            # Try to insert — if the row was pre-created by api_pin_validate,
-            # ON CONFLICT fires and we update it with the real desktop/host info.
+            # Insert the scan row. If api_pin_validate already pre-created it,
+            # DO NOTHING and then UPDATE separately so we always get the id.
             cur.execute("""
                 INSERT INTO scans
                   (scan_key,desktop_name,created_at,updated_at,status,
                    phase_index,hostname,username,os_version,discord_user_id)
                 VALUES (%s,%s,%s,%s,'running',0,%s,%s,%s,%s)
-                ON CONFLICT (scan_key) DO UPDATE SET
-                  desktop_name    = EXCLUDED.desktop_name,
-                  updated_at      = EXCLUDED.updated_at,
-                  status          = 'running',
-                  hostname        = EXCLUDED.hostname,
-                  username        = EXCLUDED.username,
-                  os_version      = EXCLUDED.os_version,
-                  -- Preserve discord_user_id set by pin/validate; only overwrite if we resolved one here
-                  discord_user_id = COALESCE(scans.discord_user_id, EXCLUDED.discord_user_id)
-                RETURNING id
+                ON CONFLICT (scan_key) DO NOTHING
             """, (scan_key, desktop, now, now,
                   data.get("hostname", ""), data.get("username", ""),
                   data.get("os_version", ""), discord_user_id))
+
+            # Always update with real machine info and set status=running.
+            # COALESCE keeps the discord_user_id stamped by pin/validate.
+            cur.execute("""
+                UPDATE scans SET
+                  desktop_name    = %s,
+                  updated_at      = %s,
+                  status          = 'running',
+                  hostname        = %s,
+                  username        = %s,
+                  os_version      = %s,
+                  discord_user_id = COALESCE(discord_user_id, %s)
+                WHERE scan_key = %s
+            """, (desktop, now,
+                  data.get("hostname", ""), data.get("username", ""),
+                  data.get("os_version", ""), discord_user_id,
+                  scan_key))
+
+            cur.execute("SELECT id FROM scans WHERE scan_key=%s", (scan_key,))
             row = cur.fetchone()
-            if not row:
-                cur.execute("SELECT id FROM scans WHERE scan_key=%s", (scan_key,))
-                row = cur.fetchone()
         conn.commit()
     return jsonify({"ok": True, "scan_id": row["id"], "scan_key": scan_key})
 
