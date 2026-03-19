@@ -644,20 +644,27 @@ function renderFinding(f, q) {
 
   // ── Roblox Account special card ──────────────────────────────────────────
   if (activeScanId === 'roblox_accts') {
-    // Extract user ID from detail like "Roblox Account: 1234567" or from fields
     const fd  = f.fields || {};
-    let userId = fd.userId || fd.id || fd.robloxId || '';
+    let userId = String(fd.userId || fd.id || fd.robloxId || '').trim();
     if (!userId) {
-      const m = raw.match(/(\d{5,12})/);
-      if (m) userId = m[1];
+      // 'Roblox Account: 1417280' — grab number after colon
+      const cm = raw.match(/:\s*(\d+)\s*$/);
+      if (cm) userId = cm[1];
     }
-    const uidLabel = userId ? `ID: ${esc(userId)}` : esc(raw);
+    if (!userId) {
+      const nm = raw.match(/\d{3,12}/);
+      if (nm) userId = nm[0];
+    }
+    const profileUrl = userId ? `https://www.roblox.com/users/${userId}/profile` : '';
+    const uidLabel   = userId ? `ID: ${esc(userId)}` : esc(raw);
     return `<div class="rblx-card" data-rblx-id="${esc(userId)}">
       <div class="rblx-avatar-placeholder">👤</div>
       <div class="rblx-info">
-        <a class="rblx-name" href="${userId ? `https://www.roblox.com/users/${esc(userId)}/profile` : '#'}"
-           target="_blank" rel="noopener">
-          ${userId ? `@loading<span class="rblx-loading"></span>` : esc(raw)}
+        <a class="rblx-name"
+           href="${profileUrl || '#'}"
+           target="${profileUrl ? '_blank' : '_self'}"
+           rel="noopener">
+          Loading…<span class="rblx-loading"></span>
         </a>
         <div class="rblx-uid">${uidLabel}</div>
         ${f.ts ? `<div class="rblx-uid" style="margin-top:1px">${esc(f.ts)}</div>` : ''}
@@ -831,16 +838,15 @@ async function enrichRobloxPane() {
       avatarEl.replaceWith(img);
     }
 
-    // Update name link
+    // Update name and avatar link
     const nameEl = card.querySelector('.rblx-name');
     if (nameEl) {
-      nameEl.textContent = formatRobloxName(profile);
-      nameEl.href = `https://www.roblox.com/users/${uid}/profile`;
+      const profileUrl = `https://www.roblox.com/users/${uid}/profile`;
+      nameEl.href   = profileUrl;
+      nameEl.target = '_blank';
+      nameEl.rel    = 'noopener';
+      nameEl.innerHTML = esc(formatRobloxName(profile));
     }
-
-    // Remove loading spinner if present
-    const spinner = card.querySelector('.rblx-loading');
-    if (spinner) spinner.remove();
   }
 }
 
