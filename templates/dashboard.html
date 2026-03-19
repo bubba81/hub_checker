@@ -1054,12 +1054,10 @@ nav {
       <button class="filter-pill" data-filter="running">Running</button>
       <button class="filter-pill" data-filter="completed">Completed</button>
       <button class="filter-pill" data-filter="pending">Pending</button>
-      {% if is_admin is defined and is_admin %}
       <button class="btn-generate-pin" onclick="openPinModal()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         Generate PIN
       </button>
-      {% endif %}
     </div>
     <div id="scanGrid">
       <div class="empty-state"><span class="empty-icon">◈</span>Loading scan data…</div>
@@ -1145,7 +1143,6 @@ nav {
   </div>
 </div>
 
-{% if is_admin is defined and is_admin %}
 <!-- PIN MODAL -->
 <div class="modal-overlay" id="pinModal">
   <div class="modal" style="max-width:420px">
@@ -1181,7 +1178,6 @@ nav {
     </div>
   </div>
 </div>
-{% endif %}
 
 <div class="toast-wrap" id="toastWrap"></div>
 
