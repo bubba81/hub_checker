@@ -568,8 +568,9 @@ function switchView(name) {
     v.classList.toggle('active', show);
     v.style.display = show ? 'block' : 'none';
   });
-  if (name === 'scans' && !activeScanId) activateScan(SCAN_DEFS[0].scans[0].id);
-  if (name === 'log') renderLog(document.getElementById('logSearch').value);
+  if (name === 'scans'   && !activeScanId) activateScan(SCAN_DEFS[0].scans[0].id);
+  if (name === 'log')     renderLog(document.getElementById('logSearch').value);
+  if (name === 'sysinfo') renderSysinfo();
 }
 document.querySelectorAll('.tnav').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
 
@@ -848,13 +849,6 @@ function renderSysinfo() {
   }
 
   grid.innerHTML = deviceHtml + servicesHtml + extraHtml;
-}
-
-// Wire sysinfo tab
-const _origSwitchView = switchView;
-function switchView(name) {
-  _origSwitchView(name);
-  if (name === 'sysinfo') renderSysinfo();
 }
 
 async function poll() {
