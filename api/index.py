@@ -360,6 +360,27 @@ def view_scan(scan_id):
                            username=session.get("global_name"),
                            avatar=session.get("avatar"))
 
+@app.route("/admin/scan/<int:scan_id>/view")
+@require_auth
+def admin_view_scan(scan_id):
+    """Admin-only scan view — no ownership check."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM scans WHERE id=%s", (scan_id,))
+            scan = cur.fetchone()
+            if not scan:
+                abort(404)
+            cur.execute("SELECT * FROM scan_events WHERE scan_id=%s ORDER BY phase_index", (scan_id,))
+            events = cur.fetchall()
+            cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
+            findings = cur.fetchall()
+    log_text = (scan.get("log_text") or "") if scan else ""
+    return render_template("view_scan.html", scan=scan, events=events,
+                           findings=findings, phases=SCAN_PHASES,
+                           log_text=log_text,
+                           username=session.get("global_name"),
+                           avatar=session.get("avatar"))
+
 @app.route("/admin")
 @require_auth
 def admin_panel():
