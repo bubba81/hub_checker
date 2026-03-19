@@ -236,6 +236,21 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:99px;}
 ::-webkit-scrollbar-thumb:hover{background:rgba(224,32,32,.3);}
 
+/* ── Roblox Account Card */
+.rblx-card{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--glass-border);transition:background .1s;}
+.rblx-card:hover{background:rgba(255,255,255,.015);}
+.rblx-card:last-child{border-bottom:none;}
+.rblx-avatar{width:52px;height:52px;border-radius:50%;border:2px solid var(--glass-border);object-fit:cover;flex-shrink:0;background:var(--glass-2);}
+.rblx-avatar-placeholder{width:52px;height:52px;border-radius:50%;border:2px solid var(--glass-border);background:var(--glass-2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.rblx-info{flex:1;min-width:0;}
+.rblx-name{font-family:var(--display);font-size:15px;font-weight:700;color:#fff;letter-spacing:-.2px;text-decoration:none;transition:color .15s;}
+.rblx-name:hover{color:var(--red-bright);}
+.rblx-uid{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:3px;letter-spacing:.3px;}
+.rblx-sev{font-family:var(--mono);font-size:9px;font-weight:600;padding:3px 9px;border-radius:10px;border:1px solid;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;}
+.rblx-sev.alert{color:var(--red-bright);border-color:var(--red-dim);background:var(--red-glass);}
+.rblx-sev.info{color:var(--text-3);border-color:var(--glass-border);background:transparent;}
+.rblx-loading{display:inline-block;width:10px;height:10px;border:1.5px solid var(--glass-border);border-top-color:var(--red-bright);border-radius:50%;animation:spin .7s linear infinite;margin-left:6px;vertical-align:middle;}
+
 /* ── System Info View */
 .sysinfo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
 .si-card{background:var(--glass-1);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 6px 24px rgba(0,0,0,.2);position:relative;}
@@ -502,18 +517,18 @@ document.getElementById('logSearch').addEventListener('input', e => renderLog(e.
 <script>
 const SCAN_DEFS = [
   { group:"PHASE 1 — FORENSIC", scans:[
-    { id:"bam",       label:"BAM Registry",      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets.",                                        cats:["bam","bam integrity"] },
-    { id:"usn",       label:"USN Journal",        desc:"Live NTFS USN change journal ($UsnJrnl:$J) + VSS carve for rolled-out records. Full ReasonMask and FRN path resolution.",                                    cats:["usn"] },
+    { id:"bam",       label:"BAM Registry",      desc:"Background Activity Monitor hive — every executable Windows logged as having run. Live + VSS snapshot, all ControlSets.",                                        cats:["bam","bam integrity","bam live scan"] },
+    { id:"usn",       label:"USN Journal",        desc:"Live NTFS USN change journal ($UsnJrnl:$J) + VSS carve for rolled-out records. Full ReasonMask and FRN path resolution.",                                    cats:["usn","usn journal","usn journal scan"] },
     { id:"shimcache", label:"Shimcache",           desc:"AppCompatCache parsed by AppCompatCacheParser.exe from VSS hive. Records every executable path touched by the OS loader. ShimCache Position indicates recency.", cats:["shimcache","appcompat","appcompatcache","shimcache integrity"], csvTools:["appcompatcacheparser","appcompat"] },
     { id:"amcache",   label:"Amcache",             desc:"Amcache.hve parsed by AmcacheParser.exe. File hash, publisher, first/last execution. Multiple CSV sub-types: shortcuts, unassociated file entries, device PnPs, drive binaries.", cats:["amcache","amcache integrity"], csvTools:["amcacheparser","amcache"] },
-    { id:"prefetch",  label:"Prefetch (PECmd)",    desc:"Windows Prefetch files (.pf) parsed by PECmd.exe. Records up to 8 run timestamps, loaded DLL list, and run count. Execution evidence persists after binary deletion.", cats:["prefetch","pecmd"], csvTools:["pecmd","prefetch"] },
+    { id:"prefetch",  label:"Prefetch (PECmd)",    desc:"Windows Prefetch files (.pf) parsed by PECmd.exe. Records up to 8 run timestamps, loaded DLL list, and run count. Execution evidence persists after binary deletion.", cats:["prefetch","pecmd","prefetch scan"], csvTools:["pecmd","prefetch"] },
     { id:"srum",      label:"SRUM",                desc:"System Resource Usage Monitor (SRUDB.dat) parsed by SrumECmd.exe. Per-app CPU, memory, and network usage. Evidence of execution even without Prefetch.",    cats:["srum","srum integrity"], csvTools:["srumemd","srum"] },
     { id:"mft",       label:"MFT / $MFT",          desc:"NTFS Master File Table parsed by MFTECmd.exe. Contains every file ever created — including deleted files whose MFT slot hasn't been reused. SI/FN timestamps and FRN.", cats:["mft"], csvTools:["mftemd","mft"] },
     { id:"evtx",      label:"Event Logs",           desc:"Windows Event Logs parsed by EvtxECmd.exe. Events 4688 (process create), 7045/4697 (service install), 4698-4702 (task scheduler), 1102/104 (log clear).", cats:["evtx","eventlog","event"], csvTools:["evtxecmd","evtx"] },
     { id:"recmd",     label:"Registry (RECmd)",     desc:"Registry batch queries via RECmd.exe across NTUSER.DAT, SOFTWARE, SAM, and SYSTEM hives. AppCompatFlags, UserAssist, WordWheelQuery, OpenSavePidlMRU, FeatureUsage, Uninstall entries.", cats:["regedit","recmd","registry"], csvTools:["recmd","regedit"] },
     { id:"bstrings",  label:"bstrings",             desc:"String extraction across forensic artifacts (pagefile.sys, hiberfil.sys, swapfile.sys) using bstrings.exe. Catches obfuscated or packed executables.",       cats:["bstrings"], csvTools:["bstrings"] },
     { id:"jumplists", label:"Jump Lists / LNK / Shell", desc:"JLECmd (Jump Lists), LECmd (LNK shortcuts), RBCmd (Recycle Bin $I files), SBECmd (Shell Bags), WxTCmd (Windows Timeline), SumECmd, RecentFileCacheParser.", cats:["jumplist","lnk","lecmd","jlecmd","rbcmd","sbecmd","recentfilecache","wxtcmd","sumemd"], csvTools:["jlecmd","lecmd","rbcmd","sbecmd","recentfilecacheparser","wxtcmd","sumemd"] },
-    { id:"signature", label:"Signature Check",      desc:"PE signature check via WinVerifyTrust + Windows catalog for every flagged file. Reports: Signed / Not Signed / Fake Signature / Cheat Signature (known cheat publishers).", cats:["signature","sig"] },
+    { id:"signature", label:"Signature Check",      desc:"PE signature check via WinVerifyTrust + Windows catalog for every flagged file. Reports: Signed / Not Signed / Fake Signature / Cheat Signature (known cheat publishers).", cats:["signature","sig","signature check"] },
   ]},
   { group:"PHASE 2 — LIVE SCANS", scans:[
     { id:"roblox_mem",    label:"Roblox Memory",     desc:"ReadProcessMemory scan of RobloxPlayerBeta.exe. Checks for Lua bytecode sigs (LuaQ/LuaR), executor API strings (hookfunction, getrawmetatable…), suspicious URLs, and manually mapped PE headers.", cats:["roblox memory","robloxmemory"] },
@@ -565,7 +580,7 @@ function findingsFor(def) {
   return allFindings.filter(f => {
     const fc = (f.category||'').toLowerCase();
     if (fc === 'csv') return csvMatchesDef(f.detail||'', def);
-    return cats.some(c => fc === c || fc.includes(c));
+    return cats.indexOf(fc) !== -1;
   });
 }
 
@@ -626,6 +641,31 @@ function activateScan(id) {
 function renderFinding(f, q) {
   const sc  = sevCls(f.severity);
   const raw = f.detail || '';
+
+  // ── Roblox Account special card ──────────────────────────────────────────
+  if (activeScanId === 'roblox_accts') {
+    // Extract user ID from detail like "Roblox Account: 1234567" or from fields
+    const fd  = f.fields || {};
+    let userId = fd.userId || fd.id || fd.robloxId || '';
+    if (!userId) {
+      const m = raw.match(/(\d{5,12})/);
+      if (m) userId = m[1];
+    }
+    const uidLabel = userId ? `ID: ${esc(userId)}` : esc(raw);
+    return `<div class="rblx-card" data-rblx-id="${esc(userId)}">
+      <div class="rblx-avatar-placeholder">👤</div>
+      <div class="rblx-info">
+        <a class="rblx-name" href="${userId ? `https://www.roblox.com/users/${esc(userId)}/profile` : '#'}"
+           target="_blank" rel="noopener">
+          ${userId ? `@loading<span class="rblx-loading"></span>` : esc(raw)}
+        </a>
+        <div class="rblx-uid">${uidLabel}</div>
+        ${f.ts ? `<div class="rblx-uid" style="margin-top:1px">${esc(f.ts)}</div>` : ''}
+      </div>
+      <span class="rblx-sev ${sc}">${esc(f.severity)}</span>
+    </div>`;
+  }
+
   const kwBadge = f.keyword ? `<span class="pf-kw">${esc(f.keyword)}</span>` : '';
   const hdr = `<div class="pf-hdr"><span class="pf-cat ${sc}">${esc(f.category||'')}</span>${kwBadge}<span class="pf-sev ${sc}">${esc(f.severity)}</span><span class="pf-ts">${esc(f.ts||'')}</span></div>`;
   if (f.fields && Object.keys(f.fields).length) {
@@ -675,6 +715,8 @@ function renderPane(hits) {
   }).join('');
   body.innerHTML = rows || `<div class="pane-empty default">◈<div class="sub">No matches${q ? ` for "${esc(q)}"` : ''}.</div></div>`;
   document.getElementById('matchCount').textContent = visible;
+  // Enrich Roblox account cards if on that pane
+  if (activeScanId === 'roblox_accts') enrichRobloxPane();
 }
 
 const searchEl = document.getElementById('paneSearch');
@@ -725,6 +767,81 @@ function renderOvFindings(findings) {
   }).join('');
   const more = findings.length > 20 ? `<div style="padding:9px 14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-3);">+${findings.length-20} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red-bright);">View all</a></div>` : '';
   return rows + more;
+}
+
+// ─── Roblox Account Enrichment ───────────────────────────────────────────────
+// Cache fetched profiles so we don't refetch on every rerender
+const _rblxCache = {};
+
+async function fetchRobloxProfile(userId) {
+  if (_rblxCache[userId]) return _rblxCache[userId];
+  try {
+    // Roblox API is public — fetch username/displayName
+    const r = await fetch(`https://users.roblox.com/v1/users/${userId}`);
+    if (!r.ok) throw new Error('not found');
+    const u = await r.json();
+    // Thumbnail
+    const tr = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=150x150&format=Png`);
+    let thumb = '';
+    if (tr.ok) {
+      const td = await tr.json();
+      thumb = td.data?.[0]?.imageUrl || '';
+    }
+    const profile = {
+      id:          u.id,
+      name:        u.name,
+      displayName: u.displayName,
+      thumb,
+    };
+    _rblxCache[userId] = profile;
+    return profile;
+  } catch(e) {
+    return null;
+  }
+}
+
+function formatRobloxName(profile) {
+  if (!profile) return null;
+  const { name, displayName } = profile;
+  if (displayName && displayName.toLowerCase() !== name.toLowerCase()) {
+    return `${displayName} (@${name})`;
+  }
+  return `@${name}`;
+}
+
+// Called when the roblox_accts pane is rendered — enriches each finding card
+async function enrichRobloxPane() {
+  const cards = document.querySelectorAll('[data-rblx-id]');
+  for (const card of cards) {
+    const uid = card.dataset.rblxId;
+    if (!uid || card.dataset.enriched) continue;
+    card.dataset.enriched = '1';
+
+    const profile = await fetchRobloxProfile(uid);
+    if (!profile) continue;
+
+    // Update avatar
+    const avatarEl = card.querySelector('.rblx-avatar-placeholder');
+    if (avatarEl && profile.thumb) {
+      const img = document.createElement('img');
+      img.className = 'rblx-avatar';
+      img.src = profile.thumb;
+      img.alt = profile.name;
+      img.onerror = () => img.remove();
+      avatarEl.replaceWith(img);
+    }
+
+    // Update name link
+    const nameEl = card.querySelector('.rblx-name');
+    if (nameEl) {
+      nameEl.textContent = formatRobloxName(profile);
+      nameEl.href = `https://www.roblox.com/users/${uid}/profile`;
+    }
+
+    // Remove loading spinner if present
+    const spinner = card.querySelector('.rblx-loading');
+    if (spinner) spinner.remove();
+  }
 }
 
 // ─── System Info View ────────────────────────────────────────────────────────
