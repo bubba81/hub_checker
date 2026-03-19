@@ -1143,6 +1143,46 @@ def api_admin_user_scans(uid):
         result.append(d)
     return jsonify(result)
 
+# ── Roblox API Proxy ─────────────────────────────────────────────────────────
+@app.route("/api/roblox/user/<int:user_id>", methods=["GET"])
+@require_scanner_user
+def roblox_user_proxy(user_id):
+    """Proxy Roblox user lookup to avoid CORS in the browser."""
+    try:
+        r = requests.get(
+            f"https://users.roblox.com/v1/users/{user_id}",
+            timeout=5,
+            headers={"Accept": "application/json"}
+        )
+        if not r.ok:
+            return jsonify({"ok": False, "error": "User not found"}), 404
+        u = r.json()
+
+        # Fetch headshot thumbnail
+        thumb = ""
+        try:
+            tr = requests.get(
+                f"https://thumbnails.roblox.com/v1/users/avatar-headshot"
+                f"?userIds={user_id}&size=150x150&format=Png",
+                timeout=5
+            )
+            if tr.ok:
+                td = tr.json()
+                thumb = (td.get("data") or [{}])[0].get("imageUrl", "")
+        except Exception:
+            pass
+
+        return jsonify({
+            "ok":          True,
+            "id":          u.get("id"),
+            "name":        u.get("name"),
+            "displayName": u.get("displayName"),
+            "thumb":       thumb,
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 # ── Debug ─────────────────────────────────────────────────────────────────────
 @app.route("/api/debug/scans")
 @require_auth
