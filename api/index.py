@@ -544,9 +544,7 @@ def trinity_scan_submit():
                                ORDER BY created_at DESC LIMIT 1""", (hostname, username))
                 row = cur.fetchone()
             if not row:
-                cur.execute("SELECT id FROM scans ORDER BY created_at DESC LIMIT 1")
-                row = cur.fetchone()
-            if not row:
+                # Never grab a random latest scan — require a real match
                 return jsonify({"ok": False, "error": "No matching scan found"}), 404
 
             scan_id = row["id"]
@@ -604,63 +602,79 @@ def scanner_start():
     desktop  = data.get("desktop_name", "Unknown Desktop")
     now      = _now()
 
-    # Resolve discord_user_id from the pin → scan_key link.
-    # Label format is either "discord_uid" or "discord_uid|human label".
-    # Also accepts ALLOWED_IDS users (admins) as valid owners.
+    # The C++ scanner generates its own random scan_key and does NOT use the
+    # one returned by api_pin_validate. So we can't match on scan_key.
+    # Instead: look for the most recent 'pending' row (pre-created by
+    # pin/validate) created within the last 35 minutes — that's the one
+    # belonging to the user who just redeemed a PIN. Claim it by updating
+    # it with the real machine info and the scanner's actual scan_key.
     discord_user_id = None
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT label FROM scan_pins WHERE scan_key=%s", (scan_key,))
-            pin_row = cur.fetchone()
-            if pin_row and pin_row.get("label"):
-                raw_label   = pin_row["label"].strip()
-                # Strip the "|human label" suffix if present
-                possible_uid = raw_label.split("|")[0].strip()
-                # Check scanner_users first
-                cur.execute(
-                    "SELECT discord_user_id FROM scanner_users WHERE discord_user_id=%s",
-                    (possible_uid,)
-                )
-                su = cur.fetchone()
-                if su:
-                    discord_user_id = su["discord_user_id"]
-                elif possible_uid in ALLOWED_IDS:
-                    # Admin generated the PIN — still stamp their ID on the scan
-                    discord_user_id = possible_uid
+            # Check if this scan_key already exists (direct match)
+            cur.execute("SELECT id, discord_user_id FROM scans WHERE scan_key=%s", (scan_key,))
+            existing = cur.fetchone()
 
-            # Insert the scan row. If api_pin_validate already pre-created it,
-            # DO NOTHING and then UPDATE separately so we always get the id.
-            cur.execute("""
-                INSERT INTO scans
-                  (scan_key,desktop_name,created_at,updated_at,status,
-                   phase_index,hostname,username,os_version,discord_user_id)
-                VALUES (%s,%s,%s,%s,'running',0,%s,%s,%s,%s)
-                ON CONFLICT (scan_key) DO NOTHING
-            """, (scan_key, desktop, now, now,
-                  data.get("hostname", ""), data.get("username", ""),
-                  data.get("os_version", ""), discord_user_id))
+            if existing:
+                # Direct match — just update it
+                discord_user_id = existing["discord_user_id"]
+                cur.execute("""
+                    UPDATE scans SET
+                      desktop_name = %s, updated_at = %s, status = 'running',
+                      hostname = %s, username = %s, os_version = %s
+                    WHERE scan_key = %s
+                """, (desktop, now, data.get("hostname",""),
+                      data.get("username",""), data.get("os_version",""), scan_key))
+                scan_id = existing["id"]
+            else:
+                # No direct match — find the most recent pending row and claim it.
+                # Pending rows are pre-created by pin/validate with a placeholder scan_key.
+                # We replace the placeholder scan_key with the scanner's real one.
+                cur.execute("""
+                    SELECT id, discord_user_id FROM scans
+                    WHERE status = 'pending'
+                      AND created_at >= to_char(
+                            NOW() AT TIME ZONE 'UTC' - INTERVAL '35 minutes',
+                            'YYYY-MM-DD HH24:MI:SS'
+                          )
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                """)
+                pending = cur.fetchone()
 
-            # Always update with real machine info and set status=running.
-            # COALESCE keeps the discord_user_id stamped by pin/validate.
-            cur.execute("""
-                UPDATE scans SET
-                  desktop_name    = %s,
-                  updated_at      = %s,
-                  status          = 'running',
-                  hostname        = %s,
-                  username        = %s,
-                  os_version      = %s,
-                  discord_user_id = COALESCE(discord_user_id, %s)
-                WHERE scan_key = %s
-            """, (desktop, now,
-                  data.get("hostname", ""), data.get("username", ""),
-                  data.get("os_version", ""), discord_user_id,
-                  scan_key))
+                if pending:
+                    # Claim the pending row — update its scan_key to the real one
+                    # and fill in all the machine info
+                    discord_user_id = pending["discord_user_id"]
+                    cur.execute("""
+                        UPDATE scans SET
+                          scan_key     = %s,
+                          desktop_name = %s,
+                          updated_at   = %s,
+                          status       = 'running',
+                          hostname     = %s,
+                          username     = %s,
+                          os_version   = %s
+                        WHERE id = %s
+                    """, (scan_key, desktop, now, data.get("hostname",""),
+                          data.get("username",""), data.get("os_version",""),
+                          pending["id"]))
+                    scan_id = pending["id"]
+                else:
+                    # No pending row — create a fresh scan with no owner
+                    cur.execute("""
+                        INSERT INTO scans
+                          (scan_key,desktop_name,created_at,updated_at,status,
+                           phase_index,hostname,username,os_version,discord_user_id)
+                        VALUES (%s,%s,%s,%s,'running',0,%s,%s,%s,%s)
+                        RETURNING id
+                    """, (scan_key, desktop, now, now,
+                          data.get("hostname",""), data.get("username",""),
+                          data.get("os_version",""), None))
+                    scan_id = cur.fetchone()["id"]
 
-            cur.execute("SELECT id FROM scans WHERE scan_key=%s", (scan_key,))
-            row = cur.fetchone()
         conn.commit()
-    return jsonify({"ok": True, "scan_id": row["id"], "scan_key": scan_key})
+    return jsonify({"ok": True, "scan_id": scan_id, "scan_key": scan_key})
 
 @app.route("/api/scanner/progress", methods=["POST"])
 def scanner_progress():
