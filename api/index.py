@@ -327,10 +327,16 @@ def dashboard():
     is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                "SELECT * FROM scans WHERE discord_user_id=%s AND status <> 'pending' ORDER BY created_at DESC",
-                (uid,)
-            )
+            if is_admin:
+                cur.execute(
+                    "SELECT * FROM scans WHERE discord_user_id = ANY(%s) AND status <> 'pending' ORDER BY created_at DESC",
+                    (list(ALLOWED_IDS),)
+                )
+            else:
+                cur.execute(
+                    "SELECT * FROM scans WHERE discord_user_id=%s AND status <> 'pending' ORDER BY created_at DESC",
+                    (uid,)
+                )
             scans = cur.fetchall()
     return render_template("dashboard.html", scans=scans,
                            username=session.get("global_name"),
@@ -342,10 +348,16 @@ def dashboard():
 @app.route("/scan/<int:scan_id>/view")
 @require_scanner_user
 def view_scan(scan_id):
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
+            if is_admin:
+                cur.execute(
+                    "SELECT * FROM scans WHERE id=%s AND discord_user_id = ANY(%s)",
+                    (scan_id, list(ALLOWED_IDS)))
+            else:
+                cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             scan = cur.fetchone()
             if not scan:
                 abort(404)
@@ -404,17 +416,29 @@ def api_scans():
     Admins are NOT special here. Cross-user scan access is admin-panel only
     via /api/admin/scans/<uid>.
     """
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT s.*, COUNT(sf.id) AS findings_count
-                FROM scans s
-                LEFT JOIN scan_findings sf ON sf.scan_id = s.id
-                WHERE s.discord_user_id = %s
-                  AND s.status <> 'pending'
-                GROUP BY s.id ORDER BY s.created_at DESC
-            """, (uid,))
+            if is_admin:
+                # All admin IDs share a combined scan pool
+                cur.execute("""
+                    SELECT s.*, COUNT(sf.id) AS findings_count
+                    FROM scans s
+                    LEFT JOIN scan_findings sf ON sf.scan_id = s.id
+                    WHERE s.discord_user_id = ANY(%s)
+                      AND s.status <> 'pending'
+                    GROUP BY s.id ORDER BY s.created_at DESC
+                """, (list(ALLOWED_IDS),))
+            else:
+                cur.execute("""
+                    SELECT s.*, COUNT(sf.id) AS findings_count
+                    FROM scans s
+                    LEFT JOIN scan_findings sf ON sf.scan_id = s.id
+                    WHERE s.discord_user_id = %s
+                      AND s.status <> 'pending'
+                    GROUP BY s.id ORDER BY s.created_at DESC
+                """, (uid,))
             rows = cur.fetchall()
 
     result = []
@@ -433,9 +457,9 @@ def delete_scan(scan_id):
     with get_conn() as conn:
         with conn.cursor() as cur:
             if is_admin:
-                cur.execute("DELETE FROM scans WHERE id=%s", (scan_id,))
+                cur.execute("DELETE FROM scans WHERE id=%s AND discord_user_id = ANY(%s)",
+                            (scan_id, list(ALLOWED_IDS)))
             else:
-                # Users can only delete their own scans
                 cur.execute("DELETE FROM scans WHERE id=%s AND discord_user_id=%s",
                             (scan_id, uid))
         conn.commit()
@@ -458,10 +482,15 @@ def rename_scan(scan_id):
 @app.route("/api/scan/<int:scan_id>/findings")
 @require_scanner_user
 def scan_findings(scan_id):
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
+            if is_admin:
+                cur.execute("SELECT id FROM scans WHERE id=%s AND discord_user_id = ANY(%s)",
+                            (scan_id, list(ALLOWED_IDS)))
+            else:
+                cur.execute("SELECT id FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             if not cur.fetchone():
                 abort(403)
             cur.execute("SELECT * FROM scan_findings WHERE scan_id=%s ORDER BY id", (scan_id,))
@@ -471,10 +500,15 @@ def scan_findings(scan_id):
 @app.route("/api/scan/<int:scan_id>/log")
 @require_scanner_user
 def scan_log(scan_id):
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT log_text FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
+            if is_admin:
+                cur.execute("SELECT log_text FROM scans WHERE id=%s AND discord_user_id = ANY(%s)",
+                            (scan_id, list(ALLOWED_IDS)))
+            else:
+                cur.execute("SELECT log_text FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             row = cur.fetchone()
     if not row:
         return jsonify({"log": ""}), 404
@@ -483,10 +517,16 @@ def scan_log(scan_id):
 @app.route("/api/scan/<int:scan_id>/progress")
 @require_scanner_user
 def scan_progress(scan_id):
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
+            if is_admin:
+                cur.execute(
+                    "SELECT * FROM scans WHERE id=%s AND discord_user_id = ANY(%s)",
+                    (scan_id, list(ALLOWED_IDS)))
+            else:
+                cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             scan = cur.fetchone()
             if not scan:
                 abort(404)
@@ -505,10 +545,15 @@ def scan_progress(scan_id):
 @app.route("/api/scans/<int:scan_id>")
 @require_scanner_user
 def api_scan_detail(scan_id):
-    uid = session.get("user_id")
+    uid      = session.get("user_id")
+    is_admin = uid in ALLOWED_IDS
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
+            if is_admin:
+                cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id = ANY(%s)",
+                            (scan_id, list(ALLOWED_IDS)))
+            else:
+                cur.execute("SELECT * FROM scans WHERE id=%s AND discord_user_id=%s", (scan_id, uid))
             scan = cur.fetchone()
             if not scan:
                 abort(404)
