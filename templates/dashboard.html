@@ -1159,7 +1159,7 @@ nav {
 
 <!-- PIN MODAL -->
 <div class="modal-overlay" id="pinModal">
-  <div class="modal" style="max-width:420px">
+  <div class="modal" style="max-width:460px">
     <div class="modal-head">
       <div class="modal-title">Generate Scan PIN<span class="sub">Authorise a scanner to begin</span></div>
       <button class="btn-close" onclick="closePinModal()">✕</button>
@@ -1180,9 +1180,14 @@ nav {
       <div id="pinStep2" style="display:none">
         <div class="pin-display">
           <div class="pin-meta">Enter this PIN on the scanner</div>
-          <div class="pin-code" id="pinCode">——————</div>
+          <div id="pinCode" class="pin-code" style="font-size:72px;letter-spacing:18px;padding:0 10px">——————</div>
           <div class="pin-instructions">Expires in <span class="pin-countdown" id="pinCountdown">30:00</span></div>
-          <div class="pin-scankey" id="pinScanKeyDisplay"></div>
+        </div>
+        <div style="display:flex;justify-content:center;margin:14px 0 6px">
+          <button class="btn-secondary" id="pinCopyBtn" onclick="copyPin()" style="display:flex;align-items:center;gap:7px;padding:9px 24px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy PIN
+          </button>
         </div>
         <div class="form-actions" style="margin-top:8px">
           <button class="btn-secondary" onclick="closePinModal()">Close</button>
@@ -1204,12 +1209,15 @@ let activeFilter  = 'all';
 let searchTerm    = '';
 let keySearchTerm = '';
 let pinSearchTerm = '';
-let currentTab    = 'scans';
+let currentTab    = sessionStorage.getItem('hc_tab') || 'scans';
 
 // ── Init ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Restore tab from session
+  switchTab(currentTab, true);
+
   loadAll();
-  setInterval(loadAll, 15000);
+  setInterval(loadAll, 8000);
 
   document.querySelectorAll('.filter-pill').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1238,8 +1246,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Tab ────────────────────────────────────────────────────────────────────
-function switchTab(tab) {
+function switchTab(tab, silent) {
   currentTab = tab;
+  if (!silent) sessionStorage.setItem('hc_tab', tab);
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
 }
@@ -1252,7 +1261,17 @@ async function loadAll() {
       apiFetch('/api/pins/mine').catch(() => []),
     ]);
     scans  = scanData;
-    myPins = Array.isArray(pinData) ? pinData : [];
+    const rawPins = Array.isArray(pinData) ? pinData : [];
+
+    // Auto-delete used or expired pins silently
+    const toDelete = rawPins.filter(p => p.used || p.expired ||
+      (p.expires_at && new Date(p.expires_at.replace(' ', 'T') + 'Z').getTime() < Date.now()));
+    for (const p of toDelete) {
+      apiFetch(`/api/keys/${p.id}/revoke`, { method: 'POST' }).catch(() => {});
+    }
+    myPins = rawPins.filter(p => !p.used && !p.expired &&
+      (!p.expires_at || new Date(p.expires_at.replace(' ', 'T') + 'Z').getTime() > Date.now()));
+
     updateMetrics();
     renderScans();
     renderPins();
@@ -1265,7 +1284,7 @@ async function loadAll() {
 function updateTabCounts() {
   document.getElementById('tabCountScans').textContent = scans.length;
   const pinsEl = document.getElementById('tabCountPins');
-  if (pinsEl) pinsEl.textContent = myPins.filter(p => !p.used && !p.expired).length;
+  if (pinsEl) pinsEl.textContent = myPins.length;
 }
 
 function updateMetrics() {
@@ -1298,14 +1317,16 @@ function renderScans() {
 }
 
 function renderScanCard(s) {
+  // Use actual progress percentage if available, otherwise estimate
+  const pct = s.status === 'completed' ? 100 :
+              s.status === 'running'   ? (s.progress_pct != null ? s.progress_pct : 50) : 0;
+
   const progHtml = s.status === 'running' ? `
     <div class="progress-wrap">
-      <div class="progress-track"><div class="progress-fill animated" style="width:50%"></div></div>
-      <div class="progress-pct">Running…</div>
+      <div class="progress-track"><div class="progress-fill animated" style="width:${pct}%"></div></div>
     </div>` : s.status === 'completed' ? `
     <div class="progress-wrap">
       <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
-      <div class="progress-pct">100%</div>
     </div>` : '';
 
   const bc = { running:'badge-running', completed:'badge-completed', pending:'badge-pending', flagged:'badge-flagged' }[s.status] || 'badge-pending';
@@ -1351,31 +1372,15 @@ function renderPins() {
 function renderPinCard(p) {
   const now    = Date.now();
   const expMs  = p.expires_at ? new Date(p.expires_at.replace(' ', 'T') + 'Z').getTime() - now : 0;
-  const active = !p.used && !p.expired && expMs > 0;
-  const used   = p.used;
+  const expMins = Math.floor(expMs / 60000);
+  const expSecs = Math.floor((expMs % 60000) / 1000);
 
-  let statusBadge, expiryHtml = '';
-  if (used) {
-    statusBadge = `<div class="badge-unused" style="border-color:rgba(240,240,240,.15);color:var(--text-3)">Used</div>`;
-    expiryHtml  = `<span style="font-family:var(--mono);font-size:10px;color:var(--text-3)">Used ${fmtDate(p.used_at)}</span>`;
-  } else if (active) {
-    const expMins = Math.floor(expMs / 60000);
-    const expSecs = Math.floor((expMs % 60000) / 1000);
-    statusBadge = `<div class="badge-unused">Active</div>`;
-    expiryHtml  = `<span style="color:#ff9500;font-size:10px;font-family:var(--mono)">expires in ${expMins}m ${expSecs}s</span>`;
-  } else {
-    statusBadge = `<div class="badge-unused" style="border-color:rgba(255,149,0,.3);color:#ff9500">Expired</div>`;
-    expiryHtml  = `<span style="font-family:var(--mono);font-size:10px;color:var(--text-3)">Expired</span>`;
-  }
-
-  const pinDisplay = active
-    ? `<div class="key-pin-display">${escHtml(p.pin || '——')}</div>`
-    : `<div class="key-pin-display" style="opacity:.25;text-decoration:line-through">${escHtml(p.pin || '——')}</div>`;
-
-  const btnLabel = active ? 'Revoke' : 'Delete';
-  const revokeBtn = `<button class="action-btn btn-del" style="flex:none;padding:7px 16px" onclick="openDeleteKey(${p.id}, '${escAttr(p.display_label || p.scan_key)}')">
+  const statusBadge = `<div class="badge-unused">Active</div>`;
+  const expiryHtml  = `<span style="color:#ff9500;font-size:10px;font-family:var(--mono)">expires in ${expMins}m ${expSecs}s</span>`;
+  const pinDisplay  = `<div class="key-pin-display">${escHtml(p.pin || '——')}</div>`;
+  const revokeBtn   = `<button class="action-btn btn-del" style="flex:none;padding:7px 16px" onclick="openDeleteKey(${p.id}, '${escAttr(p.display_label || p.scan_key)}')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-      ${btnLabel}
+      Revoke
     </button>`;
 
   return `<div class="key-card">
@@ -1388,10 +1393,6 @@ function renderPinCard(p) {
     <div class="key-pin-block">
       <div class="key-code-label">PIN</div>
       ${pinDisplay}
-    </div>
-    <div>
-      <div class="key-code-label">Scan Key</div>
-      <div class="key-code">${escHtml(p.scan_key)}</div>
     </div>
     <div class="key-foot">
       <div class="key-created">Generated ${fmtDate(p.created_at)}</div>
@@ -1543,7 +1544,6 @@ function resetPinModal() {
   document.getElementById('pinCode').classList.remove('expired');
   document.getElementById('pinCountdown').textContent = '30:00';
   document.getElementById('pinCountdown').classList.remove('urgent');
-  document.getElementById('pinScanKeyDisplay').textContent = '';
 }
 async function submitGeneratePin() {
   const label  = document.getElementById('pinLabelInput').value.trim();
@@ -1565,7 +1565,6 @@ async function submitGeneratePin() {
   document.getElementById('pinStep1').style.display = 'none';
   document.getElementById('pinStep2').style.display = '';
   document.getElementById('pinCode').textContent = data.pin;
-  document.getElementById('pinScanKeyDisplay').textContent = 'KEY: ' + data.scan_key;
   genBtn.disabled = false; genBtn.textContent = 'Generate PIN';
   let secs = 1800;
   const countEl = document.getElementById('pinCountdown');
@@ -1581,6 +1580,19 @@ async function submitGeneratePin() {
     countEl.textContent = m + ':' + String(s).padStart(2, '0');
     if (secs <= 60) countEl.classList.add('urgent');
   }, 1000);
+}
+
+function copyPin() {
+  const pin = document.getElementById('pinCode').textContent.trim();
+  if (!pin || pin.includes('—')) return;
+  navigator.clipboard.writeText(pin).then(() => {
+    const btn = document.getElementById('pinCopyBtn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    btn.style.borderColor = 'rgba(48,209,88,.35)';
+    btn.style.color = '#30d158';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.borderColor = ''; btn.style.color = ''; }, 2000);
+  }).catch(() => toast('Could not copy', 'error'));
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
