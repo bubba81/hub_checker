@@ -699,30 +699,50 @@ function renderFinding(f, q) {
   const hdr = `<div class="pf-hdr"><span class="pf-cat ${sc}">${esc(f.category||'')}</span>${kwBadge}<span class="pf-sev ${sc}">${esc(f.severity)}</span></div>`;
   if (f.fields && Object.keys(f.fields).length) {
     const fd = f.fields; const rows = [];
-    const addRow = (k, v, cls) => {
+    const seen = new Set();
+    const addRow = (k, v, cls, key) => {
       if (v == null || v === '' || v === undefined) return;
+      if (key) seen.add(key);
       const hi = q ? esc(String(v)).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(String(v));
       rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv ${cls||''}">${hi}</div>`);
     };
-    addRow('Tool',fd.tool); addRow('CSV',fd.csv,'muted'); addRow('Event Type',fd.eventType,'event');
-    addRow('Path',fd.path,'path'); addRow('File Name',fd.fileName); addRow('Run Time',fd.runTime);
-    addRow('Last Run',fd.lastRun); addRow('Run Count',fd.runCount); addRow('Executed',fd.executed);
-    addRow('Present',fd.present); addRow('ShimCache Position',fd.shimPos,'muted'); addRow('Executed Flag',fd.executedFlag);
-    addRow('Source Hive',fd.sourceHive,'muted'); addRow('Key Last Write',fd.keyLastWrite); addRow('Last Write',fd.lastWrite);
-    addRow('Key Path',fd.keyPath); addRow('Value Name',fd.valueName); addRow('Value Data',fd.valueData);
-    addRow('Registry Category',fd.regCategory); addRow('LNK Name',fd.lnkName,'path'); addRow('Program Name',fd.programName);
-    addRow('Source Name ($I)',fd.sourceName,'muted'); addRow('File Size',fd.fileSize,'muted'); addRow('Deleted On',fd.deletedOn);
-    addRow('SI Created',fd.siCreated); addRow('SI Modified',fd.siModified); addRow('SI Accessed',fd.siAccessed,'muted');
-    addRow('FRN',fd.frn,'muted'); addRow('In Use',fd.inUse,'muted');
-    addRow('Signature Status',fd.sigStatus, fd.sigStatus&&fd.sigStatus.toLowerCase().includes('not')?'hit':fd.sigStatus&&fd.sigStatus.toLowerCase().includes('fake')?'hit':'clean');
-    addRow('Signer',fd.signerName); addRow('Patterns',fd.patterns,'hit'); addRow('Hive',fd.hive,'muted'); addRow('File Last Modified',fd.fileLastModified);
+    addRow('Tool',fd.tool,'','tool'); addRow('CSV',fd.csv,'muted','csv'); addRow('Event Type',fd.eventType,'event','eventType');
+    addRow('Path',fd.path,'path','path'); addRow('File Name',fd.fileName,'','fileName'); addRow('Run Time',fd.runTime,'','runTime');
+    addRow('Last Run',fd.lastRun,'','lastRun'); addRow('Run Count',fd.runCount,'','runCount'); addRow('Executed',fd.executed,'','executed');
+    addRow('Present',fd.present,'','present'); addRow('ShimCache Position',fd.shimPos,'muted','shimPos'); addRow('Executed Flag',fd.executedFlag,'','executedFlag');
+    addRow('Source Hive',fd.sourceHive,'muted','sourceHive'); addRow('Key Last Write',fd.keyLastWrite,'','keyLastWrite'); addRow('Last Write',fd.lastWrite,'','lastWrite');
+    addRow('Key Path',fd.keyPath,'','keyPath'); addRow('Value Name',fd.valueName,'','valueName'); addRow('Value Data',fd.valueData,'','valueData');
+    addRow('Registry Category',fd.regCategory,'','regCategory'); addRow('LNK Name',fd.lnkName,'path','lnkName'); addRow('Program Name',fd.programName,'','programName');
+    addRow('Source Name ($I)',fd.sourceName,'muted','sourceName'); addRow('File Size',fd.fileSize,'muted','fileSize'); addRow('Deleted On',fd.deletedOn,'','deletedOn');
+    addRow('SI Created',fd.siCreated,'','siCreated'); addRow('SI Modified',fd.siModified,'','siModified'); addRow('SI Accessed',fd.siAccessed,'muted','siAccessed');
+    addRow('FRN',fd.frn,'muted','frn'); addRow('In Use',fd.inUse,'muted','inUse');
+    addRow('Signature Status',fd.sigStatus, fd.sigStatus&&fd.sigStatus.toLowerCase().includes('not')?'hit':fd.sigStatus&&fd.sigStatus.toLowerCase().includes('fake')?'hit':'clean','sigStatus');
+    addRow('Signer',fd.signerName,'','signerName'); addRow('Patterns',fd.patterns,'hit','patterns'); addRow('Hive',fd.hive,'muted','hive'); addRow('File Last Modified',fd.fileLastModified,'','fileLastModified');
     if (fd.prevRuns && fd.prevRuns.length) {
+      seen.add('prevRuns');
       const prevHtml = fd.prevRuns.map(r => `<div class="pf-prev-item">${esc(r)}</div>`).join('');
       rows.push(`<div class="pf-fk">Prev Runs</div><div class="pf-fv"><div class="pf-prev">${prevHtml}</div></div>`);
     }
-    return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">${hdr}<div class="pf-fields">${rows.join('')}</div></div>`;
+    // Catch-all: render any fields not already handled above
+    for (const [k, v] of Object.entries(fd)) {
+      if (seen.has(k) || v == null || v === '') continue;
+      if (Array.isArray(v)) {
+        const arrHtml = v.map(r => `<div class="pf-prev-item">${esc(String(r))}</div>`).join('');
+        rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv"><div class="pf-prev">${arrHtml}</div></div>`);
+      } else if (typeof v === 'object') {
+        rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv muted">${esc(JSON.stringify(v))}</div>`);
+      } else {
+        const hi = q ? esc(String(v)).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(String(v));
+        rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv">${hi}</div>`);
+      }
+    }
+    // If fields existed but produced no rows, fall through to raw detail
+    if (rows.length) {
+      return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">${hdr}<div class="pf-fields">${rows.join('')}</div></div>`;
+    }
   }
-  const hi = q ? esc(raw).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(raw);
+  const hiRaw = raw || '(no detail)';
+  const hi = q ? esc(hiRaw).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(hiRaw);
   return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">${hdr}<div class="pf-info-block">${hi}</div></div>`;
 }
 
@@ -736,8 +756,9 @@ function renderPane(hits) {
   let visible = 0;
   const rows = hits.map(f => {
     const sc = sevCls(f.severity); const raw = (f.detail||'').toLowerCase();
+    const fieldsText = f.fields ? Object.values(f.fields).map(v => String(v||'')).join(' ').toLowerCase() : '';
     const sevOk = sf === 'all' || f.severity === sf;
-    const qOk   = !q || raw.includes(q) || (f.keyword||'').toLowerCase().includes(q);
+    const qOk   = !q || raw.includes(q) || (f.keyword||'').toLowerCase().includes(q) || fieldsText.includes(q);
     if (sevOk && qOk) visible++;
     const html = renderFinding(f, q);
     return sevOk && qOk ? html : html.replace(`class="pf ${sc}"`, `class="pf ${sc} hid"`);
