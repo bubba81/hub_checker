@@ -917,9 +917,9 @@ nav {
 .pin-meta { font-size: 10px; color: var(--text-3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
 .pin-code {
   font-family: var(--display);
-  font-size: 58px; font-weight: 800;
+  font-size: 52px; font-weight: 800;
   color: var(--red-bright);
-  letter-spacing: 14px;
+  letter-spacing: 12px;
   line-height: 1;
   text-shadow: 0 0 40px rgba(224,32,32,.5);
   transition: opacity .4s;
@@ -1159,7 +1159,7 @@ nav {
 
 <!-- PIN MODAL -->
 <div class="modal-overlay" id="pinModal">
-  <div class="modal" style="max-width:460px">
+  <div class="modal" style="max-width:560px">
     <div class="modal-head">
       <div class="modal-title">Generate Scan PIN<span class="sub">Authorise a scanner to begin</span></div>
       <button class="btn-close" onclick="closePinModal()">✕</button>
@@ -1180,7 +1180,7 @@ nav {
       <div id="pinStep2" style="display:none">
         <div class="pin-display">
           <div class="pin-meta">Enter this PIN on the scanner</div>
-          <div id="pinCode" class="pin-code" style="font-size:72px;letter-spacing:18px;padding:0 10px">——————</div>
+          <div id="pinCode" class="pin-code" style="font-size:52px;letter-spacing:12px;padding:0 8px">——————</div>
           <div class="pin-instructions">Expires in <span class="pin-countdown" id="pinCountdown">30:00</span></div>
         </div>
         <div style="display:flex;justify-content:center;margin:14px 0 6px">
