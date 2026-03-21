@@ -162,7 +162,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .si-cnt{font-family:var(--mono);font-size:9px;padding:1px 5px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:4px;flex-shrink:0;color:var(--text-3);}
 .si.active .si-cnt{border-color:var(--glass-border-red);color:var(--red-bright);}
 
-.scan-pane{display:flex;flex-direction:column;min-height:680px;}
+.scan-pane{display:flex;flex-direction:column;}
 .pane-head{padding:16px 20px 14px;border-bottom:1px solid var(--glass-border);display:flex;align-items:flex-start;justify-content:space-between;gap:14px;background:rgba(255,255,255,.015);}
 .pane-title{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:-.1px;color:#fff;margin-bottom:4px;}
 .pane-desc{font-size:12px;color:var(--text-3);line-height:1.6;max-width:620px;}
@@ -189,7 +189,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .sv.aw{border-color:rgba(255,149,0,.3);color:var(--orange);background:rgba(255,149,0,.07);}
 .sv.ai{border-color:var(--glass-border);color:var(--text-3);background:var(--glass-1);}
 
-.pane-body{flex:1;overflow-y:auto;max-height:580px;}
+.pane-body{flex:1;overflow-y:auto;}
 .pf{padding:16px 20px;border-bottom:1px solid var(--glass-border);border-left:3px solid transparent;transition:background .1s;}
 .pf:last-child{border-bottom:none;}
 .pf:hover{background:rgba(255,255,255,.015);}
@@ -209,10 +209,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .pf-sev.alert{color:var(--red-bright);}
 .pf-sev.warn{color:var(--orange);}
 .pf-sev.info{color:var(--text-3);}
-.pf-fields{display:grid;grid-template-columns:160px 1fr;gap:0;margin-top:4px;border:1px solid var(--glass-border);border-radius:var(--radius-xs);overflow:hidden;}
+.pf-fields{display:grid;grid-template-columns:120px 1fr;gap:0;border:1px solid var(--glass-border);border-radius:var(--radius-xs);overflow:hidden;width:100%;}
 .pf-fk{font-family:var(--mono);font-size:10px;color:var(--text-3);white-space:nowrap;padding:7px 12px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--glass-border);border-right:1px solid var(--glass-border);letter-spacing:.3px;align-self:stretch;display:flex;align-items:center;}
 .pf-fv{font-family:var(--mono);font-size:11.5px;color:var(--text);word-break:break-all;line-height:1.5;padding:7px 12px;border-bottom:1px solid var(--glass-border);}
-.pf-fk:last-of-type,.pf-fv:last-child{border-bottom:none;}
+.pf-fk:nth-last-child(2),.pf-fv:last-child{border-bottom:none;}
 .pf-fv.path{color:#64b5f6;}
 .pf-fv.event{color:#ffd60a;font-weight:500;}
 .pf-fv.hit{color:var(--red-bright);font-weight:500;}
@@ -670,26 +670,14 @@ function renderFinding(f, q) {
   if (activeScanId === 'roblox_accts') {
     const fd  = f.fields || {};
     let userId = String(fd.userId || fd.id || fd.robloxId || '').trim();
-    if (!userId) {
-      // 'Roblox Account: 1417280' — grab number after colon
-      const cm = raw.match(/:\s*(\d+)\s*$/);
-      if (cm) userId = cm[1];
-    }
-    if (!userId) {
-      const nm = raw.match(/\d{3,12}/);
-      if (nm) userId = nm[0];
-    }
+    if (!userId) { const cm = raw.match(/:\s*(\d+)\s*$/); if (cm) userId = cm[1]; }
+    if (!userId) { const nm = raw.match(/\d{3,12}/); if (nm) userId = nm[0]; }
     const profileUrl = userId ? `https://www.roblox.com/users/${userId}/profile` : '';
     const uidLabel   = userId ? `ID: ${esc(userId)}` : esc(raw);
     return `<div class="rblx-card" data-rblx-id="${esc(userId)}">
       <div class="rblx-avatar-placeholder">👤</div>
       <div class="rblx-info">
-        <a class="rblx-name"
-           href="${profileUrl || '#'}"
-           target="${profileUrl ? '_blank' : '_self'}"
-           rel="noopener">
-          Loading…<span class="rblx-loading"></span>
-        </a>
+        <a class="rblx-name" href="${profileUrl||'#'}" target="${profileUrl?'_blank':'_self'}" rel="noopener">Loading…<span class="rblx-loading"></span></a>
         <div class="rblx-uid">${uidLabel}</div>
         ${f.ts ? `<div class="rblx-uid" style="margin-top:1px">${esc(f.ts)}</div>` : ''}
       </div>
@@ -697,55 +685,91 @@ function renderFinding(f, q) {
     </div>`;
   }
 
-  const kwLabel = f.keyword ? `<span class="pf-kw">${esc(f.keyword)}</span>` : '';
-  const hdr = kwLabel ? `<div class="pf-hdr">${kwLabel}</div>` : '';
-  if (f.fields && Object.keys(f.fields).length) {
-    const fd = f.fields; const rows = [];
-    const seen = new Set();
-    const addRow = (k, v, cls, key) => {
-      if (v == null || v === '' || v === undefined) return;
-      if (key) seen.add(key);
-      const hi = q ? esc(String(v)).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(String(v));
-      rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv ${cls||''}">${hi}</div>`);
-    };
-    addRow('Tool',fd.tool,'','tool'); addRow('CSV',fd.csv,'muted','csv'); addRow('Event Type',fd.eventType,'event','eventType');
-    addRow('Path',fd.path,'path','path'); addRow('File Name',fd.fileName,'','fileName'); addRow('Run Time',fd.runTime,'','runTime');
-    addRow('Last Run',fd.lastRun,'','lastRun'); addRow('Run Count',fd.runCount,'','runCount'); addRow('Executed',fd.executed,'','executed');
-    addRow('Present',fd.present,'','present'); addRow('ShimCache Position',fd.shimPos,'muted','shimPos'); addRow('Executed Flag',fd.executedFlag,'','executedFlag');
-    addRow('Source Hive',fd.sourceHive,'muted','sourceHive'); addRow('Key Last Write',fd.keyLastWrite,'','keyLastWrite'); addRow('Last Write',fd.lastWrite,'','lastWrite');
-    addRow('Key Path',fd.keyPath,'','keyPath'); addRow('Value Name',fd.valueName,'','valueName'); addRow('Value Data',fd.valueData,'','valueData');
-    addRow('Registry Category',fd.regCategory,'','regCategory'); addRow('LNK Name',fd.lnkName,'path','lnkName'); addRow('Program Name',fd.programName,'','programName');
-    addRow('Source Name ($I)',fd.sourceName,'muted','sourceName'); addRow('File Size',fd.fileSize,'muted','fileSize'); addRow('Deleted On',fd.deletedOn,'','deletedOn');
-    addRow('SI Created',fd.siCreated,'','siCreated'); addRow('SI Modified',fd.siModified,'','siModified'); addRow('SI Accessed',fd.siAccessed,'muted','siAccessed');
-    addRow('FRN',fd.frn,'muted','frn'); addRow('In Use',fd.inUse,'muted','inUse');
-    addRow('Signature Status',fd.sigStatus, fd.sigStatus&&fd.sigStatus.toLowerCase().includes('not')?'hit':fd.sigStatus&&fd.sigStatus.toLowerCase().includes('fake')?'hit':'clean','sigStatus');
-    addRow('Signer',fd.signerName,'','signerName'); addRow('Patterns',fd.patterns,'hit','patterns'); addRow('Hive',fd.hive,'muted','hive'); addRow('File Last Modified',fd.fileLastModified,'','fileLastModified');
-    if (fd.prevRuns && fd.prevRuns.length) {
-      seen.add('prevRuns');
-      const prevHtml = fd.prevRuns.map(r => `<div class="pf-prev-item">${esc(r)}</div>`).join('');
-      rows.push(`<div class="pf-fk">Prev Runs</div><div class="pf-fv"><div class="pf-prev">${prevHtml}</div></div>`);
-    }
-    // Catch-all: render any fields not already handled above
-    for (const [k, v] of Object.entries(fd)) {
-      if (seen.has(k) || v == null || v === '') continue;
-      if (Array.isArray(v)) {
-        const arrHtml = v.map(r => `<div class="pf-prev-item">${esc(String(r))}</div>`).join('');
-        rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv"><div class="pf-prev">${arrHtml}</div></div>`);
-      } else if (typeof v === 'object') {
-        rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv muted">${esc(JSON.stringify(v))}</div>`);
-      } else {
-        const hi = q ? esc(String(v)).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(String(v));
-        rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv">${hi}</div>`);
-      }
-    }
-    // If fields existed but produced no rows, fall through to raw detail
-    if (rows.length) {
-      return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">${hdr}<div class="pf-fields">${rows.join('')}</div></div>`;
-    }
+  // ── Skip keys that are noise ─────────────────────────────────────────────
+  const SKIP = new Set(['category','severity','detail','fields_json','id','scan_id','created_at']);
+
+  // ── Helper: highlight query matches ──────────────────────────────────────
+  const hi = v => {
+    const s = esc(String(v));
+    return q ? s.replace(new RegExp('('+rxEsc(esc(q.toLowerCase()))+')', 'gi'), '<mark>$1</mark>') : s;
+  };
+
+  // ── Build rows array ──────────────────────────────────────────────────────
+  const rows = [];
+  const addRow = (k, v, cls) => {
+    if (v == null || v === '') return;
+    rows.push({ k, v: hi(v), cls: cls||'' });
+  };
+
+  // ── 1. Try structured fields first (minus junk keys) ─────────────────────
+  const fd = f.fields && typeof f.fields === 'object' ? f.fields : {};
+  const FIELD_MAP = [
+    ['path','Path','path'],['fileName','File Name',''],['tool','Tool','muted'],
+    ['runTime','Run Time',''],['lastRun','Last Run',''],['runCount','Run Count',''],
+    ['executed','Executed',''],['present','Present',''],['shimPos','ShimCache Pos','muted'],
+    ['executedFlag','Executed Flag',''],['sourceHive','Source Hive','muted'],
+    ['keyLastWrite','Key Last Write',''],['lastWrite','Last Write',''],
+    ['keyPath','Key Path','path'],['valueName','Value Name',''],['valueData','Value Data',''],
+    ['regCategory','Registry Category',''],['lnkName','LNK Name','path'],
+    ['programName','Program Name',''],['sourceName','Source Name','muted'],
+    ['fileSize','File Size','muted'],['deletedOn','Deleted On',''],
+    ['siCreated','SI Created',''],['siModified','SI Modified',''],['siAccessed','SI Accessed','muted'],
+    ['frn','FRN','muted'],['inUse','In Use','muted'],
+    ['sigStatus','Signature','fd.sigStatus&&fd.sigStatus.toLowerCase().includes("not")||fd.sigStatus&&fd.sigStatus.toLowerCase().includes("fake")?"hit":"clean"'],
+    ['signerName','Signer',''],['patterns','Patterns','hit'],
+    ['hive','Hive','muted'],['fileLastModified','File Modified',''],['eventType','Event Type','event'],
+    ['csv','CSV','muted'],
+  ];
+  const seen = new Set(SKIP);
+  for (const [key, label, cls] of FIELD_MAP) {
+    seen.add(key);
+    const v = fd[key];
+    if (v == null || v === '') continue;
+    // Special case signature status colouring
+    let c = cls;
+    if (key === 'sigStatus') c = String(v).toLowerCase().includes('not')||String(v).toLowerCase().includes('fake') ? 'hit' : 'clean';
+    addRow(label, v, c);
   }
-  const hiRaw = raw || '(no detail)';
-  const hi = q ? esc(hiRaw).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(hiRaw);
-  return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">${hdr}<div class="pf-info-block">${hi}</div></div>`;
+  if (fd.prevRuns && fd.prevRuns.length) {
+    seen.add('prevRuns');
+    rows.push({ k:'Prev Runs', v: fd.prevRuns.map(r=>`<div class="pf-prev-item">${esc(r)}</div>`).join(''), cls:'' });
+  }
+  // Catch-all unknown fields
+  for (const [k, v] of Object.entries(fd)) {
+    if (seen.has(k) || v == null || v === '') continue;
+    if (Array.isArray(v)) rows.push({ k, v: v.map(r=>`<div class="pf-prev-item">${esc(String(r))}</div>`).join(''), cls:'' });
+    else if (typeof v === 'object') rows.push({ k, v: hi(JSON.stringify(v)), cls:'muted' });
+    else rows.push({ k, v: hi(v), cls:'' });
+  }
+
+  // ── 2. Parse the raw detail string if no structured rows ─────────────────
+  if (!rows.length && raw) {
+    // Format: "[Not signed] C:\path\to\file.exe (tool: BAM-Live) @ 2026-03-21 06:57:41 (UTC) | sig: Not signed"
+    const pathM  = raw.match(/([A-Za-z]:\\[^\s(|]+)/);
+    const toolM  = raw.match(/\(tool:\s*([^)]+)\)/i);
+    const timeM  = raw.match(/@ (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[^|]*)/);
+    const sigM   = raw.match(/\|\s*sig:\s*(.+)$/i);
+    const statusM= raw.match(/^\[([^\]]+)\]/);
+
+    if (pathM)   addRow('Path',   pathM[1].trim(),    'path');
+    if (toolM)   addRow('Tool',   toolM[1].trim(),    'muted');
+    if (timeM)   addRow('Time',   timeM[1].trim(),    'muted');
+    if (sigM)    addRow('Sig',    sigM[1].trim(),     sigM[1].toLowerCase().includes('not')||sigM[1].toLowerCase().includes('fake')?'hit':'clean');
+    if (statusM) addRow('Status', statusM[1].trim(),  statusM[1].toLowerCase().includes('not')||statusM[1].toLowerCase().includes('fake')?'hit':'clean');
+    // If parsing yielded nothing, just show the raw string
+    if (!rows.length) addRow('Detail', raw, '');
+  }
+
+  // ── 3. Add keyword row if present and not already shown ──────────────────
+  if (f.keyword) rows.unshift({ k:'Keyword', v: hi(f.keyword), cls:'hit' });
+
+  // ── 4. Render ─────────────────────────────────────────────────────────────
+  if (rows.length) {
+    const inner = rows.map(r => `<div class="pf-fk">${esc(r.k)}</div><div class="pf-fv ${r.cls}">${r.v}</div>`).join('');
+    return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}"><div class="pf-fields">${inner}</div></div>`;
+  }
+  // Absolute fallback
+  return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}"><div class="pf-info-block">${hi(raw||'(no detail)')}</div></div>`;
 }
 
 function renderPane(hits) {
