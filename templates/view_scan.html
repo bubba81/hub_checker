@@ -613,6 +613,7 @@ function switchView(name) {
     v.classList.toggle('active', show);
     v.style.display = show ? 'block' : 'none';
   });
+  sessionStorage.setItem('hc_scanview_' + scanId, name);
   if (name === 'scans'   && !activeScanId) activateScan(SCAN_DEFS[0].scans[0].id);
   if (name === 'log')     renderLog(document.getElementById('logSearch').value);
   if (name === 'sysinfo') renderSysinfo();
@@ -1043,36 +1044,7 @@ async function refreshScan() {
       }
     });
 
-    const total = d.total_phases || phases.length;
-    const pi    = d.phase_index  || 0;
-    const done  = d.status === 'complete' || d.status === 'completed';
-    const pct   = done ? 100 : Math.round(pi / Math.max(total - 1, 1) * 100);
-
-    document.getElementById('barFill').style.width  = pct + '%';
-    document.getElementById('progPct').textContent  = pct + '%';
-    document.getElementById('tcTotal').textContent  = findings.length;
-    document.getElementById('findingCount').textContent = findings.length;
-
-    if (done) {
-      document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
-      document.getElementById('statusBadge').className   = 'status-badge complete';
-      document.getElementById('statusBadge').textContent = '✓ COMPLETE';
-      const lp = document.getElementById('livePill');
-      if (lp) lp.style.display = 'none';
-    } else {
-      document.getElementById('progLabel').textContent =
-        `PHASE ${pi+1}/${total} — ${phases[Math.min(pi, phases.length-1)]}`;
-    }
-
-    const phHtml = renderPhaseLog(d.events || [], pi, done);
-    document.getElementById('phaseLogOv').innerHTML   = phHtml;
-    document.getElementById('phaseLogFull').innerHTML = phHtml;
-    document.getElementById('phaseCount').textContent = `${(d.events||[]).length}/${phases.length}`;
-    document.getElementById('ovFindings').innerHTML   = renderOvFindings(findings);
-
-    buildSidebar();
-    rerender();
-    renderSysinfo();
+    applyProgressUpdate(d, findings);
 
     // Flash green to confirm
     btn.style.color       = 'var(--green)';
@@ -1095,44 +1067,79 @@ async function refreshScan() {
   }
 }
 
+function applyProgressUpdate(d, findings) {
+  const total   = d.total_phases || phases.length;
+  const pi      = d.phase_index  || 0;
+  const done    = d.status === 'complete' || d.status === 'completed';
+  const events  = d.events || [];
+
+  // Use the last reported pct from events for accuracy, fall back to phase-index ratio
+  let pct;
+  if (done) {
+    pct = 100;
+  } else if (events.length > 0) {
+    pct = events[events.length - 1].pct || Math.round(pi / Math.max(total - 1, 1) * 100);
+  } else {
+    pct = Math.round(pi / Math.max(total - 1, 1) * 100);
+  }
+
+  document.getElementById('barFill').style.width  = pct + '%';
+  document.getElementById('progPct').textContent  = pct + '%';
+  document.getElementById('tcTotal').textContent  = findings.length;
+  document.getElementById('findingCount').textContent = findings.length;
+
+  if (done) {
+    document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
+    document.getElementById('statusBadge').className   = 'status-badge complete';
+    document.getElementById('statusBadge').textContent = '✓ COMPLETE';
+    const lp = document.getElementById('livePill');
+    if (lp) lp.style.display = 'none';
+    isDone = true;
+  } else {
+    document.getElementById('progLabel').textContent =
+      `PHASE ${pi+1}/${total} — ${phases[Math.min(pi, phases.length-1)]}`;
+  }
+
+  const phHtml = renderPhaseLog(events, pi, done);
+  document.getElementById('phaseLogOv').innerHTML   = phHtml;
+  document.getElementById('phaseLogFull').innerHTML = phHtml;
+  document.getElementById('phaseCount').textContent = `${events.length}/${phases.length}`;
+  document.getElementById('ovFindings').innerHTML   = renderOvFindings(findings);
+
+  buildSidebar();
+  rerender();
+  renderSysinfo();
+}
+
 async function poll() {
   try {
     const [pRes, fRes] = await Promise.all([fetch(`/api/scan/${scanId}/progress`), fetch(`/api/scan/${scanId}/findings`)]);
     const d = await pRes.json();
     const findings = fRes.ok ? await fRes.json() : allFindings;
     allFindings = findings;
-    const total = d.total_phases || phases.length;
-    const pi    = d.phase_index  || 0;
-    const done  = d.status === 'complete' || d.status === 'completed';
-    const pct   = done ? 100 : Math.round(pi / Math.max(total - 1, 1) * 100);
-    document.getElementById('barFill').style.width  = pct + '%';
-    document.getElementById('progPct').textContent  = pct + '%';
-    if (done) {
-      document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
-      document.getElementById('statusBadge').className   = 'status-badge complete';
-      document.getElementById('statusBadge').textContent = '✓ COMPLETE';
-      const lp = document.getElementById('livePill'); if (lp) lp.style.display = 'none';
-      isDone = true;
-    } else {
-      document.getElementById('progLabel').textContent = `PHASE ${pi+1}/${total} — ${phases[Math.min(pi, phases.length-1)]}`;
-    }
-    const phHtml = renderPhaseLog(d.events || [], pi, done);
-    document.getElementById('phaseLogOv').innerHTML    = phHtml;
-    document.getElementById('phaseLogFull').innerHTML  = phHtml;
-    document.getElementById('phaseCount').textContent  = `${(d.events||[]).length}/${phases.length}`;
-    document.getElementById('tcTotal').textContent     = findings.length;
-    document.getElementById('findingCount').textContent = findings.length;
-    document.getElementById('ovFindings').innerHTML    = renderOvFindings(findings);
-    buildSidebar(); rerender();
-    if (!done) setTimeout(poll, 2500);
+    allFindings.forEach(f => { if (f.fields_json && !f.fields) { try { f.fields = JSON.parse(f.fields_json); } catch(e) { f.fields = null; } } });
+    applyProgressUpdate(d, findings);
+    if (!isDone) setTimeout(poll, 2500);
   } catch(e) { if (!isDone) setTimeout(poll, 4000); }
 }
 
 buildSidebar();
-(function autoActivate() {
-  for (const g of SCAN_DEFS) { for (const s of g.scans) { if (findingsFor(s).length > 0) { activateScan(s.id); return; } } }
-  if (SCAN_DEFS[0] && SCAN_DEFS[0].scans[0]) activateScan(SCAN_DEFS[0].scans[0].id);
-})();
+// Restore last active tab for this scan, or auto-activate best scan
+const _savedView = sessionStorage.getItem('hc_scanview_' + scanId);
+if (_savedView && _savedView !== 'overview') {
+  switchView(_savedView);
+  if (_savedView === 'scans') {
+    (function autoActivate() {
+      for (const g of SCAN_DEFS) { for (const s of g.scans) { if (findingsFor(s).length > 0) { activateScan(s.id); return; } } }
+      if (SCAN_DEFS[0] && SCAN_DEFS[0].scans[0]) activateScan(SCAN_DEFS[0].scans[0].id);
+    })();
+  }
+} else {
+  (function autoActivate() {
+    for (const g of SCAN_DEFS) { for (const s of g.scans) { if (findingsFor(s).length > 0) { activateScan(s.id); return; } } }
+    if (SCAN_DEFS[0] && SCAN_DEFS[0].scans[0]) activateScan(SCAN_DEFS[0].scans[0].id);
+  })();
+}
 poll();
 </script>
 </body>
