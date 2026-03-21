@@ -190,7 +190,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .sv.ai{border-color:var(--glass-border);color:var(--text-3);background:var(--glass-1);}
 
 .pane-body{flex:1;overflow-y:auto;max-height:580px;}
-.pf{padding:14px 18px;border-bottom:1px solid var(--glass-border);border-left:2px solid transparent;transition:background .1s;}
+.pf{padding:16px 20px;border-bottom:1px solid var(--glass-border);border-left:3px solid transparent;transition:background .1s;}
 .pf:last-child{border-bottom:none;}
 .pf:hover{background:rgba(255,255,255,.015);}
 .pf.alert{border-left-color:var(--red-bright);}
@@ -207,10 +207,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .pf-sev.alert{color:var(--red-bright);}
 .pf-sev.warn{color:var(--orange);}
 .pf-sev.info{color:var(--text-3);}
-.pf-ts{font-family:var(--mono);font-size:9px;color:var(--text-3);opacity:.4;margin-left:auto;}
-.pf-fields{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;}
-.pf-fk{font-family:var(--mono);font-size:10px;color:var(--text-3);white-space:nowrap;padding-top:1px;align-self:start;}
-.pf-fv{font-family:var(--mono);font-size:11px;color:var(--text);word-break:break-all;line-height:1.55;}
+.pf-fields{display:grid;grid-template-columns:160px 1fr;gap:0;margin-top:4px;border:1px solid var(--glass-border);border-radius:var(--radius-xs);overflow:hidden;}
+.pf-fk{font-family:var(--mono);font-size:10px;color:var(--text-3);white-space:nowrap;padding:7px 12px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--glass-border);border-right:1px solid var(--glass-border);letter-spacing:.3px;align-self:stretch;display:flex;align-items:center;}
+.pf-fv{font-family:var(--mono);font-size:11.5px;color:var(--text);word-break:break-all;line-height:1.5;padding:7px 12px;border-bottom:1px solid var(--glass-border);}
+.pf-fk:last-of-type,.pf-fv:last-child{border-bottom:none;}
 .pf-fv.path{color:#64b5f6;}
 .pf-fv.event{color:#ffd60a;font-weight:500;}
 .pf-fv.hit{color:var(--red-bright);font-weight:500;}
@@ -220,7 +220,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .pf-prev{margin-top:3px;}
 .pf-prev-item{font-family:var(--mono);font-size:10px;color:var(--text-3);padding:1px 0;}
 .pf-prev-item::before{content:'↳ ';color:var(--text-3);opacity:.4;}
-.pf-info-block{font-family:var(--mono);font-size:11px;color:var(--text-2);line-height:1.7;word-break:break-word;}
+.pf-info-block{font-family:var(--mono);font-size:12px;color:var(--text-2);line-height:1.75;word-break:break-word;padding:10px 14px;background:rgba(0,0,0,.18);border:1px solid var(--glass-border);border-radius:var(--radius-xs);margin-top:4px;}
 .pf-info-block mark{background:rgba(224,32,32,.3);color:#fff;padding:0 2px;border-radius:2px;}
 .pane-empty{padding:60px 24px;text-align:center;font-family:var(--mono);font-size:12px;}
 .pane-empty.clean{color:var(--green);}
@@ -416,7 +416,6 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
                 {% if f.keyword %}<span class="ov-kw">{{f.keyword}}</span>{% endif %}
               </div>
               <div class="ov-detail">{{f.detail|truncate(120)}}</div>
-              <div class="ov-ts">{{f.ts}}</div>
             </div>
             {% endfor %}
             {% if findings|length > 20 %}
@@ -697,7 +696,7 @@ function renderFinding(f, q) {
   }
 
   const kwBadge = f.keyword ? `<span class="pf-kw">${esc(f.keyword)}</span>` : '';
-  const hdr = `<div class="pf-hdr"><span class="pf-cat ${sc}">${esc(f.category||'')}</span>${kwBadge}<span class="pf-sev ${sc}">${esc(f.severity)}</span><span class="pf-ts">${esc(f.ts||'')}</span></div>`;
+  const hdr = `<div class="pf-hdr"><span class="pf-cat ${sc}">${esc(f.category||'')}</span>${kwBadge}<span class="pf-sev ${sc}">${esc(f.severity)}</span></div>`;
   if (f.fields && Object.keys(f.fields).length) {
     const fd = f.fields; const rows = [];
     const addRow = (k, v, cls) => {
@@ -793,7 +792,7 @@ function renderOvFindings(findings) {
     const sc = sevCls(f.severity);
     const kw = f.keyword ? `<span class="ov-kw">${esc(f.keyword)}</span>` : '';
     const detail = (f.detail||'').slice(0,120) + ((f.detail||'').length > 120 ? '…' : '');
-    return `<div class="ov-row ${sc}"><div class="ov-top"><span class="ov-cat ${sc}">${esc(f.category||'')}</span>${kw}</div><div class="ov-detail">${esc(detail)}</div><div class="ov-ts">${esc(f.ts||'')}</div></div>`;
+    return `<div class="ov-row ${sc}"><div class="ov-top"><span class="ov-cat ${sc}">${esc(f.category||'')}</span>${kw}</div><div class="ov-detail">${esc(detail)}</div></div>`;
   }).join('');
   const more = findings.length > 20 ? `<div style="padding:9px 14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-3);">+${findings.length-20} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red-bright);">View all</a></div>` : '';
   return rows + more;
