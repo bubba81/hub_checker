@@ -742,21 +742,44 @@ function renderFinding(f, q) {
     else rows.push({ k, v: hi(v), cls:'' });
   }
 
-  // ── 2. Parse the raw detail string if no structured rows ─────────────────
-  if (!rows.length && raw) {
-    // Format: "[Not signed] C:\path\to\file.exe (tool: BAM-Live) @ 2026-03-21 06:57:41 (UTC) | sig: Not signed"
-    const pathM  = raw.match(/([A-Za-z]:\\[^\s(|]+)/);
-    const toolM  = raw.match(/\(tool:\s*([^)]+)\)/i);
-    const timeM  = raw.match(/@ (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[^|]*)/);
-    const sigM   = raw.match(/\|\s*sig:\s*(.+)$/i);
-    const statusM= raw.match(/^\[([^\]]+)\]/);
+  // ── 2. Parse the raw detail string for timestamps & extra info ───────────
+  // Always run this — detail often contains event timestamps even when fields exist
+  if (raw) {
+    // "[Not signed] C:\path\file.exe (tool: BAM-Live) @ 2026-03-21 06:57:41 (UTC) | sig: Not signed"
+    // Also handles: "service: svcname | start: auto | last modified: 2026-03-15 ..."
+    const pathM   = !rows.find(r=>r.k==='Path')   && raw.match(/([A-Za-z]:\\[^\s(|,]+)/);
+    const toolM   = !rows.find(r=>r.k==='Tool')   && raw.match(/\(tool:\s*([^)]+)\)/i);
+    const sigM    = !rows.find(r=>r.k==='Sig')    && raw.match(/\|\s*sig:\s*(.+)$/i);
+    const statusM = !rows.find(r=>r.k==='Status') && raw.match(/^\[([^\]]+)\]/);
 
-    if (pathM)   addRow('Path',   pathM[1].trim(),    'path');
-    if (toolM)   addRow('Tool',   toolM[1].trim(),    'muted');
-    if (timeM)   addRow('Time',   timeM[1].trim(),    'muted');
-    if (sigM)    addRow('Sig',    sigM[1].trim(),     sigM[1].toLowerCase().includes('not')||sigM[1].toLowerCase().includes('fake')?'hit':'clean');
-    if (statusM) addRow('Status', statusM[1].trim(),  statusM[1].toLowerCase().includes('not')||statusM[1].toLowerCase().includes('fake')?'hit':'clean');
-    // If parsing yielded nothing, just show the raw string
+    // Extract ALL timestamps from the string — these are file event times
+    const tsMatches = [...raw.matchAll(/(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[^|\s,)]*)/g)];
+    const tsLabels = ['@ ','last modified:','last run:','run time:','created:','modified:','accessed:','deleted on:','last write:'];
+
+    if (pathM)   addRow('Path',   pathM[1].trim(),   'path');
+    if (toolM)   addRow('Tool',   toolM[1].trim(),   'muted');
+
+    // Label each timestamp by what precedes it in the string
+    for (const m of tsMatches) {
+      const before = raw.slice(0, m.index).toLowerCase().trimEnd();
+      let label = 'Timestamp';
+      if (before.endsWith('@'))              label = 'Event Time';
+      else if (before.includes('last modified')) label = 'Last Modified';
+      else if (before.includes('last run'))      label = 'Last Run';
+      else if (before.includes('run time'))      label = 'Run Time';
+      else if (before.includes('created'))       label = 'Created';
+      else if (before.includes('modified'))      label = 'Modified';
+      else if (before.includes('accessed'))      label = 'Accessed';
+      else if (before.includes('deleted'))       label = 'Deleted On';
+      else if (before.includes('last write'))    label = 'Last Write';
+      // Don't duplicate if already in rows
+      if (!rows.find(r => r.k === label)) addRow(label, m[1].trim(), 'muted');
+    }
+
+    if (sigM)    addRow('Sig',    sigM[1].trim(),    sigM[1].toLowerCase().includes('not')||sigM[1].toLowerCase().includes('fake')?'hit':'clean');
+    if (statusM) addRow('Status', statusM[1].trim(), statusM[1].toLowerCase().includes('not')||statusM[1].toLowerCase().includes('fake')?'hit':'clean');
+
+    // If still nothing at all, show raw detail
     if (!rows.length) addRow('Detail', raw, '');
   }
 
