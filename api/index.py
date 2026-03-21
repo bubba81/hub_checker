@@ -632,7 +632,14 @@ def trinity_scan_submit():
 
             hits = data.get("hits", [])
             if hits:
-                cur.execute("DELETE FROM scan_findings WHERE scan_id=%s", (scan_id,))
+                # Only wipe existing findings if this batch is a full replacement.
+                # If the scanner already posted findings incrementally via
+                # /api/scanner/finding, and this is just a smaller partial
+                # re-send (e.g. only Phase 1 results), preserve the incremental ones.
+                cur.execute("SELECT COUNT(*) AS cnt FROM scan_findings WHERE scan_id=%s", (scan_id,))
+                existing_count = (cur.fetchone() or {"cnt": 0})["cnt"]
+                if len(hits) >= existing_count:
+                    cur.execute("DELETE FROM scan_findings WHERE scan_id=%s", (scan_id,))
                 for h in hits:
                     severity   = h.get("severity", "alert") or "alert"
                     category   = h.get("category", "") or ""
@@ -775,6 +782,7 @@ def scanner_progress():
 
 @app.route("/api/scanner/finding", methods=["POST"])
 def scanner_finding():
+    import json as _json
     data     = request.get_json(force=True) or {}
     scan_key = data.get("scan_key")
     if not scan_key:
@@ -785,12 +793,33 @@ def scanner_finding():
             scan = cur.fetchone()
             if not scan:
                 abort(404)
+            # Build detail string from structured fields (same logic as trinity_scan_submit)
+            keyword    = data.get("keyword", "") or ""
+            path_or_fn = data.get("path") or data.get("filename", "")
+            parts = []
+            if keyword:                  parts.append(f"[{keyword}]")
+            if path_or_fn:               parts.append(path_or_fn)
+            if data.get("tool"):         parts.append(f"(tool: {data['tool']})")
+            if data.get("eventType"):    parts.append(f"| {data['eventType']}")
+            if data.get("timestamp"):    parts.append(f"@ {data['timestamp']}")
+            if data.get("source"):       parts.append(f"| source: {data['source']}")
+            if data.get("inSession"):    parts.append(f"| in-session: {data['inSession']}")
+            if data.get("signature"):    parts.append(f"| sig: {data['signature']}")
+            if data.get("signer"):       parts.append(f"| signer: {data['signer']}")
+            if data.get("onDisk"):       parts.append(f"| on-disk: {data['onDisk']}")
+            if data.get("bamSeqNum"):    parts.append(f"| BAM-seq: {data['bamSeqNum']}")
+            if data.get("runCount"):     parts.append(f"| runs: {data['runCount']}")
+            if data.get("patterns"):     parts.append(f"| patterns: {'; '.join(data['patterns'])}")
+            raw_detail = data.get("detail", "")
+            detail = (" ".join(parts) if parts else raw_detail)[:2000]
+            fields_json = _json.dumps({k: v for k, v in data.items() if k not in ("scan_key",)})
             cur.execute("""
-                INSERT INTO scan_findings (scan_id,category,severity,detail,keyword,ts)
-                VALUES (%s,%s,%s,%s,%s,%s)
+                INSERT INTO scan_findings
+                  (scan_id,category,severity,detail,keyword,fields_json,ts)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
             """, (scan["id"], data.get("category", "general"),
-                  data.get("severity", "warn"), data.get("detail", ""),
-                  data.get("keyword", ""), _now()))
+                  data.get("severity", "warn"), detail,
+                  keyword, fields_json, _now()))
         conn.commit()
     return jsonify({"ok": True})
 
