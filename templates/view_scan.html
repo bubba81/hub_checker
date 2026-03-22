@@ -58,8 +58,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
 
 /* ── LAYOUT */
-.main{position:relative;z-index:1;max-width:1380px;margin:0 auto;padding:28px 28px 0;}
-#view-scans{padding-bottom:28px;}
+.main{position:relative;z-index:1;max-width:1380px;margin:0 auto;padding:28px 28px 80px;}
 
 /* ── SCAN HEADER */
 .scan-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:24px;border-bottom:1px solid var(--glass-border);margin-bottom:22px;position:relative;}
@@ -145,9 +144,9 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .ov-ts{font-family:var(--mono);font-size:9px;color:var(--text-3);opacity:.4;margin-top:3px;}
 
 /* ── SCAN RESULTS */
-.scan-layout{display:grid;grid-template-columns:220px 1fr;border:1px solid var(--glass-border);border-radius:var(--radius);margin-top:20px;background:var(--glass-1);overflow:hidden;backdrop-filter:var(--blur);height:calc(100vh - 64px - 28px - 28px - 28px);}
-@media(max-width:860px){.scan-layout{grid-template-columns:1fr;height:auto;}}
-.scan-sidebar{border-right:1px solid var(--glass-border);overflow-y:auto;background:rgba(0,0,0,.15);height:100%;}
+.scan-layout{display:grid;grid-template-columns:220px 1fr;border:1px solid var(--glass-border);border-radius:var(--radius);margin-top:20px;min-height:680px;background:var(--glass-1);overflow:hidden;backdrop-filter:var(--blur);}
+@media(max-width:860px){.scan-layout{grid-template-columns:1fr;}}
+.scan-sidebar{border-right:1px solid var(--glass-border);overflow-y:auto;background:rgba(0,0,0,.15);}
 .sg-label{font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:1.5px;color:var(--red-bright);text-transform:uppercase;padding:10px 14px 7px;background:rgba(224,32,32,.04);border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:5;backdrop-filter:var(--blur-sm);}
 .si{display:flex;align-items:center;gap:7px;padding:9px 13px;cursor:pointer;border-bottom:1px solid var(--glass-border);transition:background .12s;border-left:2px solid transparent;}
 .si:last-child{border-bottom:none;}
@@ -163,7 +162,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .si-cnt{font-family:var(--mono);font-size:9px;padding:1px 5px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:4px;flex-shrink:0;color:var(--text-3);}
 .si.active .si-cnt{border-color:var(--glass-border-red);color:var(--red-bright);}
 
-.scan-pane{display:flex;flex-direction:column;height:100%;overflow:hidden;}
+.scan-pane{display:flex;flex-direction:column;min-height:680px;}
 .pane-head{padding:16px 20px 14px;border-bottom:1px solid var(--glass-border);display:flex;align-items:flex-start;justify-content:space-between;gap:14px;background:rgba(255,255,255,.015);}
 .pane-title{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:-.1px;color:#fff;margin-bottom:4px;}
 .pane-desc{font-size:12px;color:var(--text-3);line-height:1.6;max-width:620px;}
@@ -190,30 +189,28 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .sv.aw{border-color:rgba(255,149,0,.3);color:var(--orange);background:rgba(255,149,0,.07);}
 .sv.ai{border-color:var(--glass-border);color:var(--text-3);background:var(--glass-1);}
 
-.pane-body{flex:1;overflow-y:auto;}
-.pf{padding:16px 20px;border-bottom:1px solid var(--glass-border);border-left:3px solid transparent;transition:background .1s;}
+.pane-body{flex:1;overflow-y:auto;max-height:580px;}
+.pf{padding:14px 18px;border-bottom:1px solid var(--glass-border);border-left:2px solid transparent;transition:background .1s;}
 .pf:last-child{border-bottom:none;}
 .pf:hover{background:rgba(255,255,255,.015);}
 .pf.alert{border-left-color:var(--red-bright);}
 .pf.warn{border-left-color:var(--orange);}
 .pf.info{border-left-color:rgba(255,255,255,.08);}
 .pf.hid{display:none;}
-.pf-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
-.pf-hdr:empty{display:none;}
-.pf-kw{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--red-bright);letter-spacing:.4px;}
+.pf-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
 .pf-cat{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:2px 8px;border:1px solid;border-radius:20px;}
 .pf-cat.alert{border-color:rgba(224,32,32,.3);color:var(--red-bright);background:var(--red-glass);}
 .pf-cat.warn{border-color:rgba(255,149,0,.3);color:var(--orange);background:rgba(255,149,0,.07);}
 .pf-cat.info{border-color:var(--glass-border);color:var(--text-3);background:transparent;}
-
+.pf-kw{font-family:var(--mono);font-size:9px;padding:2px 8px;border:1px solid var(--glass-border-red);color:var(--red-bright);background:var(--red-dim);border-radius:20px;}
 .pf-sev{font-family:var(--mono);font-size:9px;text-transform:uppercase;font-weight:600;}
 .pf-sev.alert{color:var(--red-bright);}
 .pf-sev.warn{color:var(--orange);}
 .pf-sev.info{color:var(--text-3);}
-.pf-fields{display:grid;grid-template-columns:120px 1fr;gap:0;border:1px solid var(--glass-border);border-radius:var(--radius-xs);overflow:hidden;width:100%;}
-.pf-fk{font-family:var(--mono);font-size:10px;color:var(--text-3);white-space:nowrap;padding:7px 12px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--glass-border);border-right:1px solid var(--glass-border);letter-spacing:.3px;align-self:stretch;display:flex;align-items:center;}
-.pf-fv{font-family:var(--mono);font-size:11.5px;color:var(--text);word-break:break-all;line-height:1.5;padding:7px 12px;border-bottom:1px solid var(--glass-border);}
-.pf-fk:nth-last-child(2),.pf-fv:last-child{border-bottom:none;}
+.pf-ts{font-family:var(--mono);font-size:9px;color:var(--text-3);opacity:.4;margin-left:auto;}
+.pf-fields{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;}
+.pf-fk{font-family:var(--mono);font-size:10px;color:var(--text-3);white-space:nowrap;padding-top:1px;align-self:start;}
+.pf-fv{font-family:var(--mono);font-size:11px;color:var(--text);word-break:break-all;line-height:1.55;}
 .pf-fv.path{color:#64b5f6;}
 .pf-fv.event{color:#ffd60a;font-weight:500;}
 .pf-fv.hit{color:var(--red-bright);font-weight:500;}
@@ -223,7 +220,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
 .pf-prev{margin-top:3px;}
 .pf-prev-item{font-family:var(--mono);font-size:10px;color:var(--text-3);padding:1px 0;}
 .pf-prev-item::before{content:'↳ ';color:var(--text-3);opacity:.4;}
-.pf-info-block{font-family:var(--mono);font-size:12px;color:var(--text-2);line-height:1.75;word-break:break-word;padding:10px 14px;background:rgba(0,0,0,.18);border:1px solid var(--glass-border);border-radius:var(--radius-xs);margin-top:4px;}
+.pf-info-block{font-family:var(--mono);font-size:11px;color:var(--text-2);line-height:1.7;word-break:break-word;}
 .pf-info-block mark{background:rgba(224,32,32,.3);color:#fff;padding:0 2px;border-radius:2px;}
 .pane-empty{padding:60px 24px;text-align:center;font-family:var(--mono);font-size:12px;}
 .pane-empty.clean{color:var(--green);}
@@ -419,6 +416,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;b
                 {% if f.keyword %}<span class="ov-kw">{{f.keyword}}</span>{% endif %}
               </div>
               <div class="ov-detail">{{f.detail|truncate(120)}}</div>
+              <div class="ov-ts">{{f.ts}}</div>
             </div>
             {% endfor %}
             {% if findings|length > 20 %}
@@ -615,7 +613,6 @@ function switchView(name) {
     v.classList.toggle('active', show);
     v.style.display = show ? 'block' : 'none';
   });
-  sessionStorage.setItem('hc_scanview_' + scanId, name);
   if (name === 'scans'   && !activeScanId) activateScan(SCAN_DEFS[0].scans[0].id);
   if (name === 'log')     renderLog(document.getElementById('logSearch').value);
   if (name === 'sysinfo') renderSysinfo();
@@ -671,14 +668,26 @@ function renderFinding(f, q) {
   if (activeScanId === 'roblox_accts') {
     const fd  = f.fields || {};
     let userId = String(fd.userId || fd.id || fd.robloxId || '').trim();
-    if (!userId) { const cm = raw.match(/:\s*(\d+)\s*$/); if (cm) userId = cm[1]; }
-    if (!userId) { const nm = raw.match(/\d{3,12}/); if (nm) userId = nm[0]; }
+    if (!userId) {
+      // 'Roblox Account: 1417280' — grab number after colon
+      const cm = raw.match(/:\s*(\d+)\s*$/);
+      if (cm) userId = cm[1];
+    }
+    if (!userId) {
+      const nm = raw.match(/\d{3,12}/);
+      if (nm) userId = nm[0];
+    }
     const profileUrl = userId ? `https://www.roblox.com/users/${userId}/profile` : '';
     const uidLabel   = userId ? `ID: ${esc(userId)}` : esc(raw);
     return `<div class="rblx-card" data-rblx-id="${esc(userId)}">
       <div class="rblx-avatar-placeholder">👤</div>
       <div class="rblx-info">
-        <a class="rblx-name" href="${profileUrl||'#'}" target="${profileUrl?'_blank':'_self'}" rel="noopener">Loading…<span class="rblx-loading"></span></a>
+        <a class="rblx-name"
+           href="${profileUrl || '#'}"
+           target="${profileUrl ? '_blank' : '_self'}"
+           rel="noopener">
+          Loading…<span class="rblx-loading"></span>
+        </a>
         <div class="rblx-uid">${uidLabel}</div>
         ${f.ts ? `<div class="rblx-uid" style="margin-top:1px">${esc(f.ts)}</div>` : ''}
       </div>
@@ -686,114 +695,35 @@ function renderFinding(f, q) {
     </div>`;
   }
 
-  // ── Skip keys that are noise ─────────────────────────────────────────────
-  const SKIP = new Set(['category','severity','detail','fields_json','id','scan_id','created_at']);
-
-  // ── Helper: highlight query matches ──────────────────────────────────────
-  const hi = v => {
-    const s = esc(String(v));
-    return q ? s.replace(new RegExp('('+rxEsc(esc(q.toLowerCase()))+')', 'gi'), '<mark>$1</mark>') : s;
-  };
-
-  // ── Build rows array ──────────────────────────────────────────────────────
-  const rows = [];
-  const addRow = (k, v, cls) => {
-    if (v == null || v === '') return;
-    rows.push({ k, v: hi(v), cls: cls||'' });
-  };
-
-  // ── 1. Try structured fields first (minus junk keys) ─────────────────────
-  const fd = f.fields && typeof f.fields === 'object' ? f.fields : {};
-  const FIELD_MAP = [
-    ['path','Path','path'],['fileName','File Name',''],['tool','Tool','muted'],
-    ['runTime','Run Time',''],['lastRun','Last Run',''],['runCount','Run Count',''],
-    ['executed','Executed',''],['present','Present',''],['shimPos','ShimCache Pos','muted'],
-    ['executedFlag','Executed Flag',''],['sourceHive','Source Hive','muted'],
-    ['keyLastWrite','Key Last Write',''],['lastWrite','Last Write',''],
-    ['keyPath','Key Path','path'],['valueName','Value Name',''],['valueData','Value Data',''],
-    ['regCategory','Registry Category',''],['lnkName','LNK Name','path'],
-    ['programName','Program Name',''],['sourceName','Source Name','muted'],
-    ['fileSize','File Size','muted'],['deletedOn','Deleted On',''],
-    ['siCreated','SI Created',''],['siModified','SI Modified',''],['siAccessed','SI Accessed','muted'],
-    ['frn','FRN','muted'],['inUse','In Use','muted'],
-    ['sigStatus','Signature','fd.sigStatus&&fd.sigStatus.toLowerCase().includes("not")||fd.sigStatus&&fd.sigStatus.toLowerCase().includes("fake")?"hit":"clean"'],
-    ['signerName','Signer',''],['patterns','Patterns','hit'],
-    ['hive','Hive','muted'],['fileLastModified','File Modified',''],['eventType','Event Type','event'],
-    ['csv','CSV','muted'],
-  ];
-  const seen = new Set(SKIP);
-  for (const [key, label, cls] of FIELD_MAP) {
-    seen.add(key);
-    const v = fd[key];
-    if (v == null || v === '') continue;
-    // Special case signature status colouring
-    let c = cls;
-    if (key === 'sigStatus') c = String(v).toLowerCase().includes('not')||String(v).toLowerCase().includes('fake') ? 'hit' : 'clean';
-    addRow(label, v, c);
-  }
-  if (fd.prevRuns && fd.prevRuns.length) {
-    seen.add('prevRuns');
-    rows.push({ k:'Prev Runs', v: fd.prevRuns.map(r=>`<div class="pf-prev-item">${esc(r)}</div>`).join(''), cls:'' });
-  }
-  // Catch-all unknown fields
-  for (const [k, v] of Object.entries(fd)) {
-    if (seen.has(k) || v == null || v === '') continue;
-    if (Array.isArray(v)) rows.push({ k, v: v.map(r=>`<div class="pf-prev-item">${esc(String(r))}</div>`).join(''), cls:'' });
-    else if (typeof v === 'object') rows.push({ k, v: hi(JSON.stringify(v)), cls:'muted' });
-    else rows.push({ k, v: hi(v), cls:'' });
-  }
-
-  // ── 2. Parse the raw detail string for timestamps & extra info ───────────
-  // Always run this — detail often contains event timestamps even when fields exist
-  if (raw) {
-    // "[Not signed] C:\path\file.exe (tool: BAM-Live) @ 2026-03-21 06:57:41 (UTC) | sig: Not signed"
-    // Also handles: "service: svcname | start: auto | last modified: 2026-03-15 ..."
-    const pathM   = !rows.find(r=>r.k==='Path')   && raw.match(/([A-Za-z]:\\[^\s(|,]+)/);
-    const toolM   = !rows.find(r=>r.k==='Tool')   && raw.match(/\(tool:\s*([^)]+)\)/i);
-    const sigM    = !rows.find(r=>r.k==='Sig')    && raw.match(/\|\s*sig:\s*(.+)$/i);
-    const statusM = !rows.find(r=>r.k==='Status') && raw.match(/^\[([^\]]+)\]/);
-
-    // Extract ALL timestamps from the string — these are file event times
-    const tsMatches = [...raw.matchAll(/(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[^|\s,)]*)/g)];
-    const tsLabels = ['@ ','last modified:','last run:','run time:','created:','modified:','accessed:','deleted on:','last write:'];
-
-    if (pathM)   addRow('Path',   pathM[1].trim(),   'path');
-    if (toolM)   addRow('Tool',   toolM[1].trim(),   'muted');
-
-    // Label each timestamp by what precedes it in the string
-    for (const m of tsMatches) {
-      const before = raw.slice(0, m.index).toLowerCase().trimEnd();
-      let label = 'Timestamp';
-      if (before.endsWith('@'))              label = 'Event Time';
-      else if (before.includes('last modified')) label = 'Last Modified';
-      else if (before.includes('last run'))      label = 'Last Run';
-      else if (before.includes('run time'))      label = 'Run Time';
-      else if (before.includes('created'))       label = 'Created';
-      else if (before.includes('modified'))      label = 'Modified';
-      else if (before.includes('accessed'))      label = 'Accessed';
-      else if (before.includes('deleted'))       label = 'Deleted On';
-      else if (before.includes('last write'))    label = 'Last Write';
-      // Don't duplicate if already in rows
-      if (!rows.find(r => r.k === label)) addRow(label, m[1].trim(), 'muted');
+  const kwBadge = f.keyword ? `<span class="pf-kw">${esc(f.keyword)}</span>` : '';
+  const hdr = `<div class="pf-hdr"><span class="pf-cat ${sc}">${esc(f.category||'')}</span>${kwBadge}<span class="pf-sev ${sc}">${esc(f.severity)}</span><span class="pf-ts">${esc(f.ts||'')}</span></div>`;
+  if (f.fields && Object.keys(f.fields).length) {
+    const fd = f.fields; const rows = [];
+    const addRow = (k, v, cls) => {
+      if (v == null || v === '' || v === undefined) return;
+      const hi = q ? esc(String(v)).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(String(v));
+      rows.push(`<div class="pf-fk">${esc(k)}</div><div class="pf-fv ${cls||''}">${hi}</div>`);
+    };
+    addRow('Tool',fd.tool); addRow('CSV',fd.csv,'muted'); addRow('Event Type',fd.eventType,'event');
+    addRow('Path',fd.path,'path'); addRow('File Name',fd.fileName); addRow('Run Time',fd.runTime);
+    addRow('Last Run',fd.lastRun); addRow('Run Count',fd.runCount); addRow('Executed',fd.executed);
+    addRow('Present',fd.present); addRow('ShimCache Position',fd.shimPos,'muted'); addRow('Executed Flag',fd.executedFlag);
+    addRow('Source Hive',fd.sourceHive,'muted'); addRow('Key Last Write',fd.keyLastWrite); addRow('Last Write',fd.lastWrite);
+    addRow('Key Path',fd.keyPath); addRow('Value Name',fd.valueName); addRow('Value Data',fd.valueData);
+    addRow('Registry Category',fd.regCategory); addRow('LNK Name',fd.lnkName,'path'); addRow('Program Name',fd.programName);
+    addRow('Source Name ($I)',fd.sourceName,'muted'); addRow('File Size',fd.fileSize,'muted'); addRow('Deleted On',fd.deletedOn);
+    addRow('SI Created',fd.siCreated); addRow('SI Modified',fd.siModified); addRow('SI Accessed',fd.siAccessed,'muted');
+    addRow('FRN',fd.frn,'muted'); addRow('In Use',fd.inUse,'muted');
+    addRow('Signature Status',fd.sigStatus, fd.sigStatus&&fd.sigStatus.toLowerCase().includes('not')?'hit':fd.sigStatus&&fd.sigStatus.toLowerCase().includes('fake')?'hit':'clean');
+    addRow('Signer',fd.signerName); addRow('Patterns',fd.patterns,'hit'); addRow('Hive',fd.hive,'muted'); addRow('File Last Modified',fd.fileLastModified);
+    if (fd.prevRuns && fd.prevRuns.length) {
+      const prevHtml = fd.prevRuns.map(r => `<div class="pf-prev-item">${esc(r)}</div>`).join('');
+      rows.push(`<div class="pf-fk">Prev Runs</div><div class="pf-fv"><div class="pf-prev">${prevHtml}</div></div>`);
     }
-
-    if (sigM)    addRow('Sig',    sigM[1].trim(),    sigM[1].toLowerCase().includes('not')||sigM[1].toLowerCase().includes('fake')?'hit':'clean');
-    if (statusM) addRow('Status', statusM[1].trim(), statusM[1].toLowerCase().includes('not')||statusM[1].toLowerCase().includes('fake')?'hit':'clean');
-
-    // If still nothing at all, show raw detail
-    if (!rows.length) addRow('Detail', raw, '');
+    return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">${hdr}<div class="pf-fields">${rows.join('')}</div></div>`;
   }
-
-  // ── 3. Add keyword row if present and not already shown ──────────────────
-  if (f.keyword) rows.unshift({ k:'Keyword', v: hi(f.keyword), cls:'hit' });
-
-  // ── 4. Render ─────────────────────────────────────────────────────────────
-  if (rows.length) {
-    const inner = rows.map(r => `<div class="pf-fk">${esc(r.k)}</div><div class="pf-fv ${r.cls}">${r.v}</div>`).join('');
-    return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}"><div class="pf-fields">${inner}</div></div>`;
-  }
-  // Absolute fallback
-  return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}"><div class="pf-info-block">${hi(raw||'(no detail)')}</div></div>`;
+  const hi = q ? esc(raw).replace(new RegExp('(' + rxEsc(esc(q.toLowerCase())) + ')', 'gi'), '<mark>$1</mark>') : esc(raw);
+  return `<div class="pf ${sc}" data-sev="${sc}" data-raw="${esc(raw.toLowerCase())}">${hdr}<div class="pf-info-block">${hi}</div></div>`;
 }
 
 function renderPane(hits) {
@@ -806,9 +736,8 @@ function renderPane(hits) {
   let visible = 0;
   const rows = hits.map(f => {
     const sc = sevCls(f.severity); const raw = (f.detail||'').toLowerCase();
-    const fieldsText = f.fields ? Object.values(f.fields).map(v => String(v||'')).join(' ').toLowerCase() : '';
     const sevOk = sf === 'all' || f.severity === sf;
-    const qOk   = !q || raw.includes(q) || (f.keyword||'').toLowerCase().includes(q) || fieldsText.includes(q);
+    const qOk   = !q || raw.includes(q) || (f.keyword||'').toLowerCase().includes(q);
     if (sevOk && qOk) visible++;
     const html = renderFinding(f, q);
     return sevOk && qOk ? html : html.replace(`class="pf ${sc}"`, `class="pf ${sc} hid"`);
@@ -863,7 +792,7 @@ function renderOvFindings(findings) {
     const sc = sevCls(f.severity);
     const kw = f.keyword ? `<span class="ov-kw">${esc(f.keyword)}</span>` : '';
     const detail = (f.detail||'').slice(0,120) + ((f.detail||'').length > 120 ? '…' : '');
-    return `<div class="ov-row ${sc}"><div class="ov-top"><span class="ov-cat ${sc}">${esc(f.category||'')}</span>${kw}</div><div class="ov-detail">${esc(detail)}</div></div>`;
+    return `<div class="ov-row ${sc}"><div class="ov-top"><span class="ov-cat ${sc}">${esc(f.category||'')}</span>${kw}</div><div class="ov-detail">${esc(detail)}</div><div class="ov-ts">${esc(f.ts||'')}</div></div>`;
   }).join('');
   const more = findings.length > 20 ? `<div style="padding:9px 14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-3);">+${findings.length-20} more — <a href="#" onclick="switchView('scans');return false;" style="color:var(--red-bright);">View all</a></div>` : '';
   return rows + more;
@@ -1114,7 +1043,36 @@ async function refreshScan() {
       }
     });
 
-    applyProgressUpdate(d, findings);
+    const total = d.total_phases || phases.length;
+    const pi    = d.phase_index  || 0;
+    const done  = d.status === 'complete' || d.status === 'completed';
+    const pct   = done ? 100 : Math.round(pi / Math.max(total - 1, 1) * 100);
+
+    document.getElementById('barFill').style.width  = pct + '%';
+    document.getElementById('progPct').textContent  = pct + '%';
+    document.getElementById('tcTotal').textContent  = findings.length;
+    document.getElementById('findingCount').textContent = findings.length;
+
+    if (done) {
+      document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
+      document.getElementById('statusBadge').className   = 'status-badge complete';
+      document.getElementById('statusBadge').textContent = '✓ COMPLETE';
+      const lp = document.getElementById('livePill');
+      if (lp) lp.style.display = 'none';
+    } else {
+      document.getElementById('progLabel').textContent =
+        `PHASE ${pi+1}/${total} — ${phases[Math.min(pi, phases.length-1)]}`;
+    }
+
+    const phHtml = renderPhaseLog(d.events || [], pi, done);
+    document.getElementById('phaseLogOv').innerHTML   = phHtml;
+    document.getElementById('phaseLogFull').innerHTML = phHtml;
+    document.getElementById('phaseCount').textContent = `${(d.events||[]).length}/${phases.length}`;
+    document.getElementById('ovFindings').innerHTML   = renderOvFindings(findings);
+
+    buildSidebar();
+    rerender();
+    renderSysinfo();
 
     // Flash green to confirm
     btn.style.color       = 'var(--green)';
@@ -1137,79 +1095,44 @@ async function refreshScan() {
   }
 }
 
-function applyProgressUpdate(d, findings) {
-  const total   = d.total_phases || phases.length;
-  const pi      = d.phase_index  || 0;
-  const done    = d.status === 'complete' || d.status === 'completed';
-  const events  = d.events || [];
-
-  // Use the last reported pct from events for accuracy, fall back to phase-index ratio
-  let pct;
-  if (done) {
-    pct = 100;
-  } else if (events.length > 0) {
-    pct = events[events.length - 1].pct || Math.round(pi / Math.max(total - 1, 1) * 100);
-  } else {
-    pct = Math.round(pi / Math.max(total - 1, 1) * 100);
-  }
-
-  document.getElementById('barFill').style.width  = pct + '%';
-  document.getElementById('progPct').textContent  = pct + '%';
-  document.getElementById('tcTotal').textContent  = findings.length;
-  document.getElementById('findingCount').textContent = findings.length;
-
-  if (done) {
-    document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
-    document.getElementById('statusBadge').className   = 'status-badge complete';
-    document.getElementById('statusBadge').textContent = '✓ COMPLETE';
-    const lp = document.getElementById('livePill');
-    if (lp) lp.style.display = 'none';
-    isDone = true;
-  } else {
-    document.getElementById('progLabel').textContent =
-      `PHASE ${pi+1}/${total} — ${phases[Math.min(pi, phases.length-1)]}`;
-  }
-
-  const phHtml = renderPhaseLog(events, pi, done);
-  document.getElementById('phaseLogOv').innerHTML   = phHtml;
-  document.getElementById('phaseLogFull').innerHTML = phHtml;
-  document.getElementById('phaseCount').textContent = `${events.length}/${phases.length}`;
-  document.getElementById('ovFindings').innerHTML   = renderOvFindings(findings);
-
-  buildSidebar();
-  rerender();
-  renderSysinfo();
-}
-
 async function poll() {
   try {
     const [pRes, fRes] = await Promise.all([fetch(`/api/scan/${scanId}/progress`), fetch(`/api/scan/${scanId}/findings`)]);
     const d = await pRes.json();
     const findings = fRes.ok ? await fRes.json() : allFindings;
     allFindings = findings;
-    allFindings.forEach(f => { if (f.fields_json && !f.fields) { try { f.fields = JSON.parse(f.fields_json); } catch(e) { f.fields = null; } } });
-    applyProgressUpdate(d, findings);
-    if (!isDone) setTimeout(poll, 2500);
+    const total = d.total_phases || phases.length;
+    const pi    = d.phase_index  || 0;
+    const done  = d.status === 'complete' || d.status === 'completed';
+    const pct   = done ? 100 : Math.round(pi / Math.max(total - 1, 1) * 100);
+    document.getElementById('barFill').style.width  = pct + '%';
+    document.getElementById('progPct').textContent  = pct + '%';
+    if (done) {
+      document.getElementById('progLabel').textContent   = 'ALL PHASES COMPLETE';
+      document.getElementById('statusBadge').className   = 'status-badge complete';
+      document.getElementById('statusBadge').textContent = '✓ COMPLETE';
+      const lp = document.getElementById('livePill'); if (lp) lp.style.display = 'none';
+      isDone = true;
+    } else {
+      document.getElementById('progLabel').textContent = `PHASE ${pi+1}/${total} — ${phases[Math.min(pi, phases.length-1)]}`;
+    }
+    const phHtml = renderPhaseLog(d.events || [], pi, done);
+    document.getElementById('phaseLogOv').innerHTML    = phHtml;
+    document.getElementById('phaseLogFull').innerHTML  = phHtml;
+    document.getElementById('phaseCount').textContent  = `${(d.events||[]).length}/${phases.length}`;
+    document.getElementById('tcTotal').textContent     = findings.length;
+    document.getElementById('findingCount').textContent = findings.length;
+    document.getElementById('ovFindings').innerHTML    = renderOvFindings(findings);
+    buildSidebar(); rerender();
+    if (!done) setTimeout(poll, 2500);
   } catch(e) { if (!isDone) setTimeout(poll, 4000); }
 }
 
 buildSidebar();
-// Restore last active tab for this scan, or auto-activate best scan
-const _savedView = sessionStorage.getItem('hc_scanview_' + scanId);
-if (_savedView && _savedView !== 'overview') {
-  switchView(_savedView);
-  if (_savedView === 'scans') {
-    (function autoActivate() {
-      for (const g of SCAN_DEFS) { for (const s of g.scans) { if (findingsFor(s).length > 0) { activateScan(s.id); return; } } }
-      if (SCAN_DEFS[0] && SCAN_DEFS[0].scans[0]) activateScan(SCAN_DEFS[0].scans[0].id);
-    })();
-  }
-} else {
-  (function autoActivate() {
-    for (const g of SCAN_DEFS) { for (const s of g.scans) { if (findingsFor(s).length > 0) { activateScan(s.id); return; } } }
-    if (SCAN_DEFS[0] && SCAN_DEFS[0].scans[0]) activateScan(SCAN_DEFS[0].scans[0].id);
-  })();
-}
+(function autoActivate() {
+  for (const g of SCAN_DEFS) { for (const s of g.scans) { if (findingsFor(s).length > 0) { activateScan(s.id); return; } } }
+  if (SCAN_DEFS[0] && SCAN_DEFS[0].scans[0]) activateScan(SCAN_DEFS[0].scans[0].id);
+})();
 poll();
 </script>
 </body>
